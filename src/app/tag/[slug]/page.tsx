@@ -1,7 +1,25 @@
-import tags from '@/tags.json'
+'use client'
 
-export const generateStaticParams = async () => tags.map(tag => ({ slug: tag.tag }))
+import { BlogCard } from '@/components/post-card'
+import { capitalize } from '@/lib/utils'
+import { allBlogs } from 'contentlayer/generated'
 
-const TagPage = ({ params }: { params: { slug: string } }) => <div>{params.slug}</div>
+export default function TagHome({ params }: { params: { slug: string } }) {
+  let posts = allBlogs
+  const tag = params.slug
 
-export default TagPage
+  if (tag) {
+    posts = posts.filter(post => post.tags?.includes(tag))
+  }
+
+  return (
+    <div className="mx-auto max-w-xl px-8 py-8 md:px-0">
+      <h1 className="mb-8 text-center text-2xl font-black">
+        Tag {tag ? ` | ${capitalize(tag)}` : ''}
+      </h1>
+      {posts.map((post, idx) => (
+        <BlogCard key={idx} {...post} />
+      ))}
+    </div>
+  )
+}

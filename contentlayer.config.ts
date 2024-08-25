@@ -33,7 +33,7 @@ export const blogSource = defineDocumentType(() => ({
       type: 'string',
       resolve: post => `/blog/${post._raw.flattenedPath}`,
     },
-    lastmod: {
+    lastMod: {
       type: 'date',
       resolve: post => {
         if (post.date) {

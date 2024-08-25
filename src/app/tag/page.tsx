@@ -1,15 +1,24 @@
+import { Link } from 'next-view-transitions'
+
 import tags from '@/tags.json'
 
 const TagList = () => (
-  <div>
-    <h1>标签</h1>
-    <ul>
+  <div className="mx-auto max-w-xl px-8 py-8 md:px-0">
+    <h1 className="mb-8 flex items-center justify-center gap-2 text-2xl font-black">Tags</h1>
+
+    {/* 分三列 */}
+    <div className="grid grid-cols-4 gap-y-4">
       {tags.map(tag => (
-        <li key={tag.tag}>
-          {tag.tag} ({tag.count})
-        </li>
+        <div key={tag.tag}>
+          <Link
+            className="text-blue-600 transition-colors duration-150 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-200"
+            href={`/blog?tag=${tag.tag}`}
+          >
+            {tag.tag} ({tag.count})
+          </Link>
+        </div>
       ))}
-    </ul>
+    </div>
   </div>
 )
 

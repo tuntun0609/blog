@@ -33,7 +33,7 @@ const headerConfig = [
 ]
 
 export const Header = () => (
-  <header className="sticky inset-x-0 top-0 z-40 mx-auto flex min-h-16 w-full max-w-[800px] flex-row items-center justify-between bg-background/70 bg-white px-4 backdrop-blur-md backdrop-saturate-150 dark:bg-inherit md:px-20">
+  <header className="sticky inset-x-0 top-0 z-40 mx-auto flex min-h-16 w-full max-w-[1000px] flex-row items-center justify-between bg-background/70 bg-white px-4 backdrop-blur-md backdrop-saturate-150 dark:bg-inherit md:px-20">
     <Link href="/">
       <div className="cursor-pointer text-2xl">Blog Starter</div>
     </Link>

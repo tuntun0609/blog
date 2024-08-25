@@ -36,8 +36,8 @@ const PostLayout = ({ params }: { params: { slug: string[] } }) => {
   return (
     <article className={cn('mx-auto max-w-xl px-8 py-8 md:px-0')}>
       <div className="mb-8 text-center">
-        <time dateTime={blog.lastmod} className="mb-1 text-xs text-gray-600">
-          {dayjs(blog.lastmod).format('YYYY-MM-DD HH:mm')}
+        <time dateTime={blog.lastMod} className="mb-1 text-xs text-gray-600">
+          {dayjs(blog.lastMod).format('YYYY-MM-DD HH:mm')}
         </time>
         <h1 className="text-3xl font-bold">{blog.title}</h1>
       </div>
