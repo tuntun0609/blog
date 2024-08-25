@@ -12,7 +12,7 @@ const TagList = () => (
         <div key={tag.tag}>
           <Link
             className="text-blue-600 transition-colors duration-150 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-200"
-            href={`/blog?tag=${tag.tag}`}
+            href={`/tag/${tag.tag}`}
           >
             {tag.tag} ({tag.count})
           </Link>

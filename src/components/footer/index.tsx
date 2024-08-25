@@ -15,7 +15,7 @@ const socialIconConfig = [
   },
   {
     icon: (
-      <X className="h-5 w-5 cursor-pointer transition-colors duration-150 hover:fill-blue-400" />
+      <X className="h-5 w-5 cursor-pointer transition-colors duration-150 hover:fill-blue-400 dark:fill-gray-700" />
     ),
     href: 'https://x.com/TunTun669664',
   },
