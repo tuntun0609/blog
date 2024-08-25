@@ -1,9 +1,11 @@
 import { ViewTransitions } from 'next-view-transitions'
 
+import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
 import { ThemeProvider } from '@/components/theme'
 
 import type { Metadata } from 'next'
+
 import '@/style/globals.css'
 
 export const metadata: Metadata = {
@@ -23,6 +25,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <Header />
             <main>{children}</main>
+            <Footer />
           </ThemeProvider>
         </body>
       </html>

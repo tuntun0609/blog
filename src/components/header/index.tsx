@@ -26,10 +26,6 @@ const headerConfig = [
     label: 'About',
     href: '/about',
   },
-  {
-    label: 'Contact',
-    href: '/contact',
-  },
 ]
 
 export const Header = () => (
