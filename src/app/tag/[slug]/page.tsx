@@ -1,3 +1,5 @@
+import dayjs from 'dayjs'
+
 import { BlogCard } from '@/components/post-card'
 import { capitalize } from '@/lib/utils'
 import tagsList from '@/tags.json'
@@ -6,15 +8,17 @@ import { allBlogs } from 'contentlayer/generated'
 export const generateStaticParams = async () => tagsList.map(tag => ({ slug: tag.tag }))
 
 export const generateMetadata = ({ params }: { params: { slug: string } }) => ({
-  title: params.slug,
+  title: decodeURI(params.slug),
 })
 
 export default function TagHome({ params }: { params: { slug: string } }) {
   let posts = allBlogs
-  const tag = params.slug
+  const tag = decodeURI(params.slug)
 
   if (tag) {
-    posts = posts.filter(post => post.tags?.includes(tag))
+    posts = posts
+      .filter(post => post.tags?.includes(tag))
+      .sort((a, b) => (dayjs(b.date).isAfter(dayjs(a.date)) ? 1 : -1))
   }
 
   return (

@@ -42,7 +42,7 @@ function useHeadsObserver(): [string, Dispatch<string>] {
     }
 
     observer.current = new IntersectionObserver(handleObserver, { rootMargin: '-64px 0px 0px 0px' })
-    document.querySelectorAll('h1[id], h2[id], h3[id]').forEach(element => {
+    document.querySelectorAll('h1[id], h2[id], h3[id], h4[id]').forEach(element => {
       observer.current?.observe(element)
     })
     return () => {
@@ -64,13 +64,13 @@ const TOC = () => {
       return
     }
 
-    const extractedHeadings = Array.from(articleElement.querySelectorAll('h1, h2, h3')).map(
-      heading => ({
-        text: heading.textContent || '',
-        id: heading.id || '',
-        level: heading.nodeName,
-      })
-    )
+    const extractedHeadings = Array.from(
+      articleElement.querySelectorAll('h1[id], h2[id], h3[id], h4[id]')
+    ).map(heading => ({
+      text: heading.textContent || '',
+      id: heading.id || '',
+      level: heading.nodeName,
+    }))
 
     setHeadings(extractedHeadings)
   }, [])
@@ -85,6 +85,7 @@ const TOC = () => {
               'my-2 hover:text-blue-300',
               level === 'H2' && 'pl-4',
               level === 'H3' && 'pl-6',
+              level === 'H4' && 'pl-8',
               activeId === id && 'text-blue-400'
             )}
           >

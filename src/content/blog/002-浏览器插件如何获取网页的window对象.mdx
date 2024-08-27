@@ -1,0 +1,72 @@
+---
+title: 浏览器插件如何获取网页的window对象
+date: 2024-08-28 00:58:00
+tags: ['浏览器插件', '编程小技巧']
+---
+
+chrome插件文档关于content_scripts说明：
+
+> Content scripts live in an isolated world, allowing a content script to make changes to its JavaScript environment without conflicting with the page or other extensions' content scripts.
+> 
+> 内容脚本存在于一个孤立的世界中，允许内容脚本对其 JavaScript 环境进行更改，而不会与页面或其他扩展的内容脚本发生冲突。
+
+也就是说从content_scripts获取到的window对象和网页本身的window对象不是同一个，在content_scripts中对window进行操作并不会影响原本网页的window。
+
+那么如何获取并操作原本网页的window对象呢？
+
+> 注：本文基于最新的mv3版本
+
+# 解决方法
+
+## executeScript
+
+使用`executeScript`并且配置`world`为`MAIN`进行动态注入。这样注入的代码环境是网页的，而不是插件脚本的独立环境，从而获取或修改网页原本的window对象。
+
+## 在网页添加script标签并注入代码
+
+通过在页面中插入`script`标签的方式获取原本网页的window对象。
+
+但如果直接使用innerHTML方法注入代码的话，插件会报错。因为浏览器插件认为这样是不安全的，在mv3中无法直接插入内联脚本。
+
+但是通过src加载其他脚本文件的方式是可以的。之后就可以在引入的文件中操作原本网页的window对象了。
+
+### 原生开发
+
+在manifest.json中加入脚本代码权限：
+
+```json
+"web_accessible_resources" : ["/js/my_file.js"],
+```
+
+在content scripts里面插入需要注入的脚本：
+
+```javascript
+const injectScript = (file, node) => {
+  const th = document.querySelector(node);
+  const s = document.createElement('script');
+  s.setAttribute('type', 'text/javascript');
+  s.setAttribute('src', file);
+  th.appendChild(s);
+};
+injectScript( chrome.runtime.getURL('/js/my_file.js'), 'body');
+```
+
+### 使用plasmo开发
+
+与原生开发不同的是获取文件路径的方式，原生开发通过`chrome.runtime.getURL`方法获取，在plasmo中需要使用框架特有的方式，即通过`url:`前缀的方式获取脚本url。
+
+[https://docs.plasmo.com/workflows/faq#tilde-import-resolution](https://docs.plasmo.com/workflows/faq#tilde-import-resolution)
+
+```javascript
+import historyWarp from 'url:~utils/history-wrap';
+
+const injectScript = (file: string, node: string) => {
+  const th = document.querySelector(node);
+  const s = document.createElement('script');
+  s.setAttribute('type', 'text/javascript');
+  s.setAttribute('src', file);
+  th.appendChild(s);
+};
+
+injectScript( historyWarp, 'body');
+```
