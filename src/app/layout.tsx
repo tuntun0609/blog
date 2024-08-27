@@ -25,6 +25,12 @@ export default function RootLayout({
   return (
     // <ViewTransitions>
     <html lang="en" className="scroll-p-16 scroll-smooth" suppressHydrationWarning>
+      <head>
+        <meta
+          name="google-site-verification"
+          content="oB0kdf2_VvKkELCcNraxJAPze44Gs4DFafScoBjWGPI"
+        />
+      </head>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Header />
