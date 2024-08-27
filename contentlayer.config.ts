@@ -3,12 +3,15 @@ import path from 'path'
 import { defineDocumentType, makeSource } from 'contentlayer2/source-files'
 import fs from 'fs-extra'
 import { fromHtmlIsomorphic } from 'hast-util-from-html-isomorphic'
+import { remarkImgToJsx } from 'pliny/mdx-plugins/index.js'
 import readingTime from 'reading-time'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypeKatex from 'rehype-katex'
+import rehypePresetMinify from 'rehype-preset-minify'
 import rehypePrettyCode from 'rehype-pretty-code'
 import rehypeSlug from 'rehype-slug'
 import remarkGfm from 'remark-gfm'
+import { remarkAlert } from 'remark-github-blockquote-alert'
 import remarkMath from 'remark-math'
 
 import { Blog } from 'contentlayer/generated'
@@ -24,31 +27,29 @@ const linkIcon = fromHtmlIsomorphic(
 
 export const blogSource = defineDocumentType(() => ({
   name: 'Blog',
-  filePathPattern: '**/*.(md|mdx)',
+  filePathPattern: 'blog/**/*.(md|mdx)',
   contentType: 'mdx',
   fields: {
     title: { type: 'string', required: true },
     date: { type: 'date' },
     tags: { type: 'list', of: { type: 'string' } },
+    summary: { type: 'string' },
   },
   computedFields: {
-    url: {
+    slug: {
       type: 'string',
-      resolve: post => `/blog/${post._raw.flattenedPath}`,
-    },
-    lastMod: {
-      type: 'date',
-      resolve: post => {
-        if (post.date) {
-          return post.date
-        }
-        const filePath = path.join(process.cwd(), 'src/content', post._raw.sourceFilePath)
-        // 读取文件的修改时间
-        const stats = fs.statSync(filePath)
-        return stats.mtime
-      },
+      resolve: doc => doc._raw.flattenedPath.replace(/^.+?(\/)/, ''),
     },
     readingTime: { type: 'json', resolve: doc => formatDuration(readingTime(doc.body.raw).time) },
+  },
+}))
+
+export const pageSource = defineDocumentType(() => ({
+  name: 'Page',
+  filePathPattern: 'page/**/*.(md|mdx)',
+  contentType: 'mdx',
+  fields: {
+    key: { type: 'string', required: true },
   },
 }))
 
@@ -69,10 +70,10 @@ const generateTags = async (allBlogs: Blog[]) => {
 
 export default makeSource({
   contentDirPath: 'src/content',
-  documentTypes: [blogSource],
+  documentTypes: [blogSource, pageSource],
   mdx: {
     cwd: process.cwd(),
-    remarkPlugins: [remarkMath, remarkGfm],
+    remarkPlugins: [remarkMath, remarkGfm, remarkImgToJsx, remarkAlert],
     rehypePlugins: [
       rehypeKatex,
       rehypeSlug,
@@ -95,6 +96,7 @@ export default makeSource({
           theme: 'one-dark-pro',
         },
       ],
+      rehypePresetMinify,
     ],
   },
   onSuccess: async importData => {

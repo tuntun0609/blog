@@ -1,5 +1,5 @@
 import { Menu } from 'lucide-react'
-import { Link } from 'next-view-transitions'
+import Link from 'next/link'
 
 import { ThemeToggle } from '../theme'
 import { Button } from '../ui/button'
@@ -23,15 +23,15 @@ const headerConfig = [
     href: '/tag',
   },
   {
-    label: 'About',
-    href: '/about',
+    label: 'Projects',
+    href: '/project-list',
   },
 ]
 
 export const Header = () => (
-  <header className="sticky inset-x-0 top-0 z-40 mx-auto flex min-h-16 w-full max-w-[1000px] flex-row items-center justify-between bg-background/70 bg-white px-4 backdrop-blur-md backdrop-saturate-150 dark:bg-inherit md:px-20">
+  <header className="sticky inset-x-0 top-0 z-40 mx-auto flex min-h-16 w-full max-w-[1000px] flex-row items-center justify-between bg-background/70 px-4 backdrop-blur-md backdrop-saturate-150 dark:bg-inherit md:px-20">
     <Link href="/">
-      <div className="cursor-pointer text-2xl">Blog Starter</div>
+      <div className="cursor-pointer text-2xl">Tuntun Blog</div>
     </Link>
     <nav className="flex flex-row items-center gap-2 md:gap-4">
       {headerConfig.map(({ label, href }) => (

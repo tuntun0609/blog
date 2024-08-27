@@ -1,10 +1,10 @@
-import { Link } from 'next-view-transitions'
+import Link from 'next/link'
 
 import tags from '@/tags.json'
 
 const TagList = () => (
   <div className="mx-auto max-w-xl px-8 py-8 md:px-0">
-    <h1 className="mb-8 flex items-center justify-center gap-2 text-2xl font-black">Tags</h1>
+    <h1 className="mb-8 flex items-center justify-center gap-2 text-2xl font-black">Tags 🏷</h1>
 
     {/* 分三列 */}
     <div className="grid grid-cols-4 gap-y-4">

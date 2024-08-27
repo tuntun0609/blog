@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils'
 
 import CustomLink from './custom-link'
+import Image from './image'
 
 import type { MDXComponents } from 'mdx/types'
 
@@ -43,10 +44,14 @@ const MDXComponents: MDXComponents = {
   blockquote: props => (
     <blockquote
       {...props}
-      className={cn('my-4 border-l-4 border-gray-200 pl-4 italic text-gray-300', props.className)}
+      className={cn(
+        'my-4 border-l-4 border-gray-200 pl-4 italic text-gray-400 dark:text-gray-300',
+        props.className
+      )}
       {...props}
     />
   ),
+  Image,
 }
 
 export default MDXComponents

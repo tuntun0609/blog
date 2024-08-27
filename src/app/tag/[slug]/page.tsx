@@ -1,8 +1,13 @@
-'use client'
-
 import { BlogCard } from '@/components/post-card'
 import { capitalize } from '@/lib/utils'
+import tagsList from '@/tags.json'
 import { allBlogs } from 'contentlayer/generated'
+
+export const generateStaticParams = async () => tagsList.map(tag => ({ slug: tag.tag }))
+
+export const generateMetadata = ({ params }: { params: { slug: string } }) => ({
+  title: params.slug,
+})
 
 export default function TagHome({ params }: { params: { slug: string } }) {
   let posts = allBlogs

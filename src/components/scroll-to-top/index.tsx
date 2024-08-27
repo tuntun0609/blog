@@ -27,7 +27,10 @@ const ScrollTopButton = () => {
 
   return (
     <div
-      className={cn('fixed bottom-8 right-8 hidden flex-col gap-3', show ? 'md:flex' : 'md:hidden')}
+      className={cn(
+        'fixed bottom-8 right-8 hidden flex-col gap-3 transition-opacity duration-150 md:flex',
+        show ? 'md:opacity-100' : 'pointer-events-none cursor-default md:opacity-0'
+      )}
     >
       <button
         aria-label="Scroll To Top"
