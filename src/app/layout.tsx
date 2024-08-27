@@ -1,5 +1,6 @@
 // import { ViewTransitions } from 'next-view-transitions'
 
+import { ClarityAnalytics } from '@/components/clarity-analytics'
 import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
 import { ThemeProvider } from '@/components/theme'
@@ -31,6 +32,7 @@ export default function RootLayout({
           <Footer />
         </ThemeProvider>
       </body>
+      <ClarityAnalytics />
     </html>
     // </ViewTransitions>
   )
