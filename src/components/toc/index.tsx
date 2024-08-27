@@ -26,7 +26,7 @@ function useHeadsObserver(): [string, Dispatch<string>] {
         if (entry.isIntersecting) {
           intersectingHeadings.current.push({
             id: entry.target.id,
-            top: entry.target.clientTop,
+            top: (entry.target as HTMLHeadingElement).offsetTop,
           })
           intersectingHeadings.current.sort((a, b) => b.top - a.top)
         } else {
