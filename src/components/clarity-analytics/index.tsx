@@ -14,6 +14,6 @@ export const Analytics = () =>
     		})(window, document, "clarity", "script", "ntwpfsm14w");`,
         }}
       />
-      <GoogleAnalytics gaId="G-Q8KFE0CW2Q" />
+      <GoogleAnalytics gaId="G-Y9CY3CQWFD" />
     </>
   )
