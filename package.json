@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@giscus/react": "^3.0.0",
+    "@next/third-parties": "^14.2.6",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-popover": "^1.1.1",
     "@radix-ui/react-slot": "^1.1.0",
