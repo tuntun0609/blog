@@ -1,8 +1,8 @@
 import { Mail } from 'lucide-react'
 
-import BiliBili from '@public/bilibili.svg'
-import Github from '@public/github.svg'
-import X from '@public/x.svg'
+import BiliBili from '@public/image/bilibili.svg'
+import Github from '@public/image/github.svg'
+import X from '@public/image/x.svg'
 
 const socialIconConfig = [
   {
