@@ -36,6 +36,6 @@ export const Footer = () => (
         </a>
       ))}
     </div>
-    <div>Tuntun0609 • © {new Date().getFullYear()} • Blog Starter</div>
+    <div>Tuntun0609 • © {new Date().getFullYear()} • Tuntun Blog</div>
   </footer>
 )

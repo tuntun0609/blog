@@ -1,5 +1,8 @@
 import { type ClassValue, clsx } from 'clsx'
+import dayjs from 'dayjs'
 import { twMerge } from 'tailwind-merge'
+
+import { Blog } from 'contentlayer/generated'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -37,3 +40,6 @@ export const formatDuration = (ms: number) => {
 
   return formattedTime
 }
+
+export const sortBlogs = (blogs: Blog[]) =>
+  blogs.sort((a, b) => (dayjs(b.date).isAfter(dayjs(a.date)) ? 1 : -1))

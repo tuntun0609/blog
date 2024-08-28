@@ -84,3 +84,15 @@ pre code {
 	display: inline-block;
 	vertical-align: middle;
 }
+
+#article ul {
+	list-style: disc;
+}
+
+#article ul ul {
+	list-style: circle;
+}
+
+#article ul ul ul {
+	list-style: square;
+}

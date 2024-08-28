@@ -34,11 +34,12 @@ export const blogSource = defineDocumentType(() => ({
     date: { type: 'date' },
     tags: { type: 'list', of: { type: 'string' } },
     summary: { type: 'string' },
+    path: { type: 'string' },
   },
   computedFields: {
     slug: {
       type: 'string',
-      resolve: doc => doc._raw.flattenedPath.replace(/^.+?(\/)/, ''),
+      resolve: doc => doc.path ?? doc._raw.flattenedPath.replace(/^.+?(\/)/, ''),
     },
     readingTime: { type: 'json', resolve: doc => formatDuration(readingTime(doc.body.raw).time) },
   },

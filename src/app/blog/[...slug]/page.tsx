@@ -1,12 +1,16 @@
 import dayjs from 'dayjs'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { useMDXComponent } from 'next-contentlayer2/hooks'
 
 import { GiscusComment } from '@/components/comment'
 import MDXComponents from '@/components/mdx'
 import ScrollTopButton from '@/components/scroll-to-top'
 import TOC from '@/components/toc'
-import { cn } from '@/lib/utils'
+import { cn, sortBlogs } from '@/lib/utils'
 import { allBlogs } from 'contentlayer/generated'
+
+const blogs = sortBlogs(allBlogs)
 
 dayjs.locale('zh-cn')
 
@@ -15,16 +19,21 @@ export const generateStaticParams = async () =>
 
 export const generateMetadata = ({ params }: { params: { slug: string[] } }) => {
   const slug = decodeURI(params.slug.join('/'))
-  const post = allBlogs.find(post => post.slug === slug)
+
+  const post = blogs.find(post => post.slug === slug)
   if (!post) {
-    throw new Error(`Post not found for slug: ${params.slug}`)
+    notFound()
   }
   return { title: post.title }
 }
 
 const BlogLayout = ({ params }: { params: { slug: string[] } }) => {
   const slug = decodeURI(params.slug.join('/'))
-  const blog = allBlogs.find(blog => blog.slug === slug)
+
+  const postIndex = blogs.findIndex(post => post.slug === slug)
+  const prevBlog = blogs[postIndex + 1]
+  const nextBlog = blogs[postIndex - 1]
+  const blog = blogs.find(post => post.slug === slug)
 
   if (!blog) {
     throw new Error(`Post not found for slug: ${params.slug}`)
@@ -46,6 +55,24 @@ const BlogLayout = ({ params }: { params: { slug: string[] } }) => {
         <div id="article">
           <MDXContent components={MDXComponents} />
         </div>
+
+        <div className={cn('flex justify-between', (prevBlog || nextBlog) && 'my-8')}>
+          <div>
+            {prevBlog && (
+              <Link href={`/blog/${prevBlog.slug}`} className="text-blue-600">
+                ← {prevBlog.title}
+              </Link>
+            )}
+          </div>
+          <div>
+            {nextBlog && (
+              <Link href={`/blog/${nextBlog.slug}`} className="text-blue-600">
+                {nextBlog.title} →
+              </Link>
+            )}
+          </div>
+        </div>
+
         <GiscusComment />
         <ScrollTopButton />
       </article>

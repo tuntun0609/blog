@@ -1,7 +1,7 @@
-import dayjs from 'dayjs'
+import { notFound } from 'next/navigation'
 
 import { BlogCard } from '@/components/post-card'
-import { capitalize } from '@/lib/utils'
+import { capitalize, sortBlogs } from '@/lib/utils'
 import tagsList from '@/tags.json'
 import { allBlogs } from 'contentlayer/generated'
 
@@ -12,13 +12,14 @@ export const generateMetadata = ({ params }: { params: { slug: string } }) => ({
 })
 
 export default function TagHome({ params }: { params: { slug: string } }) {
+  if (!params.slug) {
+    notFound()
+  }
   let posts = allBlogs
   const tag = decodeURI(params.slug)
 
   if (tag) {
-    posts = posts
-      .filter(post => post.tags?.includes(tag))
-      .sort((a, b) => (dayjs(b.date).isAfter(dayjs(a.date)) ? 1 : -1))
+    posts = sortBlogs(posts.filter(post => post.tags?.includes(tag)))
   }
 
   return (
