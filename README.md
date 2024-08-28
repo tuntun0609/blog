@@ -4,7 +4,7 @@
 
 使用 [Nextjs](https://nextjs.org/) & [Tailwindcss](https://tailwindcss.com/) & [Contentlayer](https://contentlayer.dev/)
 
-框架协议为 [MIT](https://github.com/tuntun0609/blog/blob/main/LICENSE)
+框架协议为 [MIT](https://github.com/tuntun0609/blog/blob/master/LICENSE)
 
 
 > [!NOTE]
