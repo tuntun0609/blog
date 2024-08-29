@@ -7,7 +7,7 @@ const TagList = () => (
     <h1 className="mb-8 flex items-center justify-center gap-2 text-2xl font-black">Tags 🏷</h1>
 
     {/* 分三列 */}
-    <div className="grid grid-cols-4 gap-y-4">
+    <div className="grid grid-cols-4 gap-x-2 gap-y-4">
       {tags.map(tag => (
         <div key={tag.tag}>
           <Link

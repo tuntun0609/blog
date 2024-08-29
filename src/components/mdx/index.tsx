@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils'
 
+import { ImagePreview } from '../image-preview'
+
 import CustomLink from './custom-link'
 import Image from './image'
 
@@ -50,6 +52,12 @@ const MDXComponents: MDXComponents = {
       )}
       {...props}
     />
+  ),
+  img: props => (
+    <ImagePreview src={props.src}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img alt="" {...props} className={cn('cursor-pointer', props.className)} />
+    </ImagePreview>
   ),
   Image,
 }

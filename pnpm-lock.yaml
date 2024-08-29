@@ -74,6 +74,9 @@ importers:
       react-dom:
         specifier: ^18
         version: 18.3.1(react@18.3.1)
+      react-photo-view:
+        specifier: ^1.2.6
+        version: 1.2.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-transition-progress:
         specifier: ^0.0.4
         version: 0.0.4(framer-motion@11.3.30(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(next@14.2.5(@babel/core@7.25.2)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -3919,6 +3922,12 @@ packages:
 
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
+
+  react-photo-view@1.2.6:
+    resolution: {integrity: sha512-Fq17yxkMIv0oFp7HOJr39HgCZRP6A9K5T5rixJ4flSUYT2OO3V8vNxEExjhIKgIrfmTu+mDnHYEsI9RRWi1JHw==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
 
   react-remove-scroll-bar@2.3.6:
     resolution: {integrity: sha512-DtSYaao4mBmX+HDo5YWYdBWQwYIQQshUV/dVxFxK+KM26Wjwp1gZ6rv6OC3oujI6Bfu6Xyg3TwK533AQutsn/g==}
@@ -9381,6 +9390,11 @@ snapshots:
       scheduler: 0.23.2
 
   react-is@16.13.1: {}
+
+  react-photo-view@1.2.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   react-remove-scroll-bar@2.3.6(@types/react@18.3.4)(react@18.3.1):
     dependencies:

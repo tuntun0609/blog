@@ -57,20 +57,23 @@ const BlogLayout = ({ params }: { params: { slug: string[] } }) => {
         </div>
 
         <div className={cn('flex justify-between', (prevBlog || nextBlog) && 'my-8')}>
-          <div>
-            {prevBlog && (
-              <Link href={`/blog/${prevBlog.slug}`} className="text-blue-600">
-                ← {prevBlog.title}
-              </Link>
-            )}
-          </div>
-          <div>
-            {nextBlog && (
-              <Link href={`/blog/${nextBlog.slug}`} className="text-blue-600">
-                {nextBlog.title} →
-              </Link>
-            )}
-          </div>
+          {prevBlog && (
+            <Link
+              href={`/blog/${prevBlog.slug}`}
+              className={cn('flex gap-1 text-blue-600', nextBlog && 'max-w-[48%]')}
+            >
+              <span>←</span>
+              <span>{prevBlog.title}</span>
+            </Link>
+          )}
+          {nextBlog && (
+            <Link
+              href={`/blog/${nextBlog.slug}`}
+              className={cn('flex justify-end gap-1 text-blue-600', prevBlog && 'max-w-[48%]')}
+            >
+              <span>{nextBlog.title}</span> <span>→</span>
+            </Link>
+          )}
         </div>
 
         <GiscusComment />

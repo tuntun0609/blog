@@ -12,6 +12,7 @@ import '@/style/globals.css'
 import '@/style/mdx.css'
 import 'katex/dist/katex.css'
 import 'remark-github-blockquote-alert/alert.css'
+import 'react-photo-view/dist/react-photo-view.css'
 
 export const metadata: Metadata = {
   ...siteMetadata,
