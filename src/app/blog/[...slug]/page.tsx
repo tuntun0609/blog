@@ -7,6 +7,7 @@ import { GiscusComment } from '@/components/comment'
 import MDXComponents from '@/components/mdx'
 import ScrollTopButton from '@/components/scroll-to-top'
 import TOC from '@/components/toc'
+import { siteMetadata } from '@/config/siteMeta'
 import { cn, sortBlogs } from '@/lib/utils'
 import { allBlogs } from 'contentlayer/generated'
 
@@ -22,9 +23,13 @@ export const generateMetadata = ({ params }: { params: { slug: string[] } }) => 
 
   const post = blogs.find(post => post.slug === slug)
   if (!post) {
-    notFound()
+    return {}
   }
-  return { title: post.title }
+  return {
+    title: post.title,
+    description: post.summary ?? siteMetadata.description,
+    keywords: post.tags ?? siteMetadata.keywords,
+  }
 }
 
 const BlogLayout = ({ params }: { params: { slug: string[] } }) => {
@@ -36,7 +41,7 @@ const BlogLayout = ({ params }: { params: { slug: string[] } }) => {
   const blog = blogs.find(post => post.slug === slug)
 
   if (!blog) {
-    throw new Error(`Post not found for slug: ${params.slug}`)
+    notFound()
   }
 
   const MDXContent = useMDXComponent(blog.body.code)

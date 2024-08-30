@@ -1,5 +1,6 @@
 import { Mail } from 'lucide-react'
 
+import { siteMetadata } from '@/config/siteMeta'
 import BiliBili from '@public/image/bilibili.svg'
 import Github from '@public/image/github.svg'
 import X from '@public/image/x.svg'
@@ -7,23 +8,23 @@ import X from '@public/image/x.svg'
 const socialIconConfig = [
   {
     icon: <Mail className="h-6 w-6 transition-colors duration-150 hover:text-blue-400" />,
-    href: 'mailto:tun.nozomi@gmail.com',
+    href: `mailto:${siteMetadata.email}`,
   },
   {
     icon: <Github className="h-6 w-6 transition-colors duration-150 hover:text-blue-400" />,
-    href: 'https://github.com/tuntun0609',
+    href: siteMetadata.github,
   },
   {
     icon: (
       <X className="h-5 w-5 cursor-pointer fill-gray-700 transition-colors duration-150 hover:fill-blue-400" />
     ),
-    href: 'https://x.com/TunTun669664',
+    href: siteMetadata.x,
   },
   {
     icon: (
       <BiliBili className="h-6 w-6 cursor-pointer fill-gray-700 transition-colors duration-150 hover:fill-blue-400" />
     ),
-    href: 'https://space.bilibili.com/47706697',
+    href: siteMetadata.bilibili,
   },
 ]
 
