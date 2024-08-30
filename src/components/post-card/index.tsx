@@ -20,7 +20,7 @@ export const BlogCard = (post: Blog) => (
       <span>·</span>
       <span>{post.readingTime}</span>
     </div>
-    <div className="flex flex-row gap-1 overflow-x-auto">
+    <div className="flex flex-row flex-wrap gap-1 overflow-x-auto">
       {post.tags?.map(tag => (
         <Link key={tag} href={`/tag/${tag}`}>
           <Badge variant="outline" className="cursor-pointer hover:bg-gray-100">

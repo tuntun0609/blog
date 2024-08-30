@@ -38,10 +38,7 @@ const MDXComponents: MDXComponents = {
     <code {...props} className={cn('rounded bg-gray-600 px-1 text-white', props.className)} />
   ),
   pre: props => (
-    <pre
-      {...props}
-      className={cn('mb-4 overflow-x-auto rounded bg-gray-600 p-4', props.className)}
-    />
+    <pre {...props} className={cn('overflow-x-auto rounded bg-gray-600 p-4', props.className)} />
   ),
   blockquote: props => (
     <blockquote
@@ -56,7 +53,7 @@ const MDXComponents: MDXComponents = {
   img: props => (
     <ImagePreview src={props.src}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img alt="" {...props} className={cn('cursor-pointer', props.className)} />
+      <img alt="" {...props} className={cn('mb-4 cursor-pointer', props.className)} />
     </ImagePreview>
   ),
   Image,

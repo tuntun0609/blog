@@ -55,7 +55,7 @@ figure[data-rehype-pretty-code-figure]:has(> [data-rehype-pretty-code-title]) pr
 }
 
 figure {
-	@apply mb-6 mt-1;
+	@apply mb-4;
 }
 
 pre,

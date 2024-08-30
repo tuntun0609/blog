@@ -1,10 +1,12 @@
 import NextImage, { ImageProps } from 'next/image'
 
+import { cn } from '@/lib/utils'
+
 import { ImagePreview } from '../image-preview'
 
-const Image = ({ src, ...rest }: ImageProps) => (
+const Image = ({ src, className, ...rest }: ImageProps) => (
   <ImagePreview src={src as string}>
-    <NextImage className="cursor-pointer" src={src} {...rest} />
+    <NextImage {...rest} className={cn('mb-4 cursor-pointer', className)} src={src} />
   </ImagePreview>
 )
 
