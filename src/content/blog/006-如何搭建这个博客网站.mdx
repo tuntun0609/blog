@@ -1,0 +1,374 @@
+---
+title: 如何用Nextjs搭建一个基于MDX的博客网站
+tags: [react, nextjs, tailwindcss]
+date: 2024-08-31
+summary: 本文将介绍如何搭建一个类似于本博客网站的网站，使用 React、Next.js、Tailwind CSS、MDX 等技术栈。
+path: how-to-build-blog-website-with-nextjs
+---
+
+## 介绍
+
+本文将介绍如何搭建一个类似于本博客网站的网站，使用 React、Next.js、Tailwind CSS、Shadcn/ui、MDX 等技术栈。
+
+其中MDX的管理由[contentlayer](https://contentlayer.dev/)提供。
+
+开发过程中部分代码和思路主要借鉴于两个项目：
+
+- [tailwind-nextjs-starter-blog](https://github.com/timlrx/tailwind-nextjs-starter-blog)
+- [weekly-boilerplate](https://github.com/weijunext/weekly-boilerplate)
+
+## 项目初始化 & 配置
+
+首先，我们需要初始化一个Next.js项目：
+
+```bash
+npx create-next-app@latest my-blog
+```
+
+然后，我们需要安装一些开发时需要用到的依赖，比如eslint、prettier等。tailwind在初始化的时候就已经配置好了，所以无需额外安装。
+
+之后初始化一下 shadcn/ui，就可以开始正式开发了。
+
+## MDX处理
+
+博客网站最重要的当然就是内容的处理了，我们使用MDX来编辑文章。
+
+> MDX是一种将Markdown和JSX结合的语法，可以让我们在Markdown中使用JSX，这样我们就可以在Markdown中使用React组件了，可以说是非常方便和强大。
+
+一开始选择的管理文章内容有如下方案：
+
+- [nextra](https://nextra.site)
+	- 优点：不需要自己编写解析MDX的代码，直接使用即可，已经有了现成的处理MDX的逻辑，以及渲染后的样式。
+	- 缺点：只支持Page Router，不方便对文章内容进行自定义的处理，更适合写文档应用而不是博客应用。
+- [contentlayer](https://contentlayer.dev)
+	- 优点：将渲染的逻辑交由开发者，本身只负责处理内容，可以更加灵活的处理文章内容。
+	- 缺点：需要自己添加插件，编写解析MDX的代码，相对麻烦一些。
+
+最终选择的是`contentlayer`作为MDX的管理方案，但是contentlayer的主仓库已经很久没更新了，实际安装的是类似于contentlayer分支的另一个库：[contentlayer2](https://github.com/timlrx/contentlayer2)，详见[官方ISSUE](https://github.com/contentlayerdev/contentlayer/issues/651#issuecomment-2030335434)
+
+但是其用法和contentlayer基本一致，只是升级了一下内部的一些代码。
+
+### 安装
+
+```bash
+pnpm add contentlayer2 next-contentlayer2
+```
+
+之后按照contentlayer[文档](https://contentlayer.dev/docs/getting-started-cddd76b7)进行配置，主要是在项目根目录下新建`contentlayer.config.ts`文件；修改`next.config.js`文件，添加`withContentlayer`；修改`tsconfig.json`等。
+
+### 配置contentlayer
+
+contentlayer首先要配置数据源，在`contentlayer.config.ts`中导出数据源，将内容的文件夹路径设置为`src/content`
+
+```ts
+export default makeSource({
+  contentDirPath: 'src/content',
+  documentTypes: [],
+})
+```
+
+之后配置Blog的数据类型，主要是设置属于Blog的mdx文件路径、内容类型、字段、计算字段等。
+
+其中`fields`是mdx中开头的元数据，例如下方的title、tags、date等。Blog需要展示的标题、日期、标签、摘要等都可以在`fields`中设置
+
+```mdx
+---
+title: 这个博客网站是如何搭建的
+tags: [react, nextjs, tailwindcss]
+date: 2024-08-31
+---
+```
+
+`computedFields`是一些计算字段，例如下方的slug，用于之后通过路由匹配文章（如果定义了path，就用path当做路由，否则用文件的文件路径当做路由）、readingTime 用于展示阅读时间等。
+
+最终配置如下：
+
+```ts
+export const blogSource = defineDocumentType(() => ({
+  name: 'Blog',
+  filePathPattern: 'blog/**/*.(md|mdx)',
+  contentType: 'mdx',
+  fields: {
+    title: { type: 'string', required: true },
+    date: { type: 'date' },
+    tags: { type: 'list', of: { type: 'string' } },
+    summary: { type: 'string' },
+    path: { type: 'string' },
+  },
+  computedFields: {
+    slug: {
+      type: 'string',
+      resolve: doc => doc.path ?? doc._raw.flattenedPath.replace(/^.+?(\/)/, ''),
+    },
+    readingTime: { type: 'json', resolve: doc => formatDuration(readingTime(doc.body.raw).time) },
+  },
+}))
+```
+
+除了Blog，在一些其他页面也需要展示MDX内容，例如about, home页面，所以可以配置一个`page`的文档类型。
+
+可以直接通过key来找到对应的mdx文件，从而展示不同的内容。
+
+```ts
+export const pageSource = defineDocumentType(() => ({
+  name: 'Page',
+  filePathPattern: 'page/**/*.(md|mdx)',
+  contentType: 'mdx',
+  fields: {
+    key: { type: 'string', required: true },
+  },
+}))
+```
+
+之后将这两个文档类型添加到makeSource的documentTypes字段中，就定义好需要的文档类型了。
+
+```ts {3}
+export default makeSource({
+  contentDirPath: 'src/content',
+  documentTypes: [blogSource, pageSource],
+})
+```
+
+之后就可以在`src/content/blog`或者`src/content/page`中添加mdx文件，contentlayer会自动解析这些文件，生成对应的数据。
+
+### 添加mdx插件
+
+#### remark
+
+- remark-gfm: 拓展markdown的功能，支持表格、任务列表等
+- remark-math: 支持数学公式
+- remark-img-to-jsx: 将本地文件使用Nextjs的Image组件进行替换
+- remark-github-blockquote-alert: 支持在markdown中使用github风格的alert
+
+#### rehype
+
+- rehype-katex: 使用katex渲染数学公式
+- rehype-slug: 为heading自动生成id
+- rehype-autolink-headings: 为heading自动生成锚点
+- rehype-pretty-code: 代码块美化
+- rehype-preset-minify: 压缩html
+
+最终代码如下：
+
+```ts
+mdx: {
+    cwd: process.cwd(),
+    remarkPlugins: [remarkMath, remarkGfm, remarkImgToJsx, remarkAlert],
+    rehypePlugins: [
+      rehypeKatex,
+      rehypeSlug,
+      [
+        rehypeAutolinkHeadings,
+        {
+          behavior: 'prepend',
+          headingProperties: {
+            className: ['content-header'],
+          },
+          properties: {
+            ariaHidden: undefined,
+          },
+          content: linkIcon.children, // Icon component
+        },
+      ],
+      [
+        rehypePrettyCode,
+        {
+          theme: 'one-dark-pro',
+        },
+      ],
+      rehypePresetMinify,
+    ],
+  },
+```
+
+### 其他数据的处理
+
+在生成数据之后，我们需要把所有Blog的tag提取出来存储在JSON文件中，用于展示tag列表。
+
+```ts
+export default makeSource({
+	// {...}
+  onSuccess: async importData => {
+    const { allBlogs } = await importData()
+    await generateTags(allBlogs)
+  },
+})
+```
+
+> TODO: 生成文章内容的索引以供搜索使用
+
+完整的配置可以查看[contentlayer.config.ts](https://github.com/tuntun0609/blog/blob/master/contentlayer.config.ts)
+
+之后我们就可以在项目的页面中通过引入`allBlogs`或者`allPages`使用处理后的mdx数据了。
+
+## Blog列表
+
+新建`src/app/blog/page.tsx`
+
+```tsx
+import { allBlogs } from 'contentlayer/generated'
+```
+
+allBlogs是`blog`目录下所有文章的数据，将他们通过时间排序，然后展示在页面上
+
+并且加入分页的功能，其中分页的功能是通过路径上的Query Params来获取当前页数，然后根据页数来展示不同的内容。
+
+## Blog详情页
+
+新建`src/app/blog/[...slug].tsx`
+
+通过slug来匹配对应的文章内容，然后展示在页面上。同时使用`generateStaticParams`来生成静态路由，提高访问速度。使用`generateMetadata`来生成meta信息，方便SEO。
+
+使用useMDXComponent来生成MDX组件，然后展示在页面上。
+
+```tsx
+const MDXContent = useMDXComponent(blog.body.code)
+
+<MDXContent components={MDXComponents} />
+```
+
+其中MDXComponents是一些自定义的组件，例如`a`、`h1`、`h2`等，用于替换默认的组件。
+
+```tsx
+import { cn } from '@/lib/utils'
+
+import { ImagePreview } from '../image-preview'
+
+import CustomLink from './custom-link'
+import Image from './image'
+
+import type { MDXComponents } from 'mdx/types'
+
+const MDXComponents: MDXComponents = {
+  h1: props => <h1 {...props} className={cn('mb-4 mt-6 text-4xl font-bold', props.className)} />,
+  h2: props => (
+    <h2
+      {...props}
+      className={cn('mb-4 mt-6 border-gray-200 pb-2 text-3xl font-semibold', props.className)}
+    />
+  ),
+  h3: props => (
+    <h3 {...props} className={cn('mb-4 mt-6 text-2xl font-semibold', props.className)} />
+  ),
+  h4: props => <h4 {...props} className={cn('mb-4 mt-6 text-xl font-semibold', props.className)} />,
+  h5: props => <h5 {...props} className={cn('mb-4 mt-6 text-lg font-semibold', props.className)} />,
+  h6: props => (
+    <h6 {...props} className={cn('mb-4 mt-6 text-base font-semibold', props.className)} />
+  ),
+  p: props => <p {...props} className={cn('mb-4 mt-0', props.className)} />,
+  a: props => (
+    <CustomLink
+      {...props}
+      href={props.href ?? ''}
+      className={cn('text-blue-600 underline', props.className)}
+    />
+  ),
+  ul: props => <ul {...props} className={cn('mb-4 mt-0 list-disc pl-5', props.className)} />,
+  ol: props => <ol {...props} className={cn('mb-4 mt-0 list-decimal pl-5', props.className)} />,
+  li: props => <li {...props} className={cn('mb-2', props.className)} />,
+  code: props => (
+    <code {...props} className={cn('rounded bg-gray-600 px-1 text-white', props.className)} />
+  ),
+  pre: props => (
+    <pre {...props} className={cn('overflow-x-auto rounded bg-gray-600 p-4', props.className)} />
+  ),
+  blockquote: props => (
+    <blockquote
+      {...props}
+      className={cn(
+        'my-4 border-l-4 border-gray-200 pl-4 italic text-gray-400 dark:text-gray-300',
+        props.className
+      )}
+      {...props}
+    />
+  ),
+  img: props => (
+    <ImagePreview src={props.src}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img alt="" {...props} className={cn('mb-4 cursor-pointer', props.className)} />
+    </ImagePreview>
+  ),
+  Image,
+}
+
+export default MDXComponents
+```
+
+之后再需要再加上一些样式，例如代码块的样式、嵌套列表的样式等: [mdx.css](https://github.com/tuntun0609/blog/blob/master/src/style/mdx.css)
+
+毕竟是博客网站，字体的美化也同样重要，这里使用的是[程普](https://github.com/weijunext)大佬的weekly-boilerplate项目中使用的字体[霞鹜](https://lxgw.github.io/?mode=light)
+
+还需要额外加一些内容:
+
+- 上一篇文章和上一篇文章的链接，方便用户查看其他文章。
+- 评论组件，方便用户进行评论，这里采用的是[giscus](https://giscus.app/zh-CN)，可以使用github的Discussions实现评论的功能。
+- TOC: 文章的目录，方便用户查看文章的结构。
+- 返回顶部按钮，方便用户回到页面顶部。
+
+## Tag列表
+
+新建`src/app/tag/page.tsx`和`src/app/tag/[...tag].tsx`，分别用于展示所有tag和单个tag下的文章。
+
+因为上文就已经生成了tag的数据，所以直接使用这个数据渲染即可。
+
+## Home页面
+
+新建一篇`src/content/page/home.mdx`，用于展示首页的内容。
+
+在文章中设置`key`字段，用于在页面中找到对应的文章内容。
+
+```mdx
+---
+key: home
+---
+```
+
+之后在`src/app/page.tsx`中引入这篇文章，然后展示在页面上。
+
+```tsx
+import { allPages } from 'contentlayer/generated'
+
+const home = allPages.find(page => page.key === 'home')
+```
+
+同理，还可以添加`about`等mdx，并在对应页面展示。
+
+## sitemap
+
+sitemap是一个用于搜索引擎的网站地图，可以让搜索引擎更好的爬取网站的内容。
+
+我们使用`next-sitemap`来生成sitemap，首先安装依赖：
+
+```bash
+pnpm add next-sitemap
+```
+
+之后新建文件`next-sitemap.config.js`，配置sitemap的一些信息。
+
+```js
+/** @type {import('next-sitemap').IConfig} */
+module.exports = {
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://me.tuntun.site',
+  generateRobotsTxt: true,
+  sitemapSize: 7000,
+}
+```
+
+之后在`package.json`中添加命令：
+
+```json
+"scripts": {
+  // {...}
+  "postbuild": "next-sitemap"
+},
+```
+
+之后每次构建完成后，就会自动生成sitemap.xml文件和robots文件了。
+
+## 总结
+
+通过以上的步骤，我们就可以搭建一个基础的博客网站了。
+
+其中一些其他类型网站都通用的细节没有写，比如404页面、loading页面、错误页面以及主题切换功能等等，这些都可以根据自己的需求进行添加。
+
+是不是很简单呢？

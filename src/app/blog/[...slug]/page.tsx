@@ -16,29 +16,29 @@ const blogs = sortBlogs(allBlogs)
 dayjs.locale('zh-cn')
 
 export const generateStaticParams = async () =>
-  allBlogs.map(post => ({ slug: post.slug.split('/') }))
+  allBlogs.map(blog => ({ slug: blog.slug.split('/') }))
 
 export const generateMetadata = ({ params }: { params: { slug: string[] } }) => {
   const slug = decodeURI(params.slug.join('/'))
 
-  const post = blogs.find(post => post.slug === slug)
-  if (!post) {
+  const blog = blogs.find(blog => blog.slug === slug)
+  if (!blog) {
     return {}
   }
   return {
-    title: post.title,
-    description: post.summary ?? siteMetadata.description,
-    keywords: post.tags ?? siteMetadata.keywords,
+    title: blog.title,
+    description: blog.summary ?? siteMetadata.description,
+    keywords: blog.tags ?? siteMetadata.keywords,
   }
 }
 
 const BlogLayout = ({ params }: { params: { slug: string[] } }) => {
   const slug = decodeURI(params.slug.join('/'))
 
-  const postIndex = blogs.findIndex(post => post.slug === slug)
-  const prevBlog = blogs[postIndex + 1]
-  const nextBlog = blogs[postIndex - 1]
-  const blog = blogs.find(post => post.slug === slug)
+  const blogIndex = blogs.findIndex(blog => blog.slug === slug)
+  const prevBlog = blogs[blogIndex + 1]
+  const nextBlog = blogs[blogIndex - 1]
+  const blog = blogs.find(blog => blog.slug === slug)
 
   if (!blog) {
     notFound()

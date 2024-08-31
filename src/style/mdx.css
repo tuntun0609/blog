@@ -90,9 +90,11 @@ pre code {
 }
 
 #article ul ul {
+	@apply mt-2;
 	list-style: circle;
 }
 
 #article ul ul ul {
+	@apply mt-2;
 	list-style: square;
 }
