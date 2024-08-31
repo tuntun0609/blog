@@ -10,8 +10,6 @@ path: how-to-build-blog-website-with-nextjs
 
 本文将介绍如何搭建一个类似于本博客网站的网站，使用 React、Next.js、Tailwind CSS、Shadcn/ui、MDX 等技术栈。
 
-其中MDX的管理由[contentlayer](https://contentlayer.dev/)提供。
-
 开发过程中部分代码和思路主要借鉴于两个项目：
 
 - [tailwind-nextjs-starter-blog](https://github.com/timlrx/tailwind-nextjs-starter-blog)
@@ -35,7 +33,7 @@ npx create-next-app@latest my-blog
 
 > MDX是一种将Markdown和JSX结合的语法，可以让我们在Markdown中使用JSX，这样我们就可以在Markdown中使用React组件了，可以说是非常方便和强大。
 
-一开始选择的管理文章内容有如下方案：
+一开始选择的管理文章内容方案如下：
 
 - [nextra](https://nextra.site)
 	- 优点：不需要自己编写解析MDX的代码，直接使用即可，已经有了现成的处理MDX的逻辑，以及渲染后的样式。
