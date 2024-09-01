@@ -72,3 +72,14 @@ const injectScript = (file: string, node: string) => {
 
 injectScript( historyWarp, 'body');
 ```
+
+还可以直接在cs配置中配置world: 'MAIN'
+
+```typescript
+export const config: PlasmoCSConfig = {
+  matches: ['*://*.baidu.com/*'],
+  all_frames: true,
+  world: 'MAIN',
+  run_at: 'document_start'
+}
+```
