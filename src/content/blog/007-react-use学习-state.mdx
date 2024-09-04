@@ -1,0 +1,325 @@
+---
+title: react-use源码学习 | State篇
+date: 2024-09-03
+tags: [react, 学习笔记]
+path: 'react-use-source-code-state'
+summary: '本文是react-use源码的学习总结，主要是对State相关的hook进行解读'
+---
+
+> **持续更新中**
+> 
+> 本文是react-use源码的学习总结，默认读者已经对react-use的hook使用方法有一定了解。如有错误还请指正
+
+## createMemo
+
+[createMemo源码地址](https://github.com/streamich/react-use/blob/master/src/factory/createMemo.ts)
+
+createMemo是一个工厂函数，接受一个要被memoized的函数，返回一个新的函数，这个新的函数会缓存上一次的返回值，如果参数没有变化，就会返回上一次的返回值。
+
+从名字上就可以看出我们需要用到React的[useMemo](https://react.dev/reference/react/useMemo)函数，首先新建`createMemo`函数，定义其基本的解构；传入的参数是一个函数，定义其类型为`T`，使开发者可以自定义函数的类型。
+
+```typescript
+import { useMemo } from 'react';
+
+const createMemo = (fn: T) => {}
+
+export default createMemo;
+```
+
+由于这是一个工厂函数，所以我们需要返回一个新的函数，这个函数接受的参数和返回值应该和传入的fn一致；
+
+传入函数fn的参数使用`...args`表示可以接受任意数量的参数，类型是`Parameters<T>`。Parameters是TS一个内置的工具类型，可以获取函数的参数类型。
+
+返回值使用`ReturnType<T>`获取fn的返回值类型。ReturnType也是TS一个内置的工具类型，可以获取函数的返回值类型。
+
+所以需要返回的新函数就是：
+
+```typescript
+(...args: Parameters<T>) => useMemo<ReturnType<T>>(() => fn(...args), args);
+```
+
+最后将新函数返回，所以最终的代码是
+
+```typescript
+import { useMemo } from 'react';
+
+const createMemo =
+  <T extends (...args: any) => any>(fn: T) =>
+  (...args: Parameters<T>) =>
+    useMemo<ReturnType<T>>(() => fn(...args), args);
+
+export default createMemo;
+```
+
+## createStateContext与createReducerContext
+
+[createStateContext源码地址](https://github.com/streamich/react-use/blob/master/src/factory/createStateContext.ts) [createReducerContext源码地址](https://github.com/streamich/react-use/blob/master/docs/createReducerContext.md)
+
+> createStateContext源码地址与createReducerContext的源码基本一致，只是useStateContext共享的是useState返回值，而useReducerContext共享的是useReducer返回值。所以这里只从createStateContext的源码进行解读。
+
+createStateContext是一个工厂函数，用于快速创建一个context和对应的provider，可以用于共享状态。
+
+首先新建`createStateContext`函数，定义其参数和返回值；传入的参数是初始化的值，并且定义其State的泛型为`T`，使开发者可以自定义State的类型。
+
+```typescript
+const createStateContext = <T>(defaultInitialValue: T) => {}
+```
+
+之后在函数中使用`React.createContext`创建一个context，并定义其类型，其值的类型与useState的返回值一致，因为createStateContext就是为了提供一个可以在组件间共享的state。
+
+```typescript
+const context = createContext<[T, React.Dispatch<React.SetStateAction<T>>] | undefined>(undefined);
+```
+
+根据正常使用context的步骤，我们需要一个Provider来讲需要共享状态的组件包裹起来；接下来就是创建一个Provider，并且使用`useState`新建一个State，作为Provider的value。
+
+这个state的类型是最开始定义的泛型`T`，并且判断是否在渲染Provider的时候传入了初始值，如果传入了初始值就使用传入的初始值，否则使用默认的初始值。
+
+```typescript
+const state = useState<T>(initialValue !== undefined ? initialValue : defaultInitialValue);
+```
+
+这里是用了React的[createElement](https://react.dev/reference/react/createElement)函数，将value作为props，与children一起传给context.Provider，从而合成实际使用需要的Provider。最终代码如下：
+
+```typescript
+const providerFactory = (props, children) => createElement(context.Provider, props, children);
+
+const StateProvider = ({
+  children,
+  initialValue,
+}: {
+  children?: React.ReactNode;
+  initialValue?: T;
+}) => {
+  const state = useState<T>(initialValue !== undefined ? initialValue : defaultInitialValue);
+  return providerFactory({ value: state }, children);
+};
+```
+
+之后就该创建一个hook，用于获取context的value，这里使用了useContext，传入context，获取到value并返回，即state。
+
+```typescript
+const useStateContext = () => {
+  const state = useContext(context);
+  if (state == null) {
+    throw new Error(`useStateContext must be used inside a StateProvider.`);
+  }
+  return state;
+};
+```
+
+最后将useStateContext和StateProvider以及context以数组形式导出，供其他组件使用。（以数组形式导出方便开发者使用的时候通过解构重命名属性）
+
+```typescript
+return [useStateContext, StateProvider, context] as const;
+```
+
+所以最后完整的代码就是
+
+```typescript
+import { createContext, createElement, useContext, useState } from 'react';
+
+const createStateContext = <T>(defaultInitialValue: T) => {
+  const context =
+    createContext<[T, React.Dispatch<React.SetStateAction<T>>] | undefined>(undefined);
+  const providerFactory = (props, children) => createElement(context.Provider, props, children);
+
+  const StateProvider = ({
+    children,
+    initialValue,
+  }: {
+    children?: React.ReactNode;
+    initialValue?: T;
+  }) => {
+    const state = useState<T>(initialValue !== undefined ? initialValue : defaultInitialValue);
+    return providerFactory({ value: state }, children);
+  };
+
+  const useStateContext = () => {
+    const state = useContext(context);
+    if (state == null) {
+      throw new Error(`useStateContext must be used inside a StateProvider.`);
+    }
+    return state;
+  };
+
+  return [useStateContext, StateProvider, context] as const;
+};
+
+export default createStateContext;
+```
+
+## useLatest
+
+[useLatest源码地址](https://github.com/streamich/react-use/blob/master/src/useLatest.ts)
+
+useLatest会返回state的最新值，在一些异步回调函数（比如dom事件回调）中非常有用，可以获取最新的state值。
+
+由于`useRef`在每次渲染时都会保持其值不变，所以我们可以使用`useRef`来保存state的最新值。
+
+而赋值的时机是直接写在组件的顶层，这样每次state更新时，组件更新，`useRef`的值就会更新。
+
+在最后将ref返回，而不是ref.current，这样可以保证通过ref.current引用的值是最新的。如果直接返回ref.current，那么在异步回调中的值就不会是最新的。
+
+所以完整代码如下：
+
+```typescript
+import { useRef } from 'react';
+
+const useLatest = <T>(value: T): { readonly current: T } => {
+  const ref = useRef(value);
+  ref.current = value;
+  return ref;
+};
+
+export default useLatest;
+```
+
+## usePrevious
+
+[usePrevious源码地址](https://github.com/streamich/react-use/blob/master/src/usePrevious.ts)
+
+usePrevious会返回state的上一个值，可以用于比较state的变化。
+
+看到usePrevious是不是和useLatest很像，都是输出state的某个状态下的值，只是usePrevious是上一个值，而useLatest是最新值。
+
+所以usePrevious的实现也是使用`useRef`，只是在赋值的时机上有所不同，usePrevious是在组件渲染之后赋值，所以需要使用`useEffect`。
+
+根据React文档的[描述](https://zh-hans.react.dev/reference/react/useEffect#parameters)，使用useEffect的时候如果不传第二个参数，每次重新渲染组件之后，都将重新运行 Effect 函数，所以我们可以在useEffect中赋值。这样在每次渲染的时候，usePrevious的值还没有更新，获取的就会是上一次的state。
+
+所以最终的代码如下：
+
+```typescript
+import { useEffect, useRef } from 'react';
+
+export default function usePrevious<T>(state: T): T | undefined {
+  const ref = useRef<T>();
+
+  useEffect(() => {
+    ref.current = state;
+  });
+
+  return ref.current;
+}
+```
+
+但这样会有一个问题，如果组件有多个state，那么其中任意一个state更新，usePrevious就会被更新为最新值，这样就可能无法准确获取到上一个state的值。
+
+如果只希望针对于某一个state更新才改变usePrevious的值，就需要加入判断，这样的hook就是[usePreviousDistinct](#usepreviousdistinct)。
+
+## usePreviousDistinct
+
+[usePreviousDistinct源码地址](https://github.com/streamich/react-use/blob/master/docs/usePreviousDistinct.md)
+
+usePreviousDistinct与usePrevious的区别在于，usePreviousDistinct只会在指定的条件下才会更新usePreviousDistinct的值（这个条件一般是某一个state是否改变）。
+
+所以相比于usePrevious，可以需要传入一个比较函数，这个比较函数会在每次渲染时调用，如果比较函数返回false（可以理解为前后值不相同，需要更新前一个值），就会更新usePreviousDistinct的值。如果不传这个函数，默认条件是传入的state是否改变。
+
+首先新建`usePreviousDistinct`函数，定义其参数和返回值；传入的参数是state和比较函数，定义其类型为`T`和`(prev: T, next: T) => boolean`。
+
+这里提取比较函数的type定义为`Predicate`，接受两个参数，第一个是上一个state的值，第二个是下一个state的值，返回一个boolean值。使开发者可以根据prev值和next值判断是否应该更新usePreviousDistinct的值。
+
+```typescript
+export type Predicate<T> = (prev: T | undefined, next: T) => boolean;
+
+export default function usePreviousDistinct<T>(
+  value: T,
+  compare: Predicate<T>
+): T | undefined {}
+```
+
+刚才提过，比较函数是可选的，如果不传的话默认比较条件是state是否改变，所以需要判断是否传入了比较函数，如果没有传入就使用默认的比较函数。
+
+```typescript {3, 7}
+export type Predicate<T> = (prev: T | undefined, next: T) => boolean;
+
+const strictEquals = <T>(prev: T | undefined, next: T) => prev === next;
+
+export default function usePreviousDistinct<T>(
+  value: T,
+  compare: Predicate<T> = strictEquals
+): T | undefined {}
+```
+
+之后开始编写hook内部逻辑，首先使用`useRef`保存上一个state的值，这里不设置初始值，默认是undefined，因为第一次渲染的时候没有上一个state。
+
+同时定义一个`curRef`，用于保存当前state的值，这样在比较函数中可以获取到上一个state和当前state的值。
+
+```typescript {5,6}
+export default function usePreviousDistinct<T>(
+	value: T,
+	compare: Predicate<T> = strictEquals
+): T | undefined {
+	const prevRef = useRef<T>();
+  const curRef = useRef<T>(value);
+}
+```
+
+由于第一次渲染的时候，前一个值不存在，所以需要判断是否为第一次渲染，这里使用了react-use的`useFirstMountState`hook，这个hook会返回一个boolean值，表示是否是第一次渲染。
+
+如果是第一次渲染，就不进行条件的判断：
+
+```typescript {7,9-11}
+export default function usePreviousDistinct<T>(
+	value: T,
+	compare: Predicate<T> = strictEquals
+): T | undefined {
+	const prevRef = useRef<T>();
+  const curRef = useRef<T>(value);
+	const isFirstMount = useFirstMountState();
+
+	if (!isFirstMount) {
+		// 赋值操作
+	}
+
+	return prevRef.current;
+}
+```
+
+之后就是赋值操作，这里需要判断是否满足比较函数的条件，如果满足更新条件就更新prevRef的值为当前curRef的值，并且更新curRef为最新值，否则不更新。
+
+```typescript {9-12}
+export default function usePreviousDistinct<T>(
+  value: T,
+  compare: Predicate<T> = strictEquals
+): T | undefined {
+  const prevRef = useRef<T>();
+  const curRef = useRef<T>(value);
+  const isFirstMount = useFirstMountState();
+
+  if (!isFirstMount && !compare(curRef.current, value)) {
+    prevRef.current = curRef.current;
+    curRef.current = value;
+  }
+
+  return prevRef.current;
+}
+```
+
+这样即使有其他state，也只有在传入的state发生改变时，usePreviousDistinct的值才会更新。
+
+## useFirstMountState
+
+[useFirstMountState源码地址](https://github.com/streamich/react-use/blob/master/src/useFirstMountState.ts)
+
+useFirstMountState是一个hook，用于判断组件是否是第一次渲染。
+
+这个hook的实现也是使用`useRef`，初始值是true，在第一次渲染时，将`isFirstMount`设置为false，之后就不再改变。
+
+> 注意是第一次渲染时，而不是渲染后，所以useEffect中获取的useFirstMountState返回值永远是false，而不会出现true。
+
+```typescript
+import { useRef } from 'react';
+
+export function useFirstMountState(): boolean {
+  const isFirst = useRef(true);
+
+  if (isFirst.current) {
+    isFirst.current = false;
+
+    return true;
+  }
+
+  return isFirst.current;
+}
+```
