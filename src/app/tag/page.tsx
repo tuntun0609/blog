@@ -2,6 +2,9 @@ import Link from 'next/link'
 
 import tags from '@/tags.json'
 
+// 按字母排序
+tags.sort((a, b) => a.tag.localeCompare(b.tag))
+
 const TagList = () => (
   <div className="mx-auto max-w-xl px-8 py-8 md:px-0">
     <h1 className="mb-8 flex items-center justify-center gap-2 text-2xl font-black">Tags 🏷</h1>
