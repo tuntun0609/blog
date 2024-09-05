@@ -1,0 +1,136 @@
+---
+title: Nextjs如何单次构建，多环境部署
+date: 2024-09-05 21:00:00
+tags: [nextjs, 编程小技巧]
+path: 'nextjs-single-build-multi-environment-deployment'
+summary: '本文将介绍如何在Nextjs中实现单次构建，多环境部署的方案'
+---
+
+## 方案探索
+
+根据Nextjs的[文档](https://nextjs.org/docs/app/building-your-application/configuring/environment-variables#bundling-environment-variables-for-the-browser)：客户端的环境变量在构建时就已经固定了，所以我们正常情况下无法在部署时动态修改客户端的环境变量。
+
+如果想要部署不同环境的应用，就需要在构建时就区分环境，然后在部署时选择不同的构建结果。
+
+一般我们可以用`cross-env`或者`env-cmd`或者`dotenv`来加载不同的环境变量。
+
+但是这样就会需要构建多次，生成不同环境下需要的文件。
+
+如果希望一次构建，多环境部署，官方文档中提到了一种方法，就是改为以API的形式提供环境变量。
+
+但这样还是会有延迟和资源的浪费，每次初始加载网页的时候都需要请求一次API。
+
+官方文档还提到了一种方法，就是使用`unstable_noStore`函数，这个函数会以声明方式选择退出静态渲染，这样每次获取到的环境变量就都是从服务端动态生成的了。
+
+```tsx
+import { unstable_noStore as noStore } from 'next/cache'
+ 
+export default function Component() {
+  noStore()
+  // cookies(), headers(), and other dynamic functions
+  // will also opt into dynamic rendering, meaning
+  // this env variable is evaluated at runtime
+  const value = process.env.MY_VALUE
+  // ...
+}
+```
+
+这个看起来比API的方式更加优雅，所以按这个方向继续探索。
+
+## 使用next-runtime-env
+
+next-runtime-env就像他的名字一样，可以让你在运行时获取环境变量。
+
+首先安装next-runtime-env
+
+```bash
+pnpm add next-runtime-env
+```
+
+之后在root layout中添加以下代码
+
+```tsx title="app/layout.tsx" {1, 6-8}
+import { PublicEnvScript } from 'next-runtime-env';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <head>
+        <PublicEnvScript />
+      </head>
+      <body>
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+之后在页面中修改获取环境变量的方式（服务端组件和客户端组件同理）
+
+```tsx title="app/client-page.tsx" {2, 5}
+'use client';
+import { env } from 'next-runtime-env';
+
+export default function SomePage() {
+  const NEXT_PUBLIC_FOO = env('NEXT_PUBLIC_FOO');
+  return <main>NEXT_PUBLIC_FOO: {NEXT_PUBLIC_FOO}</main>;
+}
+```
+
+这样获取到的就是运行时设置的环境变量了。
+
+> 你问我服务端的代码怎么办？服务端在运行的时候获取到的就是运行时设置的环境变量了。所以不用担心。
+
+## 实现原理
+
+next-runtime-env的实现原理是在服务端渲染的时候，将环境变量注入到`window`对象中，这样在客户端就可以直接获取到环境变量了。
+
+但正常情况下页面中的process.env在构建的时候就已经都被替换成对应的值了
+
+所以我们需要使用`unstable_noStore`函数来强制退出静态渲染，这样就可以在客户端获取到运行时的环境变量了。
+
+```tsx title="src/script/public-env-script.tsx"
+import { unstable_noStore as noStore } from 'next/cache'
+
+export const PublicEnvScript: FC<PublicEnvScriptProps> = ({ nonce }) => {
+  noStore(); // 将组件标识为动态渲染
+
+  // 获取环境变量
+  const publicEnv = getPublicEnv()
+
+	// 这里就是设置了一个script标签，将环境变量注入到window对象中
+  return <EnvScript env={publicEnv} nonce={nonce} />
+}
+```
+
+那么env函数是如何实现的呢？
+
+我们推测一下，首先肯定不止是只有简单的从window取环境变量的代码，因为env函数有可能在服务端渲染的时候被调用，所以我们需要在服务端也能获取到环境变量。
+
+所以应该要区分一下此时运行的环境是不是浏览器环境
+
+- 如果是浏览器环境，就直接从window对象中取。
+- 如果不是浏览器环境，就需要采用上面`PublicEnvScript`组件一样的方法来获取运行时环境变量，即使用`unstable_noStore`函数强制动态渲染，之后从`process.env`中获取。
+
+```tsx title="src/env.ts"
+export function env(key: string): string | undefined {
+  if (isBrowser()) {
+    if (!key.startsWith('NEXT_PUBLIC_')) {
+      throw new Error(
+        `Environment variable '${key}' is not public and cannot be accessed in the browser.`,
+      );
+    }
+
+    return window[PUBLIC_ENV_KEY][key];
+  }
+
+  noStore();
+
+  return process.env[key];
+}
+```
+
+总结一下就是使用强制动态渲染的功能，将需要使用环境变量的组件标识为动态渲染，每一次请求都经过服务端重新渲染，用性能来换取灵活性。
+
+如果对性能特别敏感的话，还是建议区分环境构建再部署比较好。
