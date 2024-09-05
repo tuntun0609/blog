@@ -8,11 +8,16 @@ import Image from './image'
 import type { MDXComponents } from 'mdx/types'
 
 const MDXComponents: MDXComponents = {
-  h1: props => <h1 {...props} className={cn('mb-4 mt-6 text-4xl font-bold', props.className)} />,
+  h1: props => (
+    <h1 {...props} className={cn('mb-4 mt-6 border-b-2 text-4xl font-bold', props.className)} />
+  ),
   h2: props => (
     <h2
       {...props}
-      className={cn('mb-4 mt-6 border-gray-200 pb-2 text-3xl font-semibold', props.className)}
+      className={cn(
+        'mb-4 mt-6 border-b-2 border-gray-200 pb-2 text-3xl font-semibold',
+        props.className
+      )}
     />
   ),
   h3: props => (
