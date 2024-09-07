@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils'
 
 import { ImagePreview } from '../image-preview'
 
+import { CopyCodeButton } from './copy-code-btn'
 import CustomLink from './custom-link'
 import Image from './image'
 
@@ -43,7 +44,13 @@ const MDXComponents: MDXComponents = {
     <code {...props} className={cn('rounded bg-gray-600 px-1 text-white', props.className)} />
   ),
   pre: props => (
-    <pre {...props} className={cn('overflow-x-auto rounded bg-gray-600 p-4', props.className)} />
+    <pre
+      {...props}
+      className={cn('group relative overflow-x-auto rounded bg-gray-600 p-4', props.className)}
+    >
+      <CopyCodeButton />
+      {props.children}
+    </pre>
   ),
   blockquote: props => (
     <blockquote
