@@ -1,10 +1,9 @@
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { useMDXComponent } from 'next-contentlayer2/hooks'
 
 import { GiscusComment } from '@/components/comment'
-import MDXComponents from '@/components/mdx'
+import { MDXContent } from '@/components/mdx'
 import ScrollTopButton from '@/components/scroll-to-top'
 import TOC from '@/components/toc'
 import { siteMetadata } from '@/config/siteMeta'
@@ -44,8 +43,6 @@ const BlogLayout = ({ params }: { params: { slug: string[] } }) => {
     notFound()
   }
 
-  const MDXContent = useMDXComponent(blog.body.code)
-
   return (
     <div className="flex">
       <aside className="hidden flex-col pr-6 lg:flex lg:w-1/5" />
@@ -58,10 +55,17 @@ const BlogLayout = ({ params }: { params: { slug: string[] } }) => {
           </div>
         </div>
         <div id="article">
-          <MDXContent components={MDXComponents} />
+          <MDXContent code={blog.body.code} />
         </div>
 
-        <div className={cn('flex justify-between', (prevBlog || nextBlog) && 'my-8')}>
+        <div
+          className={cn(
+            'flex',
+            prevBlog || nextBlog ? 'my-8' : '',
+            !prevBlog && nextBlog ? 'justify-end' : '',
+            prevBlog && nextBlog ? 'justify-between' : ''
+          )}
+        >
           {prevBlog && (
             <Link
               href={`/blog/${prevBlog.slug}`}

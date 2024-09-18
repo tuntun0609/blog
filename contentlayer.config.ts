@@ -70,7 +70,7 @@ const generateTags = async (allBlogs: Blog[]) => {
 }
 
 export default makeSource({
-  contentDirPath: 'src/content',
+  contentDirPath: 'content',
   documentTypes: [blogSource, pageSource],
   mdx: {
     cwd: process.cwd(),

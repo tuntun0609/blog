@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, MouseEvent } from 'react'
+import { MouseEvent } from 'react'
 import { Moon, Sun, SunMoon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
@@ -27,7 +27,6 @@ const themeConfig = [
 ]
 
 export function ThemeToggle() {
-  const [mounted, setMounted] = useState(false)
   const { theme, setTheme, resolvedTheme } = useTheme()
 
   const onChangeTheme = (value: string, e: MouseEvent) => {
@@ -54,34 +53,30 @@ export function ThemeToggle() {
       return
     }
 
-    const transition = document.startViewTransition(async () => {
+    if ('startViewTransition' in document) {
+      const transition = (document as any).startViewTransition(async () => {
+        setTheme(value)
+      })
+
+      transition.ready.then(() => {
+        const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`]
+        document.documentElement.animate(
+          {
+            clipPath: resolvedTheme === 'dark' ? [...clipPath].reverse() : clipPath,
+          },
+          {
+            duration: 400,
+            easing: 'ease-out',
+            pseudoElement:
+              resolvedTheme === 'dark'
+                ? '::view-transition-old(root)'
+                : '::view-transition-new(root)',
+          }
+        )
+      })
+    } else {
       setTheme(value)
-    })
-
-    transition.ready.then(() => {
-      const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`]
-      document.documentElement.animate(
-        {
-          clipPath: resolvedTheme === 'dark' ? [...clipPath].reverse() : clipPath,
-        },
-        {
-          duration: 400,
-          easing: 'ease-out',
-          pseudoElement:
-            resolvedTheme === 'dark'
-              ? '::view-transition-old(root)'
-              : '::view-transition-new(root)',
-        }
-      )
-    })
-  }
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
+    }
   }
 
   return (

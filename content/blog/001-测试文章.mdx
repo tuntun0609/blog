@@ -85,3 +85,20 @@ export const loadAudio = (
   return audio.playbackRate
 }
 ```
+
+<details>
+<summary>Tips for collapsed sections</summary>
+```tsx showLineNumbers {1-3,4} title="src/utils.ts"
+export const loadAudio = (
+  url: string,
+  audios: {
+    url: string
+    audio: HTMLAudioElement
+  }[]
+): number => {
+  const audio = audios.find(item => item.url === url)!.audio
+  audio.play()
+  return audio.playbackRate
+}
+```
+</details>

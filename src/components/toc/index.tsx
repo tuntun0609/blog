@@ -82,14 +82,17 @@ const TOC = () => {
           <li
             key={id}
             className={cn(
-              'my-2 hover:text-blue-300',
+              'my-2',
               level === 'H2' && 'pl-4',
               level === 'H3' && 'pl-6',
               level === 'H4' && 'pl-8',
               activeId === id && 'text-blue-400'
             )}
           >
-            <Link href={`#${id}`} className="link-hover">
+            <Link
+              href={`#${id}`}
+              className="link-hover transition-colors duration-150 hover:text-blue-300"
+            >
               {text}
             </Link>
           </li>

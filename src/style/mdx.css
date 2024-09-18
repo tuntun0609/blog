@@ -69,6 +69,7 @@ pre code {
 }
 
 .content-header-link {
+	transition: opacity 0.15s;
 	opacity: 0;
 	margin-left: -24px;
 	padding-right: 4px;
