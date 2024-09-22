@@ -1,4 +1,4 @@
-@import url('https://cdn.bootcdn.net/ajax/libs/lxgw-wenkai-webfont/1.6.0/style.min.css');
+@import 'lxgw-wenkai-lite-webfont/style.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -90,6 +90,6 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "LXGW WenKai", sans-serif;
+    font-family: "LXGW WenKai Lite", sans-serif;
   }
 }
