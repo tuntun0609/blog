@@ -41,7 +41,7 @@ const MDXComponents: MDXComponentsType = {
   ol: props => <ol {...props} className={cn('mb-4 mt-0 list-decimal pl-5', props.className)} />,
   li: props => <li {...props} className={cn('mb-2', props.className)} />,
   code: props => (
-    <code {...props} className={cn('rounded bg-gray-600 px-1 text-white', props.className)} />
+    <code {...props} className={cn('mx-1 rounded bg-gray-600 px-1 text-white', props.className)} />
   ),
   pre: props => (
     <pre
