@@ -10,6 +10,8 @@
     "postbuild": "next-sitemap"
   },
   "dependencies": {
+    "@docsearch/css": "^3.7.0",
+    "@docsearch/react": "^3.7.0",
     "@giscus/react": "^3.0.0",
     "@next/third-parties": "^14.2.6",
     "@radix-ui/react-dialog": "^1.1.1",

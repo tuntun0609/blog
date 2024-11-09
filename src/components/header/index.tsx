@@ -1,6 +1,7 @@
 import { Menu } from 'lucide-react'
 import Link from 'next/link'
 
+import DocSearch from '../doc-search'
 import { ThemeToggle } from '../theme'
 import { Button } from '../ui/button'
 import {
@@ -34,9 +35,10 @@ export const Header = () => (
       <div className="cursor-pointer text-2xl">Tuntun Blog</div>
     </Link>
     <nav className="flex flex-row items-center gap-2 md:gap-4">
+      <DocSearch />
       {headerConfig.map(({ label, href }) => (
-        <Link key={label} href={href}>
-          <div className="hidden transition-colors hover:text-gray-400 md:block">{label}</div>
+        <Link className="hidden md:block" key={label} href={href}>
+          <div className="transition-colors hover:text-gray-400">{label}</div>
         </Link>
       ))}
       <Sheet>
