@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { BlogPagination } from "@/components/blog/blog-pagination";
 import { PostCard } from "@/components/blog/post-card";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { getPublishedPosts, POSTS_PER_PAGE } from "@/lib/blog";
 
 export const metadata: Metadata = {
@@ -19,10 +12,6 @@ export const metadata: Metadata = {
 type BlogPageProps = {
   searchParams: Promise<{ page?: string | string[] }>;
 };
-
-function pageHref(page: number) {
-  return page === 1 ? "/blog" : `/blog?page=${page}`;
-}
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
   const posts = getPublishedPosts();
@@ -61,38 +50,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
       </section>
 
       {totalPages > 1 ? (
-        <Pagination className="mt-12">
-          <PaginationContent>
-            {currentPage > 1 ? (
-              <PaginationItem>
-                <PaginationPrevious
-                  href={pageHref(currentPage - 1)}
-                  text="上一页"
-                />
-              </PaginationItem>
-            ) : null}
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map(
-              (pageNumber) => (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink
-                    href={pageHref(pageNumber)}
-                    isActive={pageNumber === currentPage}
-                  >
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              ),
-            )}
-            {currentPage < totalPages ? (
-              <PaginationItem>
-                <PaginationNext
-                  href={pageHref(currentPage + 1)}
-                  text="下一页"
-                />
-              </PaginationItem>
-            ) : null}
-          </PaginationContent>
-        </Pagination>
+        <BlogPagination currentPage={currentPage} totalPages={totalPages} />
       ) : null}
     </div>
   );
