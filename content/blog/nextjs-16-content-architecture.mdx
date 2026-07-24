@@ -1,0 +1,30 @@
+---
+title: "用 Fumadocs 搭好 Next.js 内容层"
+description: "把 Markdown、类型校验和 App Router 串成一条稳定的内容发布链路。"
+date: "2026-07-24"
+category: "架构"
+cover: "/blog/content-architecture.jpg"
+readingTime: "6 分钟阅读"
+published: true
+---
+
+内容系统真正难的部分，不是把 Markdown 变成 HTML，而是让作者体验、类型安全和页面性能长期保持一致。
+
+## 从内容模型开始
+
+先定义标题、摘要、发布日期、分类和封面等字段，再让构建过程验证每篇文章。错误会在发布前暴露，而不是进入线上页面后才被发现。
+
+```ts
+const post = {
+  title: "一篇文章",
+  published: true,
+}
+```
+
+## 让路由只负责展示
+
+Fumadocs 负责发现文件、生成 slug 和编译 MDX；Next.js 页面只获取文章并渲染。这种边界让列表、详情页、站点地图和搜索都能共享同一份内容源。
+
+## 保持内容可迁移
+
+文章仍然是普通 MDX 文件。即使未来更换展示层，正文和元数据也不会被锁在某个页面组件里。
