@@ -1,5 +1,0 @@
-{
-  "css.customData": [".vscode/tailwind.json"],
-  "cSpell.words": ["flexsearch"],
-  "typescript.tsdk": "node_modules/typescript/lib"
-}
