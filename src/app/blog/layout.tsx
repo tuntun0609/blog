@@ -1,6 +1,7 @@
 import { BookOpenTextIcon } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -19,7 +20,7 @@ export default function BlogLayout({ children }: { children: ReactNode }) {
             </span>
             <span>开发札记</span>
           </Link>
-          <nav aria-label="主导航">
+          <nav aria-label="主导航" className="flex items-center gap-1">
             <Button
               nativeButton={false}
               variant="ghost"
@@ -27,6 +28,7 @@ export default function BlogLayout({ children }: { children: ReactNode }) {
             >
               博客
             </Button>
+            <ThemeToggle />
           </nav>
         </div>
       </header>

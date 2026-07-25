@@ -1,6 +1,8 @@
 import type { MDXComponents } from "mdx/types";
 import Link from "next/link";
 
+import { CodeBlock, Pre } from "@/components/blog/code-block";
+
 export function getMdxComponents(components?: MDXComponents): MDXComponents {
   return {
     h2: (props) => (
@@ -51,11 +53,10 @@ export function getMdxComponents(components?: MDXComponents): MDXComponents {
         {...props}
       />
     ),
-    pre: (props) => (
-      <pre
-        className="mt-6 overflow-x-auto rounded-lg bg-muted p-5 text-sm leading-7 [&_code]:bg-transparent [&_code]:p-0"
-        {...props}
-      />
+    pre: ({ ref: _ref, ...props }) => (
+      <CodeBlock {...props}>
+        <Pre>{props.children}</Pre>
+      </CodeBlock>
     ),
     ...components,
   };

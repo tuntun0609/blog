@@ -31,6 +31,7 @@
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
+  --color-code-block: var(--code-block);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
@@ -61,6 +62,7 @@
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
+  --code-block: oklch(0.985 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -96,6 +98,7 @@
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
+  --code-block: var(--muted);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
@@ -124,10 +127,70 @@
   body {
     @apply bg-background text-foreground;
   }
-  button:not(:disabled), [role="button"]:not(:disabled) {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
     cursor: pointer;
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  .blog-code-block code span {
+    color: var(--shiki-light);
+    font-style: var(--shiki-light-font-style);
+  }
+
+  .dark .blog-code-block code span {
+    color: var(--shiki-dark);
+    font-style: var(--shiki-dark-font-style);
+  }
+
+  .blog-code-block .line {
+    position: relative;
+    min-height: 1lh;
+    padding-inline: 1.25rem 3rem;
+  }
+
+  .blog-code-block[data-has-title] .line {
+    padding-inline-end: 1.25rem;
+  }
+
+  .blog-code-block .line.highlighted {
+    background: color-mix(in oklab, var(--primary) 10%, transparent);
+  }
+
+  .blog-code-block .line.highlighted::after {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 2px;
+    background: color-mix(in oklab, var(--primary) 55%, transparent);
+    content: "";
+  }
+
+  .blog-code-block .highlighted-word {
+    margin-block: -1px;
+    border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, var(--primary) 10%, transparent);
+    padding: 1px;
+    font-weight: 500;
+  }
+
+  .blog-code-block[data-line-numbers] .line {
+    counter-increment: line;
+    padding-inline-start: 4rem;
+  }
+
+  .blog-code-block[data-line-numbers] .line::before {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 2.75rem;
+    color: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
+    text-align: end;
+    content: counter(line);
   }
 }
