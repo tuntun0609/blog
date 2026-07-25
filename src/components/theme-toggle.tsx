@@ -1,35 +1,35 @@
-"use client";
+'use client'
 
-import { type LucideIcon, MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { type LucideIcon, MonitorIcon, MoonIcon, SunIcon } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu'
 
 const themeOptions = [
-  { value: "light", label: "浅色", icon: SunIcon },
-  { value: "dark", label: "深色", icon: MoonIcon },
-  { value: "system", label: "跟随系统", icon: MonitorIcon },
+  { icon: SunIcon, label: '浅色', value: 'light' },
+  { icon: MoonIcon, label: '深色', value: 'dark' },
+  { icon: MonitorIcon, label: '跟随系统', value: 'system' },
 ] as const satisfies ReadonlyArray<{
-  value: string;
-  label: string;
-  icon: LucideIcon;
-}>;
+  value: string
+  label: string
+  icon: LucideIcon
+}>
 
 export function ThemeToggle() {
-  const [mounted, setMounted] = useState(false);
-  const [open, setOpen] = useState(false);
-  const { forcedTheme, setTheme, theme } = useTheme();
+  const [mounted, setMounted] = useState(false)
+  const [open, setOpen] = useState(false)
+  const { forcedTheme, setTheme, theme } = useTheme()
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
 
   if (!mounted) {
     return (
@@ -42,15 +42,15 @@ export function ThemeToggle() {
       >
         <MonitorIcon />
       </Button>
-    );
+    )
   }
 
   const selectedTheme =
-    themeOptions.find((option) => option.value === theme) ?? themeOptions[2];
-  const SelectedIcon = selectedTheme.icon;
+    themeOptions.find((option) => option.value === theme) ?? themeOptions[2]
+  const SelectedIcon = selectedTheme.icon
 
   return (
-    <DropdownMenu open={open} onOpenChange={(nextOpen) => setOpen(nextOpen)}>
+    <DropdownMenu onOpenChange={(nextOpen) => setOpen(nextOpen)} open={open}>
       <DropdownMenuTrigger
         render={
           <Button
@@ -68,10 +68,10 @@ export function ThemeToggle() {
         <DropdownMenuRadioGroup
           aria-label="主题"
           onValueChange={(value) => {
-            setTheme(value);
-            setOpen(false);
+            setTheme(value)
+            setOpen(false)
           }}
-          value={theme ?? "system"}
+          value={theme ?? 'system'}
         >
           {themeOptions.map(({ icon: Icon, label, value }) => (
             <DropdownMenuRadioItem key={value} value={value}>
@@ -82,5 +82,5 @@ export function ThemeToggle() {
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }

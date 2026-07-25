@@ -3,75 +3,75 @@ import {
   ArrowRightIcon,
   ArrowUpRightIcon,
   MailIcon,
-} from "lucide-react";
-import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import { HomeMotion } from "@/components/home/home-motion";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { formatPostDate, getPublishedPosts } from "@/lib/blog";
-import styles from "./home.module.css";
+} from 'lucide-react'
+import type { Metadata } from 'next'
+import Image from 'next/image'
+import Link from 'next/link'
+import { HomeMotion } from '@/components/home/home-motion'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { formatPostDate, getPublishedPosts } from '@/lib/blog'
+import styles from './home.module.css'
 
 export const metadata: Metadata = {
-  title: "王望 — 产品工程师与写作者",
-  description: "王望的个人主页，记录产品工程、内容系统与持续构建的过程。",
-};
+  description: '王望的个人主页，记录产品工程、内容系统与持续构建的过程。',
+  title: '王望 — 产品工程师与写作者',
+}
 
 const featuredWork = [
   {
-    number: "01",
-    label: "CONTENT SYSTEM",
-    title: "内容基础设施",
+    accent: 'orange',
     description:
-      "把 Markdown、类型校验和 App Router 组织成一条清晰、稳定的内容发布链路。",
-    image: "/blog/content-architecture.jpg",
-    href: "/blog/nextjs-16-content-architecture",
-    accent: "orange",
+      '把 Markdown、类型校验和 App Router 组织成一条清晰、稳定的内容发布链路。',
+    href: '/blog/nextjs-16-content-architecture',
+    image: '/blog/content-architecture.jpg',
+    label: 'CONTENT SYSTEM',
+    number: '01',
+    title: '内容基础设施',
   },
   {
-    number: "02",
-    label: "PERFORMANCE",
-    title: "快速的阅读体验",
-    description: "从页面结构、图片策略到服务端分页，让速度成为设计的一部分。",
-    image: "/blog/fast-blog.jpg",
-    href: "/blog/designing-fast-blog-pages",
-    accent: "cyan",
+    accent: 'cyan',
+    description: '从页面结构、图片策略到服务端分页，让速度成为设计的一部分。',
+    href: '/blog/designing-fast-blog-pages',
+    image: '/blog/fast-blog.jpg',
+    label: 'PERFORMANCE',
+    number: '02',
+    title: '快速的阅读体验',
   },
   {
-    number: "03",
-    label: "DESIGN SYSTEM",
-    title: "可持续的组件组合",
+    accent: 'lime',
     description:
-      "保留组件系统的升级路径，同时让产品拥有自己的节奏、层级与辨识度。",
-    image: "/blog/shadcn-composition.jpg",
-    href: "/blog/shadcn-composition",
-    accent: "lime",
+      '保留组件系统的升级路径，同时让产品拥有自己的节奏、层级与辨识度。',
+    href: '/blog/shadcn-composition',
+    image: '/blog/shadcn-composition.jpg',
+    label: 'DESIGN SYSTEM',
+    number: '03',
+    title: '可持续的组件组合',
   },
-] as const;
+] as const
 
 const principles = [
   {
-    index: "01",
-    title: "先找到真正的问题",
-    description: "从使用场景和约束出发，而不是从功能清单出发。",
+    description: '从使用场景和约束出发，而不是从功能清单出发。',
+    index: '01',
+    title: '先找到真正的问题',
   },
   {
-    index: "02",
-    title: "让复杂留在系统里",
-    description: "界面应该安静、明确，让人不需要反复确认下一步。",
+    description: '界面应该安静、明确，让人不需要反复确认下一步。',
+    index: '02',
+    title: '让复杂留在系统里',
   },
   {
-    index: "03",
-    title: "写下来，再做一遍",
-    description: "通过记录沉淀判断，让一次解决方案变成长期能力。",
+    description: '通过记录沉淀判断，让一次解决方案变成长期能力。',
+    index: '03',
+    title: '写下来，再做一遍',
   },
-] as const;
+] as const
 
 export default function HomePage() {
-  const recentPosts = getPublishedPosts().slice(0, 3);
+  const recentPosts = getPublishedPosts().slice(0, 3)
 
   return (
-    <div id="personal-home" className={styles.page}>
+    <div className={styles.page} id="personal-home">
       <HomeMotion rootId="personal-home" />
 
       <a className={styles.skipLink} href="#main-content">
@@ -80,12 +80,12 @@ export default function HomePage() {
 
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <Link className={styles.logo} href="/" aria-label="王望的个人主页">
+          <Link aria-label="王望的个人主页" className={styles.logo} href="/">
             <span>WW</span>
             <span className={styles.logoText}>王望</span>
           </Link>
 
-          <nav className={styles.nav} aria-label="主导航">
+          <nav aria-label="主导航" className={styles.nav}>
             <a href="#work">作品</a>
             <a href="#about">关于</a>
             <Link href="/blog">文章</Link>
@@ -99,7 +99,7 @@ export default function HomePage() {
       </header>
 
       <main id="main-content">
-        <section className={styles.hero} aria-labelledby="hero-title">
+        <section aria-labelledby="hero-title" className={styles.hero}>
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow} data-reveal>
               <span className={styles.statusDot} />
@@ -107,21 +107,21 @@ export default function HomePage() {
             </p>
 
             <h1
-              id="hero-title"
               className={styles.heroTitle}
-              data-reveal
               data-delay="1"
+              data-reveal
+              id="hero-title"
             >
               <span>王望</span>
               <small>WANG WANG</small>
             </h1>
 
-            <p className={styles.heroLead} data-reveal data-delay="2">
+            <p className={styles.heroLead} data-delay="2" data-reveal>
               我设计并构建数字产品，关注内容系统、界面体验，
               以及那些让复杂事物变得清楚的细节。
             </p>
 
-            <div className={styles.heroActions} data-reveal data-delay="3">
+            <div className={styles.heroActions} data-delay="3" data-reveal>
               <a className={styles.primaryAction} href="#work">
                 看近期作品
                 <ArrowDownRightIcon aria-hidden="true" />
@@ -132,26 +132,26 @@ export default function HomePage() {
               </a>
             </div>
 
-            <div className={styles.heroMeta} data-reveal data-delay="3">
+            <div className={styles.heroMeta} data-delay="3" data-reveal>
               <span>当前关注</span>
               <p>设计系统 · 内容工程 · AI 产品</p>
             </div>
           </div>
 
-          <figure className={styles.heroVisual} data-reveal data-delay="2">
+          <figure className={styles.heroVisual} data-delay="2" data-reveal>
             <div
               className={styles.heroImageParallax}
               data-parallax
               data-parallax-speed="0.055"
             >
               <Image
-                src="/blog/content-architecture.jpg"
                 alt="放着代码编辑器的个人工作台"
+                className={styles.heroImage}
+                fetchPriority="high"
                 fill
                 loading="eager"
-                fetchPriority="high"
                 sizes="(max-width: 820px) 100vw, 46vw"
-                className={styles.heroImage}
+                src="/blog/content-architecture.jpg"
               />
             </div>
             <span className={styles.visualIndex}>DESK / 01</span>
@@ -162,7 +162,7 @@ export default function HomePage() {
           </figure>
         </section>
 
-        <section className={styles.introBand} aria-label="个人简介">
+        <section aria-label="个人简介" className={styles.introBand}>
           <div className={styles.introBandInner} data-reveal>
             <p>BUILD</p>
             <span>把模糊的问题做成清晰的产品</span>
@@ -172,9 +172,9 @@ export default function HomePage() {
         </section>
 
         <section
-          id="work"
-          className={styles.workSection}
           aria-labelledby="work-title"
+          className={styles.workSection}
+          id="work"
         >
           <header className={styles.sectionHeader} data-reveal>
             <div>
@@ -194,18 +194,18 @@ export default function HomePage() {
                 data-reveal
                 key={work.number}
               >
-                <Link href={work.href} className={styles.workImageLink}>
+                <Link className={styles.workImageLink} href={work.href}>
                   <div
                     className={styles.workImageParallax}
                     data-parallax
-                    data-parallax-speed={index % 2 === 0 ? "0.035" : "0.05"}
+                    data-parallax-speed={index % 2 === 0 ? '0.035' : '0.05'}
                   >
                     <Image
-                      src={work.image}
                       alt=""
+                      className={styles.workImage}
                       fill
                       sizes="(max-width: 820px) 100vw, 56vw"
-                      className={styles.workImage}
+                      src={work.image}
                     />
                   </div>
                   <span className={styles.workNumber}>{work.number}</span>
@@ -226,9 +226,9 @@ export default function HomePage() {
         </section>
 
         <section
-          id="about"
-          className={styles.aboutSection}
           aria-labelledby="about-title"
+          className={styles.aboutSection}
+          id="about"
         >
           <div className={styles.aboutInner}>
             <div className={styles.aboutSticky} data-reveal>
@@ -241,7 +241,7 @@ export default function HomePage() {
 
             <ol className={styles.principleList}>
               {principles.map((principle) => (
-                <li key={principle.index} data-reveal>
+                <li data-reveal key={principle.index}>
                   <span>{principle.index}</span>
                   <div>
                     <h3>{principle.title}</h3>
@@ -253,13 +253,13 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className={styles.notesSection} aria-labelledby="notes-title">
+        <section aria-labelledby="notes-title" className={styles.notesSection}>
           <header className={styles.notesHeader} data-reveal>
             <div>
               <p className={styles.sectionKicker}>FIELD NOTES</p>
               <h2 id="notes-title">最近在写</h2>
             </div>
-            <Link href="/blog" className={styles.allNotesLink}>
+            <Link className={styles.allNotesLink} href="/blog">
               全部文章
               <ArrowRightIcon aria-hidden="true" />
             </Link>
@@ -268,15 +268,15 @@ export default function HomePage() {
           <div className={styles.noteList}>
             {recentPosts.map((post, index) => (
               <Link
-                href={post.url}
                 className={styles.noteItem}
                 data-reveal
+                href={post.url}
                 key={post.url}
               >
                 <span className={styles.noteIndex}>0{index + 1}</span>
                 <div>
                   <p>{post.data.category}</p>
-                  <h3>{post.data.title ?? "未命名文章"}</h3>
+                  <h3>{post.data.title ?? '未命名文章'}</h3>
                 </div>
                 <time dateTime={post.data.date}>
                   {formatPostDate(post.data.date)}
@@ -288,16 +288,16 @@ export default function HomePage() {
         </section>
 
         <section
-          id="contact"
-          className={styles.contactSection}
           aria-labelledby="contact-title"
+          className={styles.contactSection}
+          id="contact"
         >
           <div className={styles.contactInner} data-reveal>
             <p className={styles.sectionKicker}>
               LET&apos;S MAKE SOMETHING CLEAR
             </p>
             <h2 id="contact-title">有一个值得认真做的问题？</h2>
-            <a href="mailto:hello@wangwang.dev" className={styles.contactLink}>
+            <a className={styles.contactLink} href="mailto:hello@wangwang.dev">
               <MailIcon aria-hidden="true" />
               hello@wangwang.dev
               <ArrowUpRightIcon aria-hidden="true" />
@@ -312,5 +312,5 @@ export default function HomePage() {
         <a href="#main-content">回到顶部 ↑</a>
       </footer>
     </div>
-  );
+  )
 }

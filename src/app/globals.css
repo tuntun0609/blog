@@ -138,13 +138,13 @@
 
 @layer components {
   .blog-code-block code span {
-    color: var(--shiki-light);
     font-style: var(--shiki-light-font-style);
+    color: var(--shiki-light);
   }
 
   .dark .blog-code-block code span {
-    color: var(--shiki-dark);
     font-style: var(--shiki-dark-font-style);
+    color: var(--shiki-dark);
   }
 
   .blog-code-block .line {
@@ -166,22 +166,22 @@
     inset-block: 0;
     inset-inline-start: 0;
     width: 2px;
-    background: color-mix(in oklab, var(--primary) 55%, transparent);
     content: "";
+    background: color-mix(in oklab, var(--primary) 55%, transparent);
   }
 
   .blog-code-block .highlighted-word {
+    padding: 1px;
     margin-block: -1px;
+    font-weight: 500;
+    background: color-mix(in oklab, var(--primary) 10%, transparent);
     border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
     border-radius: var(--radius-sm);
-    background: color-mix(in oklab, var(--primary) 10%, transparent);
-    padding: 1px;
-    font-weight: 500;
   }
 
   .blog-code-block[data-line-numbers] .line {
-    counter-increment: line;
     padding-inline-start: 4rem;
+    counter-increment: line;
   }
 
   .blog-code-block[data-line-numbers] .line::before {

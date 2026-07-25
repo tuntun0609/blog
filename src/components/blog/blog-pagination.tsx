@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Pagination,
@@ -7,15 +7,15 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination";
+} from '@/components/ui/pagination'
 
 type BlogPaginationProps = {
-  currentPage: number;
-  totalPages: number;
-};
+  currentPage: number
+  totalPages: number
+}
 
 function pageHref(page: number) {
-  return page === 1 ? "/blog" : `/blog?page=${page}`;
+  return page === 1 ? '/blog' : `/blog?page=${page}`
 }
 
 export function BlogPagination({
@@ -43,7 +43,7 @@ export function BlogPagination({
                 {pageNumber}
               </PaginationLink>
             </PaginationItem>
-          ),
+          )
         )}
         {currentPage < totalPages ? (
           <PaginationItem>
@@ -52,5 +52,5 @@ export function BlogPagination({
         ) : null}
       </PaginationContent>
     </Pagination>
-  );
+  )
 }
