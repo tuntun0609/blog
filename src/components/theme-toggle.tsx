@@ -2,7 +2,7 @@
 
 import { type LucideIcon, MonitorIcon, MoonIcon, SunIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -31,6 +31,14 @@ export function ThemeToggle() {
     setMounted(true)
   }, [])
 
+  const handleThemeChange = useCallback(
+    (value: string) => {
+      setTheme(value)
+      setOpen(false)
+    },
+    [setTheme]
+  )
+
   if (!mounted) {
     return (
       <Button
@@ -50,7 +58,7 @@ export function ThemeToggle() {
   const SelectedIcon = selectedTheme.icon
 
   return (
-    <DropdownMenu onOpenChange={(nextOpen) => setOpen(nextOpen)} open={open}>
+    <DropdownMenu onOpenChange={setOpen} open={open}>
       <DropdownMenuTrigger
         render={
           <Button
@@ -67,10 +75,7 @@ export function ThemeToggle() {
       <DropdownMenuContent align="end" sideOffset={8}>
         <DropdownMenuRadioGroup
           aria-label="主题"
-          onValueChange={(value) => {
-            setTheme(value)
-            setOpen(false)
-          }}
+          onValueChange={handleThemeChange}
           value={theme ?? 'system'}
         >
           {themeOptions.map(({ icon: Icon, label, value }) => (

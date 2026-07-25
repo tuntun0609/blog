@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { formatPostDate } from '@/lib/blog'
 
-type PostCardProps = {
+interface PostCardProps {
   post: {
     url: string
     data: {

@@ -5,6 +5,7 @@ import {
   type ComponentProps,
   type HTMLAttributes,
   type ReactNode,
+  useCallback,
   useRef,
   useState,
 } from 'react'
@@ -47,7 +48,7 @@ export function CodeBlock({
   const viewportRef = useRef<HTMLDivElement>(null)
   const [copied, setCopied] = useState(false)
 
-  async function copyCode() {
+  const copyCode = useCallback(async () => {
     const code = viewportRef.current?.querySelector('pre')?.textContent
     if (!code) {
       return
@@ -56,7 +57,7 @@ export function CodeBlock({
     await navigator.clipboard.writeText(code)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1500)
-  }
+  }, [])
 
   return (
     <figure

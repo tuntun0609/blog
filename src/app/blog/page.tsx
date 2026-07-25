@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: '博客',
 }
 
-type BlogPageProps = {
+interface BlogPageProps {
   searchParams: Promise<{ page?: string | string[] }>
 }
 

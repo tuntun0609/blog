@@ -9,7 +9,7 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 
-type BlogPaginationProps = {
+interface BlogPaginationProps {
   currentPage: number
   totalPages: number
 }

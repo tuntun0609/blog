@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 
-type HomeMotionProps = {
+interface HomeMotionProps {
   rootId: string
 }
 

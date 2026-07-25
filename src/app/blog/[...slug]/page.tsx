@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 
 import { blogSource, formatPostDate } from '@/lib/blog'
 
-type PostPageProps = {
+interface PostPageProps {
   params: Promise<{ slug: string[] }>
 }
 
@@ -23,7 +23,7 @@ export async function generateMetadata({
   const { slug } = await params
   const post = blogSource.getPage(slug)
 
-  if (!(post && post.data.published)) {
+  if (!post?.data.published) {
     return {}
   }
 
@@ -42,7 +42,7 @@ export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params
   const post = blogSource.getPage(slug)
 
-  if (!(post && post.data.published)) {
+  if (!post?.data.published) {
     notFound()
   }
 
