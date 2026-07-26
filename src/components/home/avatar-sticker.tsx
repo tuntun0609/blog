@@ -169,6 +169,7 @@ export function AvatarSticker() {
     let isCancelled = false
     let didStartPeel = false
     let hintCancellationFrame = 0
+    let readyCancellationFrame = 0
     let stickerInstance: StickerInstance | null = null
     let resizeObserver: ResizeObserver | null = null
 
@@ -209,6 +210,8 @@ export function AvatarSticker() {
       })
     }
     const handleRendererError = (): void => {
+      cancelAnimationFrame(readyCancellationFrame)
+      readyCancellationFrame = 0
       if (!isCancelled) {
         setStatus('error')
       }
@@ -287,7 +290,6 @@ export function AvatarSticker() {
         host.dataset.detached = 'false'
         host.dataset.peelProgress = '0.000'
         host.dataset.peeling = 'false'
-        setStatus('ready')
 
         resizeObserver = new ResizeObserver(() => {
           const nextDisplaySize = getDisplaySize(frame)
@@ -297,10 +299,17 @@ export function AvatarSticker() {
           instance.resize()
         })
         resizeObserver.observe(frame)
+
+        readyCancellationFrame = requestAnimationFrame(() => {
+          readyCancellationFrame = requestAnimationFrame(() => {
+            readyCancellationFrame = 0
+            if (!isCancelled) {
+              setStatus('ready')
+            }
+          })
+        })
       } catch {
-        if (!isCancelled) {
-          setStatus('error')
-        }
+        handleRendererError()
       }
     }
 
@@ -309,6 +318,7 @@ export function AvatarSticker() {
     return () => {
       isCancelled = true
       cancelAnimationFrame(hintCancellationFrame)
+      cancelAnimationFrame(readyCancellationFrame)
       resizeObserver?.disconnect()
       host.removeEventListener('cyclecomplete', handleCycleComplete)
       host.removeEventListener('detachcomplete', handleDetachComplete)

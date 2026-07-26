@@ -11,7 +11,6 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  transition: opacity 160ms linear;
 }
 
 .avatarFallback img {
@@ -22,11 +21,10 @@
   position: absolute;
   top: 50%;
   left: 50%;
+  visibility: hidden;
   width: max(500%, 200vw);
   height: max(500%, 200vh);
-  opacity: 0;
   transform: translate(-50%, -50%);
-  transition: opacity 220ms ease;
 }
 
 .engineHost canvas {
@@ -39,11 +37,11 @@
 }
 
 .avatarSticker[data-status="ready"] .engineHost {
-  opacity: 1;
+  visibility: visible;
 }
 
 .avatarSticker[data-status="ready"] .avatarFallback {
-  opacity: 0;
+  visibility: hidden;
 }
 
 .avatarSticker[data-status="error"] .engineHost {
