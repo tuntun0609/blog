@@ -11,7 +11,7 @@ import {
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { GitHubIcon } from '@/components/github-icon'
-import { AvatarSticker } from '@/components/home/avatar-sticker'
+import { AvatarStickerClient } from '@/components/home/avatar-sticker-client'
 import { GithubActivity } from '@/components/home/github-activity'
 import { HomeMotion } from '@/components/home/home-motion'
 import { SiteHeader } from '@/components/site-header'
@@ -105,7 +105,7 @@ export default function HomePage() {
       <main id="main-content">
         <section aria-labelledby="hero-title" className={styles.hero}>
           <div className={styles.profile} data-reveal>
-            <AvatarSticker />
+            <AvatarStickerClient />
 
             <div className={styles.profileIdentity}>
               <div>

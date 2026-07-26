@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import Script from 'next/script'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import styles from './avatar-sticker.module.css'
@@ -97,9 +96,9 @@ declare global {
   }
 }
 
-let roundedAvatarSourcePromise: Promise<string> | null = null
+let avatarSourcePromise: Promise<string> | null = null
 
-const createRoundedAvatarSource = async (): Promise<string> => {
+const createAvatarSource = async (): Promise<string> => {
   const avatarImage = new window.Image()
   avatarImage.decoding = 'async'
   avatarImage.src = '/avatar-tuntun.jpg'
@@ -128,9 +127,9 @@ const createRoundedAvatarSource = async (): Promise<string> => {
   return canvas.toDataURL('image/png')
 }
 
-const getRoundedAvatarSource = (): Promise<string> => {
-  roundedAvatarSourcePromise ??= createRoundedAvatarSource()
-  return roundedAvatarSourcePromise
+const getAvatarSource = (): Promise<string> => {
+  avatarSourcePromise ??= createAvatarSource()
+  return avatarSourcePromise
 }
 
 const getDisplaySize = (element: HTMLElement): number =>
@@ -218,7 +217,7 @@ export function AvatarSticker() {
 
     const mountSticker = async (): Promise<void> => {
       try {
-        const avatarSource = await getRoundedAvatarSource()
+        const avatarSource = await getAvatarSource()
         if (isCancelled) {
           return
         }
@@ -322,20 +321,6 @@ export function AvatarSticker() {
       data-status={status}
       ref={frameRef}
     >
-      <div aria-hidden={status === 'ready'} className={styles.fallback}>
-        <Image
-          alt="Tuntun 的 GitHub 头像"
-          className={styles.fallbackImage}
-          draggable={false}
-          fetchPriority="high"
-          height={460}
-          loading="eager"
-          priority
-          sizes="(max-width: 720px) 148px, 188px"
-          src="/avatar-tuntun.jpg"
-          width={460}
-        />
-      </div>
       <div className={styles.engineHost} ref={hostRef} />
       <Script
         id="sticker-forge-runtime"

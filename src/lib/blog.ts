@@ -8,6 +8,11 @@ export const blogSource = loader({
 
 export const POSTS_PER_PAGE = 6
 
+const HAN_CHARACTERS_PER_MINUTE = 400
+const WORDS_PER_MINUTE = 200
+const HAN_CHARACTER_PATTERN = /\p{Script=Han}/gu
+const WORD_PATTERN = /[\p{Alphabetic}\p{Number}]+/gu
+
 export function getPublishedPosts() {
   return blogSource
     .getPages()
@@ -22,4 +27,19 @@ export function formatPostDate(date: string) {
     timeZone: 'UTC',
     year: 'numeric',
   }).format(new Date(`${date}T00:00:00Z`))
+}
+
+export function estimateReadingTime(markdown: string) {
+  const hanCharacterCount = markdown.match(HAN_CHARACTER_PATTERN)?.length ?? 0
+  const nonHanText = markdown.replace(HAN_CHARACTER_PATTERN, ' ')
+  const wordCount = nonHanText.match(WORD_PATTERN)?.length ?? 0
+  const minutes = Math.max(
+    1,
+    Math.ceil(
+      hanCharacterCount / HAN_CHARACTERS_PER_MINUTE +
+        wordCount / WORDS_PER_MINUTE
+    )
+  )
+
+  return `${minutes} 分钟阅读`
 }
