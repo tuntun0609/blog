@@ -18,31 +18,27 @@
   place-items: center;
   pointer-events: none;
   opacity: 1;
-  transition: opacity 180ms ease;
-}
-
-.fallback::before {
-  position: absolute;
-  width: 84%;
-  aspect-ratio: 1;
-  content: "";
-  background: var(--home-paper);
-  border: 1px solid var(--home-line);
-  border-radius: var(--radius-3xl);
-  box-shadow: 0.55rem 0.55rem 0 var(--home-offset);
 }
 
 .fallbackImage {
   position: relative;
+  box-sizing: border-box;
   display: block;
-  width: calc(84% - 1.1rem);
+  width: 76%;
   height: auto;
   aspect-ratio: 1;
   pointer-events: none;
   user-select: none;
   object-fit: cover;
-  border-radius: var(--radius-2xl);
-  filter: saturate(0.9) contrast(1.02);
+  background: #fff;
+  border: 0.25rem solid #fff;
+  border-radius: calc(var(--radius-2xl) + 0.25rem);
+  filter: saturate(0.9) contrast(1.02)
+    drop-shadow(
+      0.35rem 0.4rem 0.55rem
+        color-mix(in srgb, var(--home-ink) 18%, transparent)
+    );
+  transform: rotate(1.5deg);
 }
 
 .engineHost {
@@ -52,7 +48,6 @@
   height: max(500%, 200vh);
   opacity: 0;
   transform: translate(-50%, -50%);
-  transition: opacity 180ms ease;
 }
 
 .engineHost canvas {
@@ -86,12 +81,5 @@
 @media (max-width: 360px) {
   .avatarSticker {
     width: 7rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .engineHost,
-  .fallback {
-    transition-duration: 1ms;
   }
 }

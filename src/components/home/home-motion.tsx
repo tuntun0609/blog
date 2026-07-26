@@ -55,10 +55,6 @@ export function HomeMotion({ rootId }: HomeMotionProps) {
 
     const updateMotion = () => {
       frame = 0
-      const scrollRange =
-        document.documentElement.scrollHeight - window.innerHeight
-      const progress = scrollRange > 0 ? window.scrollY / scrollRange : 0
-      root.style.setProperty('--scroll-progress', String(progress))
 
       if (reduceMotion) {
         return
@@ -100,5 +96,5 @@ export function HomeMotion({ rootId }: HomeMotionProps) {
     }
   }, [rootId])
 
-  return <div aria-hidden="true" data-home-scroll-progress />
+  return null
 }

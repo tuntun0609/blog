@@ -8,6 +8,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+import styles from './blog.module.css'
 
 interface BlogPaginationProps {
   currentPage: number
@@ -23,7 +24,7 @@ export function BlogPagination({
   totalPages,
 }: BlogPaginationProps) {
   return (
-    <Pagination className="mt-12">
+    <Pagination className={styles.pagination}>
       <PaginationContent>
         {currentPage > 1 ? (
           <PaginationItem>

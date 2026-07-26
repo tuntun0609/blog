@@ -1,16 +1,11 @@
+import { ArrowUpRightIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { formatPostDate } from '@/lib/blog'
+import styles from './blog.module.css'
 
 interface PostCardProps {
+  index: number
   post: {
     url: string
     data: {
@@ -24,42 +19,36 @@ interface PostCardProps {
   preload?: boolean
 }
 
-export function PostCard({ post, preload = false }: PostCardProps) {
+export function PostCard({ index, post, preload = false }: PostCardProps) {
   const title = post.data.title ?? '未命名文章'
 
   return (
-    <Link className="group block h-full" href={post.url}>
-      <Card className="h-full gap-0 py-0">
-        <div className="relative aspect-video overflow-hidden">
-          <Image
-            alt={title}
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            fill
-            preload={preload}
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            src={post.data.cover}
-          />
-        </div>
-        <CardHeader className="gap-3 pt-5">
-          <div className="flex items-center justify-between gap-3">
-            <Badge variant="secondary">{post.data.category}</Badge>
-            <time
-              className="text-muted-foreground text-xs"
-              dateTime={post.data.date}
-            >
+    <Link className={styles.postLink} href={post.url}>
+      <article className={styles.postRow}>
+        <span className={styles.postNumber}>
+          {String(index).padStart(2, '0')}
+        </span>
+        <div className={styles.postCopy}>
+          <div className={styles.postMeta}>
+            <span className={styles.postCategory}>{post.data.category}</span>
+            <time className={styles.postDate} dateTime={post.data.date}>
               {formatPostDate(post.data.date)}
             </time>
           </div>
-          <CardTitle>
-            <h2 className="line-clamp-2">{title}</h2>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pb-5">
-          <CardDescription className="line-clamp-2">
-            {post.data.description}
-          </CardDescription>
-        </CardContent>
-      </Card>
+          <h2 className={styles.postTitle}>{title}</h2>
+          <p className={styles.postDescription}>{post.data.description}</p>
+        </div>
+        <div className={styles.postImage}>
+          <Image
+            alt={title}
+            fill
+            preload={preload}
+            sizes="(max-width: 680px) 1px, (max-width: 880px) 136px, 168px"
+            src={post.data.cover}
+          />
+        </div>
+        <ArrowUpRightIcon aria-hidden="true" className={styles.postArrow} />
+      </article>
     </Link>
   )
 }
