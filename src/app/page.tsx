@@ -9,8 +9,8 @@ import {
   RssIcon,
 } from 'lucide-react'
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
+import { AvatarSticker } from '@/components/home/avatar-sticker'
 import { GithubActivity } from '@/components/home/github-activity'
 import { HomeMotion } from '@/components/home/home-motion'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -136,20 +136,7 @@ export default function HomePage() {
       <main id="main-content">
         <section aria-labelledby="hero-title" className={styles.hero}>
           <div className={styles.profile} data-reveal>
-            <div className={styles.avatarFrame}>
-              <Image
-                alt="Tuntun 的 GitHub 头像"
-                className={styles.avatar}
-                fetchPriority="high"
-                height={460}
-                loading="eager"
-                priority
-                sizes="(max-width: 720px) 148px, 188px"
-                src="/avatar-tuntun.jpg"
-                width={460}
-              />
-              <span aria-hidden="true" className={styles.onlineDot} />
-            </div>
+            <AvatarSticker />
 
             <div className={styles.profileIdentity}>
               <div>

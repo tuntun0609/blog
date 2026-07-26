@@ -35,6 +35,7 @@
   color: var(--home-ink);
   background: var(--home-paper);
   border: 1px solid var(--home-ink);
+  border-radius: var(--radius-xl);
   transform: translateY(-180%);
   transition: transform 160ms ease;
 }
@@ -113,6 +114,7 @@
   height: 2rem;
   color: var(--home-ink);
   border: 1px solid var(--home-line);
+  border-radius: var(--radius-2xl);
   transition:
     color 160ms ease,
     border-color 160ms ease,
@@ -147,35 +149,9 @@
   padding-top: 1.25rem;
 }
 
-.avatarFrame {
-  position: relative;
-  width: min(100%, 11.75rem);
-  padding: 0.55rem;
-  background: var(--home-paper);
-  border: 1px solid var(--home-line);
-  box-shadow: 0.55rem 0.55rem 0 var(--home-offset);
-}
-
-.avatar {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1;
-  object-fit: cover;
-  filter: saturate(0.9) contrast(1.02);
-}
-
-.onlineDot {
-  position: absolute;
-  right: 0.7rem;
-  bottom: 0.7rem;
-  width: 0.8rem;
-  height: 0.8rem;
-  background: var(--home-green);
-  border: 2px solid var(--home-paper);
-}
-
 .profileIdentity {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -207,14 +183,17 @@
   width: 2rem;
   height: 2rem;
   color: var(--home-muted);
-  border-bottom: 1px solid var(--home-line);
+  border: 1px solid var(--home-line);
+  border-radius: var(--radius-2xl);
   transition:
+    background-color 160ms ease,
     color 160ms ease,
     border-color 160ms ease;
 }
 
 .socials a:hover,
 .socials a:focus-visible {
+  background: color-mix(in srgb, var(--home-ink) 5%, var(--home-paper));
   border-color: currentColor;
 }
 
@@ -240,6 +219,8 @@
 }
 
 .heroCopy {
+  position: relative;
+  z-index: 1;
   max-width: 48rem;
 }
 
@@ -261,6 +242,7 @@
   vertical-align: 0.02rem;
   content: "";
   background: var(--home-accent);
+  border-radius: 50%;
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--home-blue) 16%, transparent);
 }
 
@@ -312,6 +294,7 @@
   color: var(--home-paper);
   background: var(--home-ink);
   border: 1px solid var(--home-ink);
+  border-radius: var(--radius-2xl);
   transition:
     color 160ms ease,
     background-color 160ms ease,
@@ -447,12 +430,14 @@
   font-weight: 650;
   background: var(--home-paper);
   border: 1px solid var(--home-line);
+  border-radius: var(--radius-xl);
 }
 
 .technologyInner li span {
   width: 0.45rem;
   height: 0.45rem;
   background: var(--home-blue);
+  border-radius: 50%;
 }
 
 .technologyInner li:nth-child(2) span,
@@ -556,6 +541,7 @@
   min-height: 8.25rem;
   padding-block: 1.35rem;
   border-bottom: 1px solid var(--home-soft-line);
+  border-radius: var(--radius-2xl);
   transition:
     background-color 180ms ease,
     padding-inline 180ms ease;
@@ -608,6 +594,7 @@
   height: 2.1rem;
   color: var(--home-ink);
   border: 1px solid var(--home-line);
+  border-radius: var(--radius-2xl);
   transition:
     color 160ms ease,
     background-color 160ms ease,
@@ -649,6 +636,7 @@
   min-height: 6.5rem;
   padding-block: 1.1rem;
   border-bottom: 1px solid var(--home-soft-line);
+  border-radius: var(--radius-2xl);
   transition:
     background-color 180ms ease,
     padding-inline 180ms ease;
@@ -705,7 +693,7 @@
 .githubSection {
   padding-block: 5.5rem;
   padding-inline: clamp(1.5rem, 5vw, 4rem);
-  background: color-mix(in srgb, var(--home-blue-soft) 55%, var(--home-paper));
+  background: transparent;
   border-block: 1px solid var(--home-line);
 }
 
@@ -922,11 +910,6 @@
     margin-bottom: 3.25rem;
   }
 
-  .avatarFrame {
-    flex: 0 0 auto;
-    width: 9.25rem;
-  }
-
   .profileIdentity {
     gap: 0.85rem;
     padding-top: 0;
@@ -1079,6 +1062,12 @@
   .footer div {
     justify-content: space-between;
     margin-top: 0.75rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .profile {
+    gap: 1rem;
   }
 }
 

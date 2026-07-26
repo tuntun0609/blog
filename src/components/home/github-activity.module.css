@@ -34,6 +34,7 @@
   padding: 1.35rem 1.4rem 1.1rem;
   background: var(--home-paper);
   border: 1px solid var(--home-line);
+  border-radius: var(--radius-3xl);
 }
 
 .stateMessage {

@@ -18,8 +18,8 @@ const YEAR_OPTIONS = Array.from(
 )
 
 const CALENDAR_THEME = {
-  dark: ['#20242a', '#1f402c', '#2f6a42', '#4a965f', '#72c08b'],
-  light: ['#e8edf2', '#d8ebde', '#acd4b7', '#75b888', '#4e9a68'],
+  dark: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
+  light: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'],
 }
 
 const CALENDAR_LABELS = {
@@ -217,7 +217,7 @@ export function GithubActivity() {
               <div className={styles.calendarCanvas}>
                 <ActivityCalendar
                   blockMargin={4}
-                  blockRadius={2}
+                  blockRadius={3}
                   blockSize={12}
                   className={styles.calendar}
                   colorScheme={resolvedTheme === 'dark' ? 'dark' : 'light'}
