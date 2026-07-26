@@ -1,7 +1,10 @@
 'use client'
 
+import Image from 'next/image'
 import Script from 'next/script'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import avatarStickerPoster from '../../../public/avatar-sticker-poster.webp'
+import avatarImageSource from '../../../public/avatar-tuntun.jpg'
 import styles from './avatar-sticker.module.css'
 
 const AVATAR_SOURCE_SIZE = 460
@@ -10,6 +13,12 @@ const DISPLAY_SIZE_RATIO = 0.84
 const STICKER_RUNTIME_SRC = '/vendor/sticker-forge/sticker-forge.iife.js'
 
 type LoadStatus = 'error' | 'loading' | 'ready'
+
+const STATUS_LABELS: Record<LoadStatus, string> = {
+  error: '互动头像不可用，已显示静态头像。',
+  loading: '正在加载互动头像。',
+  ready: '互动头像已就绪，可以从边缘拖动。',
+}
 
 interface StickerPoint {
   readonly x: number
@@ -101,7 +110,7 @@ let avatarSourcePromise: Promise<string> | null = null
 const createAvatarSource = async (): Promise<string> => {
   const avatarImage = new window.Image()
   avatarImage.decoding = 'async'
-  avatarImage.src = '/avatar-tuntun.jpg'
+  avatarImage.src = avatarImageSource.src
   await avatarImage.decode()
 
   const canvas = document.createElement('canvas')
@@ -321,7 +330,20 @@ export function AvatarSticker() {
       data-status={status}
       ref={frameRef}
     >
+      <div className={styles.avatarFallback}>
+        <Image
+          alt={status === 'ready' ? '' : 'Tuntun 的头像'}
+          fill
+          loading="eager"
+          sizes="(max-width: 360px) 7rem, (max-width: 680px) 9.25rem, 11.75rem"
+          src={avatarStickerPoster}
+          unoptimized
+        />
+      </div>
       <div className={styles.engineHost} ref={hostRef} />
+      <span aria-live="polite" className={styles.statusText}>
+        {STATUS_LABELS[status]}
+      </span>
       <Script
         id="sticker-forge-runtime"
         onError={handleRuntimeError}
