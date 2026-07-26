@@ -1,18 +1,9 @@
-import {
-  ArrowDownIcon,
-  ArrowUpRightIcon,
-  BookOpenIcon,
-  Code2Icon,
-  MailIcon,
-  MapPinIcon,
-  PlayCircleIcon,
-  RssIcon,
-} from 'lucide-react'
+import { ArrowUpRightIcon, MailIcon, RssIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { GitHubIcon } from '@/components/github-icon'
-import { AvatarStickerClient } from '@/components/home/avatar-sticker-client'
 import { GithubActivity } from '@/components/home/github-activity'
+import { HeroSection } from '@/components/home/hero-section'
 import { HomeMotion } from '@/components/home/home-motion'
 import { SiteHeader } from '@/components/site-header'
 import { formatPostDate, getPublishedPosts } from '@/lib/blog'
@@ -22,29 +13,6 @@ export const metadata: Metadata = {
   description: 'Tuntun 的个人主页，记录 Web 前端开发、开源项目与持续学习。',
   title: 'Tuntun — Web 前端开发者',
 }
-
-const socialLinks = [
-  {
-    href: 'https://github.com/tuntun0609',
-    icon: GitHubIcon,
-    label: 'GitHub',
-  },
-  {
-    href: 'https://space.bilibili.com/47706697',
-    icon: PlayCircleIcon,
-    label: 'Bilibili',
-  },
-  {
-    href: 'https://www.yuque.com/tuntun-nozomi/document',
-    icon: BookOpenIcon,
-    label: '语雀',
-  },
-  {
-    href: 'mailto:tun.nozomi@gmail.com',
-    icon: MailIcon,
-    label: '邮箱',
-  },
-] as const
 
 const technologies = [
   'TypeScript',
@@ -103,78 +71,7 @@ export default function HomePage() {
       <SiteHeader isHomePage />
 
       <main id="main-content">
-        <section aria-labelledby="hero-title" className={styles.hero}>
-          <div className={styles.profile} data-reveal>
-            <AvatarStickerClient />
-
-            <div className={styles.profileIdentity}>
-              <div>
-                <p className={styles.profileName}>Tuntun</p>
-                <p className={styles.handle}>@tuntun0609</p>
-              </div>
-              <div className={styles.socials}>
-                {socialLinks.map(({ href, icon: Icon, label }) => (
-                  <a
-                    aria-label={label}
-                    href={href}
-                    key={href}
-                    rel={href.startsWith('mailto:') ? undefined : 'noopener'}
-                    target={href.startsWith('mailto:') ? undefined : '_blank'}
-                    title={label}
-                  >
-                    <Icon aria-hidden="true" />
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.heroCopy}>
-            <p className={styles.eyebrow} data-delay="1" data-reveal>
-              WEB FRONT-END DEVELOPER
-            </p>
-            <h1
-              className={styles.heroTitle}
-              data-delay="1"
-              data-reveal
-              id="hero-title"
-            >
-              把复杂的产品问题，做成清晰、可靠的界面。
-            </h1>
-            <p className={styles.heroLead} data-delay="2" data-reveal>
-              我是 Tuntun，一名前端开发者。专注于
-              React、Next.js、浏览器扩展与交互工具，也持续把实践写成能被复用的文章。
-            </p>
-
-            <div className={styles.heroActions} data-delay="2" data-reveal>
-              <a className={styles.primaryAction} href="#projects">
-                查看项目
-                <ArrowDownIcon aria-hidden="true" data-icon="inline-end" />
-              </a>
-              <Link className={styles.secondaryAction} href="/blog">
-                阅读文章
-                <ArrowUpRightIcon aria-hidden="true" data-icon="inline-end" />
-              </Link>
-            </div>
-
-            <dl className={styles.heroFacts} data-delay="3" data-reveal>
-              <div>
-                <dt>
-                  <MapPinIcon aria-hidden="true" />
-                  所在地
-                </dt>
-                <dd>Mars</dd>
-              </div>
-              <div>
-                <dt>
-                  <Code2Icon aria-hidden="true" />
-                  当前关注
-                </dt>
-                <dd>AI 工具 · 内容体验 · 开源</dd>
-              </div>
-            </dl>
-          </div>
-        </section>
+        <HeroSection />
 
         <section aria-label="技术栈" className={styles.technologyBand}>
           <div className={styles.technologyInner} data-reveal>

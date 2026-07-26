@@ -10,15 +10,11 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import readingTime from 'reading-time'
 import styles from '@/components/blog/blog.module.css'
 import { ReadingProgress } from '@/components/blog/reading-progress'
 import { getMdxComponents } from '@/components/mdx'
-import {
-  blogSource,
-  estimateReadingTime,
-  formatPostDate,
-  getPublishedPosts,
-} from '@/lib/blog'
+import { blogSource, formatPostDate, getPublishedPosts } from '@/lib/blog'
 
 interface PostPageProps {
   params: Promise<{ slug: string[] }>
@@ -61,7 +57,7 @@ export default async function PostPage({ params }: PostPageProps) {
   const posts = getPublishedPosts()
   const currentPostIndex = posts.findIndex((item) => item.url === post.url)
   const nextPost = posts[currentPostIndex + 1]
-  const readingTime = estimateReadingTime(await post.data.getText('processed'))
+  const readTime = readingTime(await post.data.getText('processed'))
 
   return (
     <div className={styles.postPage}>
@@ -93,7 +89,7 @@ export default async function PostPage({ params }: PostPageProps) {
               <dt>阅读时间</dt>
               <dd>
                 <Clock3Icon aria-hidden="true" />
-                {readingTime}
+                {readTime.text}
               </dd>
             </div>
             <div>
