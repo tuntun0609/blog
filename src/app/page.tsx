@@ -1,78 +1,105 @@
 import {
-  ArrowDownRightIcon,
-  ArrowRightIcon,
+  ArrowDownIcon,
   ArrowUpRightIcon,
+  BookOpenIcon,
+  Code2Icon,
   MailIcon,
+  MapPinIcon,
+  PlayCircleIcon,
+  RssIcon,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import { GithubActivity } from '@/components/home/github-activity'
 import { HomeMotion } from '@/components/home/home-motion'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { formatPostDate, getPublishedPosts } from '@/lib/blog'
 import styles from './home.module.css'
 
 export const metadata: Metadata = {
-  description: '王望的个人主页，记录产品工程、内容系统与持续构建的过程。',
-  title: '王望 — 产品工程师与写作者',
+  description: 'Tuntun 的个人主页，记录 Web 前端开发、开源项目与持续学习。',
+  title: 'Tuntun — Web 前端开发者',
 }
 
-const featuredWork = [
+const GitHubIcon = () => (
+  <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.1c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2A11.5 11.5 0 0 1 12 6.5c1 0 2 .1 3 .4 2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v2.9c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z" />
+  </svg>
+)
+
+const socialLinks = [
   {
-    accent: 'orange',
-    description:
-      '把 Markdown、类型校验和 App Router 组织成一条清晰、稳定的内容发布链路。',
-    href: '/blog/nextjs-16-content-architecture',
-    image: '/blog/content-architecture.jpg',
-    label: 'CONTENT SYSTEM',
-    number: '01',
-    title: '内容基础设施',
+    href: 'https://github.com/tuntun0609',
+    icon: GitHubIcon,
+    label: 'GitHub',
   },
   {
-    accent: 'cyan',
-    description: '从页面结构、图片策略到服务端分页，让速度成为设计的一部分。',
-    href: '/blog/designing-fast-blog-pages',
-    image: '/blog/fast-blog.jpg',
-    label: 'PERFORMANCE',
-    number: '02',
-    title: '快速的阅读体验',
+    href: 'https://space.bilibili.com/47706697',
+    icon: PlayCircleIcon,
+    label: 'Bilibili',
   },
   {
-    accent: 'lime',
-    description:
-      '保留组件系统的升级路径，同时让产品拥有自己的节奏、层级与辨识度。',
-    href: '/blog/shadcn-composition',
-    image: '/blog/shadcn-composition.jpg',
-    label: 'DESIGN SYSTEM',
-    number: '03',
-    title: '可持续的组件组合',
+    href: 'https://www.yuque.com/tuntun-nozomi/document',
+    icon: BookOpenIcon,
+    label: '语雀',
+  },
+  {
+    href: 'mailto:tun.nozomi@gmail.com',
+    icon: MailIcon,
+    label: '邮箱',
   },
 ] as const
 
-const principles = [
+const technologies = [
+  'TypeScript',
+  'React',
+  'Next.js',
+  'Tailwind CSS',
+  'Node.js',
+  'Browser Extensions',
+] as const
+
+const projects = [
   {
-    description: '从使用场景和约束出发，而不是从功能清单出发。',
+    description:
+      '探索内容与视觉表达结合方式的 TypeScript 项目，持续打磨信息图生成体验。',
+    href: 'https://github.com/tuntun0609/infographic-ai',
     index: '01',
-    title: '先找到真正的问题',
+    meta: 'TypeScript · 7 stars',
+    title: 'infographic-ai',
   },
   {
-    description: '界面应该安静、明确，让人不需要反复确认下一步。',
+    description:
+      '一个便于快速构建 SaaS 产品的 Next.js 模板，关注清晰的项目结构与开发体验。',
+    href: 'https://github.com/tuntun0609/easy-saas-next',
     index: '02',
-    title: '让复杂留在系统里',
+    meta: 'Next.js · TypeScript',
+    title: 'easy-saas-next',
   },
   {
-    description: '通过记录沉淀判断，让一次解决方案变成长期能力。',
+    description:
+      'Bilibili 网页优化浏览器扩展，用更顺手的交互改善日常观看体验。',
+    href: 'https://github.com/tuntun0609/tun-bili-tool',
     index: '03',
-    title: '写下来，再做一遍',
+    meta: 'Browser Extension · 40 stars',
+    title: 'tun-bili-tool',
+  },
+  {
+    description: '为 Leafer 元素提供吸附能力，让画布编辑中的对齐操作更自然。',
+    href: 'https://github.com/tuntun0609/leafer-x-snap',
+    index: '04',
+    meta: 'TypeScript · 24 stars',
+    title: 'leafer-x-snap',
   },
 ] as const
 
 export default function HomePage() {
-  const recentPosts = getPublishedPosts().slice(0, 3)
+  const recentPosts = getPublishedPosts().slice(0, 4)
 
   return (
-    <div className={styles.page} id="personal-home">
-      <HomeMotion rootId="personal-home" />
+    <div className={styles.page} id="tuntun-home">
+      <HomeMotion rootId="tuntun-home" />
 
       <a className={styles.skipLink} href="#main-content">
         跳至主要内容
@@ -80,148 +107,130 @@ export default function HomePage() {
 
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <Link aria-label="王望的个人主页" className={styles.logo} href="/">
-            <span>WW</span>
-            <span className={styles.logoText}>王望</span>
+          <Link
+            aria-label="Tuntun 的个人主页"
+            className={styles.brand}
+            href="/"
+          >
+            @tuntun0609
           </Link>
 
           <nav aria-label="主导航" className={styles.nav}>
-            <a href="#work">作品</a>
             <a href="#about">关于</a>
+            <a href="#projects">项目</a>
             <Link href="/blog">文章</Link>
-            <ThemeToggle />
-            <a className={styles.navContact} href="#contact">
-              联系
-              <ArrowDownRightIcon aria-hidden="true" />
+            <a
+              aria-label="在 GitHub 查看 tuntun0609"
+              className={styles.iconLink}
+              href="https://github.com/tuntun0609"
+              rel="noopener"
+              target="_blank"
+            >
+              <GitHubIcon />
             </a>
+            <ThemeToggle />
           </nav>
         </div>
       </header>
 
       <main id="main-content">
         <section aria-labelledby="hero-title" className={styles.hero}>
-          <div className={styles.heroCopy}>
-            <p className={styles.eyebrow} data-reveal>
-              <span className={styles.statusDot} />
-              PRODUCT ENGINEER · SHANGHAI
-            </p>
+          <div className={styles.profile} data-reveal>
+            <div className={styles.avatarFrame}>
+              <Image
+                alt="Tuntun 的 GitHub 头像"
+                className={styles.avatar}
+                fetchPriority="high"
+                height={460}
+                loading="eager"
+                priority
+                sizes="(max-width: 720px) 148px, 188px"
+                src="/avatar-tuntun.jpg"
+                width={460}
+              />
+              <span aria-hidden="true" className={styles.onlineDot} />
+            </div>
 
+            <div className={styles.profileIdentity}>
+              <div>
+                <p className={styles.profileName}>Tuntun</p>
+                <p className={styles.handle}>@tuntun0609</p>
+              </div>
+              <div className={styles.socials}>
+                {socialLinks.map(({ href, icon: Icon, label }) => (
+                  <a
+                    aria-label={label}
+                    href={href}
+                    key={href}
+                    rel={href.startsWith('mailto:') ? undefined : 'noopener'}
+                    target={href.startsWith('mailto:') ? undefined : '_blank'}
+                    title={label}
+                  >
+                    <Icon aria-hidden="true" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.heroCopy}>
+            <p className={styles.eyebrow} data-delay="1" data-reveal>
+              WEB FRONT-END DEVELOPER
+            </p>
             <h1
               className={styles.heroTitle}
               data-delay="1"
               data-reveal
               id="hero-title"
             >
-              <span>王望</span>
-              <small>WANG WANG</small>
+              把复杂的产品问题，做成清晰、可靠的界面。
             </h1>
-
             <p className={styles.heroLead} data-delay="2" data-reveal>
-              我设计并构建数字产品，关注内容系统、界面体验，
-              以及那些让复杂事物变得清楚的细节。
+              我是 Tuntun，一名前端开发者。专注于
+              React、Next.js、浏览器扩展与交互工具，也持续把实践写成能被复用的文章。
             </p>
 
-            <div className={styles.heroActions} data-delay="3" data-reveal>
-              <a className={styles.primaryAction} href="#work">
-                看近期作品
-                <ArrowDownRightIcon aria-hidden="true" />
+            <div className={styles.heroActions} data-delay="2" data-reveal>
+              <a className={styles.primaryAction} href="#projects">
+                查看项目
+                <ArrowDownIcon aria-hidden="true" data-icon="inline-end" />
               </a>
-              <a className={styles.textAction} href="mailto:hello@wangwang.dev">
-                写封邮件
-                <ArrowUpRightIcon aria-hidden="true" />
-              </a>
+              <Link className={styles.secondaryAction} href="/blog">
+                阅读文章
+                <ArrowUpRightIcon aria-hidden="true" data-icon="inline-end" />
+              </Link>
             </div>
 
-            <div className={styles.heroMeta} data-delay="3" data-reveal>
-              <span>当前关注</span>
-              <p>设计系统 · 内容工程 · AI 产品</p>
-            </div>
-          </div>
-
-          <figure className={styles.heroVisual} data-delay="2" data-reveal>
-            <div
-              className={styles.heroImageParallax}
-              data-parallax
-              data-parallax-speed="0.055"
-            >
-              <Image
-                alt="放着代码编辑器的个人工作台"
-                className={styles.heroImage}
-                fetchPriority="high"
-                fill
-                loading="eager"
-                sizes="(max-width: 820px) 100vw, 46vw"
-                src="/blog/content-architecture.jpg"
-              />
-            </div>
-            <span className={styles.visualIndex}>DESK / 01</span>
-            <figcaption className={styles.visualCaption}>
-              <span>正在构建</span>
-              <strong>更安静、更可靠的软件。</strong>
-            </figcaption>
-          </figure>
-        </section>
-
-        <section aria-label="个人简介" className={styles.introBand}>
-          <div className={styles.introBandInner} data-reveal>
-            <p>BUILD</p>
-            <span>把模糊的问题做成清晰的产品</span>
-            <p>WRITE</p>
-            <span>把解决过程写成可以复用的知识</span>
+            <dl className={styles.heroFacts} data-delay="3" data-reveal>
+              <div>
+                <dt>
+                  <MapPinIcon aria-hidden="true" />
+                  所在地
+                </dt>
+                <dd>Mars</dd>
+              </div>
+              <div>
+                <dt>
+                  <Code2Icon aria-hidden="true" />
+                  当前关注
+                </dt>
+                <dd>AI 工具 · 内容体验 · 开源</dd>
+              </div>
+            </dl>
           </div>
         </section>
 
-        <section
-          aria-labelledby="work-title"
-          className={styles.workSection}
-          id="work"
-        >
-          <header className={styles.sectionHeader} data-reveal>
-            <div>
-              <p className={styles.sectionKicker}>SELECTED WORK / 2026</p>
-              <h2 id="work-title">近期实践</h2>
-            </div>
-            <p>
-              我喜欢从结构开始工作：先理解信息和行为，再让视觉、代码与内容形成同一个系统。
-            </p>
-          </header>
-
-          <div className={styles.workList}>
-            {featuredWork.map((work, index) => (
-              <article
-                className={styles.workItem}
-                data-accent={work.accent}
-                data-reveal
-                key={work.number}
-              >
-                <Link className={styles.workImageLink} href={work.href}>
-                  <div
-                    className={styles.workImageParallax}
-                    data-parallax
-                    data-parallax-speed={index % 2 === 0 ? '0.035' : '0.05'}
-                  >
-                    <Image
-                      alt=""
-                      className={styles.workImage}
-                      fill
-                      sizes="(max-width: 820px) 100vw, 56vw"
-                      src={work.image}
-                    />
-                  </div>
-                  <span className={styles.workNumber}>{work.number}</span>
-                </Link>
-
-                <div className={styles.workContent}>
-                  <p>{work.label}</p>
-                  <h3>{work.title}</h3>
-                  <p className={styles.workDescription}>{work.description}</p>
-                  <Link className={styles.workLink} href={work.href}>
-                    阅读项目笔记
-                    <ArrowUpRightIcon aria-hidden="true" />
-                  </Link>
-                </div>
-              </article>
-            ))}
+        <section aria-label="技术栈" className={styles.technologyBand}>
+          <div className={styles.technologyInner} data-reveal>
+            <p>Technologies</p>
+            <ul>
+              {technologies.map((technology, index) => (
+                <li data-tone={index % 3} key={technology}>
+                  <span aria-hidden="true" />
+                  {technology}
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -230,45 +239,94 @@ export default function HomePage() {
           className={styles.aboutSection}
           id="about"
         >
-          <div className={styles.aboutInner}>
-            <div className={styles.aboutSticky} data-reveal>
-              <p className={styles.sectionKicker}>HOW I WORK</p>
-              <h2 id="about-title">做事的方法，决定作品的质感。</h2>
-              <p>
-                我在设计与工程之间工作。关心的不只是界面能否完成任务，也关心团队以后能否继续把它做好。
-              </p>
-            </div>
+          <div className={styles.sectionHeading} data-reveal>
+            <p className={styles.sectionKicker}>01 / ABOUT</p>
+            <h2 id="about-title">构建、记录，再持续改进。</h2>
+          </div>
 
-            <ol className={styles.principleList}>
-              {principles.map((principle) => (
-                <li data-reveal key={principle.index}>
-                  <span>{principle.index}</span>
-                  <div>
-                    <h3>{principle.title}</h3>
-                    <p>{principle.description}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+          <div className={styles.aboutGrid}>
+            <p className={styles.aboutStatement} data-reveal>
+              我喜欢从真实使用场景出发，把信息结构、交互细节与工程质量放在同一个问题里考虑。
+            </p>
+            <div className={styles.aboutDetails} data-delay="1" data-reveal>
+              <p>
+                平时主要使用 TypeScript、React 和
+                Next.js，也在浏览器扩展、画布交互、内容系统与 AI
+                工具方向持续实践。
+              </p>
+              <p>
+                除了写代码，我会在博客和语雀记录前端基础、工程经验与常见面试问题，让一次解决方案变成可以继续使用的知识。
+              </p>
+              <a
+                className={styles.inlineLink}
+                href="https://www.yuque.com/tuntun-nozomi/document"
+                rel="noopener"
+                target="_blank"
+              >
+                查看语雀文档
+                <ArrowUpRightIcon aria-hidden="true" />
+              </a>
+            </div>
           </div>
         </section>
 
+        <section
+          aria-labelledby="projects-title"
+          className={styles.projectsSection}
+          id="projects"
+        >
+          <div className={styles.sectionHeading} data-reveal>
+            <p className={styles.sectionKicker}>02 / SELECTED PROJECTS</p>
+            <h2 id="projects-title">正在构建的东西</h2>
+          </div>
+
+          <div className={styles.projectList}>
+            {projects.map((project) => (
+              <article
+                className={styles.projectRow}
+                data-reveal
+                key={project.href}
+              >
+                <span className={styles.projectIndex}>{project.index}</span>
+                <div className={styles.projectCopy}>
+                  <h3>{project.title}</h3>
+                  <p>{project.description}</p>
+                </div>
+                <p className={styles.projectMeta}>{project.meta}</p>
+                <a
+                  aria-label={`在 GitHub 查看 ${project.title}`}
+                  className={styles.projectLink}
+                  href={project.href}
+                  rel="noopener"
+                  target="_blank"
+                >
+                  <ArrowUpRightIcon aria-hidden="true" />
+                </a>
+              </article>
+            ))}
+          </div>
+
+          <a
+            className={styles.allProjectsLink}
+            href="https://github.com/tuntun0609?tab=repositories"
+            rel="noopener"
+            target="_blank"
+          >
+            查看全部 74 个公开仓库
+            <ArrowUpRightIcon aria-hidden="true" />
+          </a>
+        </section>
+
         <section aria-labelledby="notes-title" className={styles.notesSection}>
-          <header className={styles.notesHeader} data-reveal>
-            <div>
-              <p className={styles.sectionKicker}>FIELD NOTES</p>
-              <h2 id="notes-title">最近在写</h2>
-            </div>
-            <Link className={styles.allNotesLink} href="/blog">
-              全部文章
-              <ArrowRightIcon aria-hidden="true" />
-            </Link>
-          </header>
+          <div className={styles.sectionHeading} data-reveal>
+            <p className={styles.sectionKicker}>03 / WRITING</p>
+            <h2 id="notes-title">最近写下的内容</h2>
+          </div>
 
           <div className={styles.noteList}>
             {recentPosts.map((post, index) => (
               <Link
-                className={styles.noteItem}
+                className={styles.noteRow}
                 data-reveal
                 href={post.url}
                 key={post.url}
@@ -285,31 +343,70 @@ export default function HomePage() {
               </Link>
             ))}
           </div>
+
+          <Link className={styles.allNotesLink} href="/blog">
+            <RssIcon aria-hidden="true" />
+            浏览全部文章
+          </Link>
+        </section>
+
+        <section
+          aria-labelledby="github-title"
+          className={styles.githubSection}
+        >
+          <div className={styles.githubIntro} data-reveal>
+            <div>
+              <p className={styles.sectionKicker}>04 / OPEN SOURCE</p>
+              <h2 id="github-title">在 GitHub 上保持公开构建。</h2>
+            </div>
+            <div className={styles.githubCopy}>
+              <p>
+                项目、实验和这个博客本身都公开在
+                GitHub。持续提交，也持续把过程留下来。
+              </p>
+              <a
+                className={styles.githubCta}
+                href="https://github.com/tuntun0609"
+                rel="noopener"
+                target="_blank"
+              >
+                <GitHubIcon />
+                关注 @tuntun0609
+              </a>
+            </div>
+          </div>
+
+          <GithubActivity />
         </section>
 
         <section
           aria-labelledby="contact-title"
           className={styles.contactSection}
-          id="contact"
         >
-          <div className={styles.contactInner} data-reveal>
-            <p className={styles.sectionKicker}>
-              LET&apos;S MAKE SOMETHING CLEAR
-            </p>
-            <h2 id="contact-title">有一个值得认真做的问题？</h2>
-            <a className={styles.contactLink} href="mailto:hello@wangwang.dev">
-              <MailIcon aria-hidden="true" />
-              hello@wangwang.dev
-              <ArrowUpRightIcon aria-hidden="true" />
-            </a>
+          <div className={styles.contactCopy} data-reveal>
+            <div>
+              <p className={styles.sectionKicker}>05 / CONTACT</p>
+              <h2 id="contact-title">一起做点有用的东西。</h2>
+            </div>
+            <p>有项目想法、开源协作或只是想聊聊前端工程，都可以直接发邮件。</p>
           </div>
+
+          <a className={styles.contactLink} href="mailto:tun.nozomi@gmail.com">
+            <span className={styles.contactAddress}>
+              <MailIcon aria-hidden="true" />
+              tun.nozomi@gmail.com
+            </span>
+            <ArrowUpRightIcon aria-hidden="true" />
+          </a>
         </section>
       </main>
 
       <footer className={styles.footer}>
-        <p>王望 · 产品工程师 / 写作者</p>
-        <p>上海 · 2026</p>
-        <a href="#main-content">回到顶部 ↑</a>
+        <p>Tuntun · Web Front-End Developer</p>
+        <div>
+          <span>Designed &amp; built with Next.js</span>
+          <a href="#main-content">回到顶部</a>
+        </div>
       </footer>
     </div>
   )
