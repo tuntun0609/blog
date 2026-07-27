@@ -16,10 +16,13 @@
     "includes": [
       "!node_modules",
       "!.next",
+      "!.source",
       "!dist",
       "!build",
       "!public",
       "!types",
+      "!.agents",
+      "!.claude",
       "!src/components/ui",
       "!src/components/ai-elements"
     ]
