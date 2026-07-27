@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { BilibiliIcon } from '@/components/bilibili-icon'
 import { GitHubIcon } from '@/components/github-icon'
 import { AvatarStickerClient } from '@/components/home/avatar-sticker-client'
+import { HeroTitleReveal } from '@/components/home/hero-title-reveal'
 import { XIcon } from '@/components/x-icon'
 import styles from '@/app/home.module.css'
 
@@ -72,7 +73,7 @@ export function HeroSection() {
       <div className={styles.heroCopy}>
         <p className={styles.eyebrow}>WEB FRONT-END DEVELOPER</p>
         <h1 className={styles.heroTitle} id="hero-title">
-          FullStack Developer
+          <HeroTitleReveal />
         </h1>
         <p className={styles.heroLead}>
           Hello, 我是 Tuntun，一名前端开发者。专注于

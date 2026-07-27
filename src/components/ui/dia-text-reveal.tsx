@@ -122,6 +122,10 @@ export interface DiaTextRevealProps extends Omit<
    * @defaultValue `false`
    */
   fixedWidth?: boolean
+  /**
+   * Called after a non-repeating sweep finishes, or immediately when reduced motion is enabled.
+   */
+  onRevealComplete?: () => void
 }
 
 export function DiaTextReveal({
@@ -136,6 +140,7 @@ export function DiaTextReveal({
   once = true,
   className,
   fixedWidth = false,
+  onRevealComplete,
   ...props
 }: DiaTextRevealProps) {
   const texts = Array.isArray(text) ? text : [text]
@@ -151,6 +156,7 @@ export function DiaTextReveal({
     repeat,
     repeatDelay,
     texts,
+    onRevealComplete,
   })
   optsRef.current = {
     colors,
@@ -160,6 +166,7 @@ export function DiaTextReveal({
     repeat,
     repeatDelay,
     texts,
+    onRevealComplete,
   }
 
   const indexRef = useRef(0)
@@ -186,7 +193,8 @@ export function DiaTextReveal({
   }, [Array.isArray(text) ? text.join("\0") : text])
 
   playRef.current = () => {
-    const { duration, delay, repeat, repeatDelay, texts } = optsRef.current
+    const { duration, delay, onRevealComplete, repeat, repeatDelay, texts } =
+      optsRef.current
 
     sweepPos.set(SWEEP_START)
 
@@ -195,7 +203,10 @@ export function DiaTextReveal({
       delay,
       ease: sweepEase,
       onComplete() {
-        if (!repeat) return
+        if (!repeat) {
+          onRevealComplete?.()
+          return
+        }
         timerRef.current = setTimeout(() => {
           const next = (indexRef.current + 1) % texts.length
           indexRef.current = next
@@ -211,6 +222,7 @@ export function DiaTextReveal({
   useEffect(() => {
     if (prefersReducedMotion) {
       sweepPos.set(SWEEP_END)
+      onRevealComplete?.()
       return
     }
     if (startOnView && !isInView) return

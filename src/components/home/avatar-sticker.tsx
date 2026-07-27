@@ -12,10 +12,11 @@ const AVATAR_CORNER_RADIUS = 44
 const DISPLAY_SIZE_RATIO = 0.84
 const STICKER_RUNTIME_SRC = '/vendor/sticker-forge/sticker-forge.iife.js'
 
-type LoadStatus = 'error' | 'loading' | 'ready'
+type LoadStatus = 'error' | 'idle' | 'loading' | 'ready'
 
 const STATUS_LABELS: Record<LoadStatus, string> = {
   error: '互动头像不可用，已显示静态头像。',
+  idle: '静态头像已显示，互动头像将在标题动画结束后加载。',
   loading: '正在加载互动头像。',
   ready: '互动头像已就绪，可以从边缘拖动。',
 }
@@ -144,19 +145,30 @@ const getAvatarSource = (): Promise<string> => {
 const getDisplaySize = (element: HTMLElement): number =>
   Math.max(1, element.getBoundingClientRect().width * DISPLAY_SIZE_RATIO)
 
-export function AvatarSticker() {
+interface AvatarStickerProps {
+  readonly isRuntimeEnabled: boolean
+}
+
+export function AvatarSticker({ isRuntimeEnabled }: AvatarStickerProps) {
   const [isRuntimeReady, setIsRuntimeReady] = useState(false)
-  const [status, setStatus] = useState<LoadStatus>('loading')
+  const [status, setStatus] = useState<LoadStatus>('idle')
   const frameRef = useRef<HTMLDivElement | null>(null)
   const hostRef = useRef<HTMLDivElement | null>(null)
 
   const handleRuntimeReady = useCallback((): void => {
+    setStatus('loading')
     setIsRuntimeReady(true)
   }, [])
 
   const handleRuntimeError = useCallback((): void => {
     setStatus('error')
   }, [])
+
+  useEffect(() => {
+    if (isRuntimeEnabled) {
+      setStatus('loading')
+    }
+  }, [isRuntimeEnabled])
 
   useEffect(() => {
     const frame = frameRef.current
@@ -328,7 +340,7 @@ export function AvatarSticker() {
       data-note="这里可以撕开"
     >
       <div
-        aria-busy={status === 'loading'}
+        aria-busy={isRuntimeEnabled && status === 'loading'}
         className={styles.avatarSticker}
         data-status={status}
         ref={frameRef}
@@ -347,13 +359,15 @@ export function AvatarSticker() {
         <span aria-live="polite" className={styles.statusText}>
           {STATUS_LABELS[status]}
         </span>
-        <Script
-          id="sticker-forge-runtime"
-          onError={handleRuntimeError}
-          onReady={handleRuntimeReady}
-          src={STICKER_RUNTIME_SRC}
-          strategy="afterInteractive"
-        />
+        {isRuntimeEnabled ? (
+          <Script
+            id="sticker-forge-runtime"
+            onError={handleRuntimeError}
+            onReady={handleRuntimeReady}
+            src={STICKER_RUNTIME_SRC}
+            strategy="afterInteractive"
+          />
+        ) : null}
       </div>
     </span>
   )

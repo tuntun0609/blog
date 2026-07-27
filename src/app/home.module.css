@@ -54,9 +54,7 @@
 .heroFacts {
   opacity: 1;
   transform: none;
-  transition:
-    opacity var(--duration-reveal) var(--ease-out),
-    transform var(--duration-reveal) var(--ease-out);
+  transition: opacity var(--duration-reveal) var(--ease-out);
 }
 
 .eyebrow {
@@ -87,7 +85,7 @@
   .heroActions,
   .heroFacts {
     opacity: 0;
-    transform: translateY(0.75rem) scale(0.98);
+    transform: none;
   }
 }
 
