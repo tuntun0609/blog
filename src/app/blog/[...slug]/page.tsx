@@ -11,10 +11,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import readingTime from 'reading-time'
-import styles from '@/components/blog/blog.module.css'
 import { ReadingProgress } from '@/components/blog/reading-progress'
 import { getMdxComponents } from '@/components/mdx'
 import { blogSource, formatPostDate, getPublishedPosts } from '@/lib/blog'
+import styles from '@/components/blog/blog.module.css'
 
 interface PostPageProps {
   params: Promise<{ slug: string[] }>

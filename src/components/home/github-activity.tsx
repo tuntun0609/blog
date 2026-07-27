@@ -1,11 +1,12 @@
 'use client'
 
+import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { type Activity, ActivityCalendar } from 'react-activity-calendar'
-import 'react-activity-calendar/tooltips.css'
-import { useTheme } from 'next-themes'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import styles from './github-activity.module.css'
+
+import 'react-activity-calendar/tooltips.css'
 
 const ACTIVITY_API_URL =
   'https://github-contributions-api.jogruber.de/v4/tuntun0609'

@@ -30,6 +30,18 @@
       "quoteStyle": "single"
     }
   },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": ["!:STYLE:", ":STYLE:"]
+          }
+        }
+      }
+    }
+  },
   "linter": {
     "enabled": true,
     "domains": {

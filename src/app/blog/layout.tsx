@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import styles from '@/components/blog/blog.module.css'
 import { SiteHeader } from '@/components/site-header'
+import styles from '@/components/blog/blog.module.css'
 
 export default function BlogLayout({ children }: { children: ReactNode }) {
   return (

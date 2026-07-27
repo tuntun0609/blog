@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import styles from '@/components/blog/blog.module.css'
 import { BlogPagination } from '@/components/blog/blog-pagination'
 import { PostCard } from '@/components/blog/post-card'
 import { getPublishedPosts, POSTS_PER_PAGE } from '@/lib/blog'
+import styles from '@/components/blog/blog.module.css'
 
 export const metadata: Metadata = {
   description: '来自开发札记的工程实践、技术观察与产品思考。',

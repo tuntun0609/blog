@@ -1,8 +1,9 @@
 import { RootProvider } from 'fumadocs-ui/provider/next'
 import type { Metadata } from 'next'
 import { Geist_Mono, Noto_Sans } from 'next/font/google'
-import './globals.css'
 import { cn } from '@/lib/utils'
+
+import './globals.css'
 
 const notoSans = Noto_Sans({
   subsets: ['latin'],

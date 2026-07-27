@@ -8,9 +8,9 @@ import {
   PlayCircleIcon,
 } from 'lucide-react'
 import Link from 'next/link'
-import styles from '@/app/home.module.css'
 import { GitHubIcon } from '@/components/github-icon'
 import { AvatarStickerClient } from '@/components/home/avatar-sticker-client'
+import styles from '@/app/home.module.css'
 
 const socialLinks = [
   {
