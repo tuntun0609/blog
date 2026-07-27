@@ -8,10 +8,11 @@
 }
 
 .peelHint.peelHint {
-  --ann-arrow-x: 4.75rem;
-  --ann-arrow-y: 0.25rem;
+  --ann-arrow-x: 3.5rem;
+  --ann-arrow-y: 0.5rem;
+  --ann-font: var(--font-shantell-sans), cursive;
   --ann-label-max-width: 7rem;
-  --ann-rotate: -7deg;
+  --ann-rotate: 16deg;
   --ann-text-x: 4rem;
   --ann-text-y: 0.6rem;
   display: block;

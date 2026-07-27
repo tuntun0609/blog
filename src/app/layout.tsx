@@ -1,9 +1,10 @@
 import { RootProvider } from 'fumadocs-ui/provider/next'
 import type { Metadata } from 'next'
-import { Geist_Mono, Noto_Sans } from 'next/font/google'
+import { Geist_Mono, Noto_Sans, Shantell_Sans } from 'next/font/google'
 import { cn } from '@/lib/utils'
 
 import './globals.css'
+import '@/styles/vendor/neat-annotations.css'
 
 const notoSans = Noto_Sans({
   subsets: ['latin'],
@@ -13,6 +14,12 @@ const notoSans = Noto_Sans({
 const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
+})
+
+const shantellSans = Shantell_Sans({
+  subsets: ['latin'],
+  variable: '--font-shantell-sans',
+  weight: ['400', '500', '600'],
 })
 
 export const metadata: Metadata = {
@@ -36,21 +43,12 @@ export default function RootLayout({
       className={cn(
         'h-full antialiased',
         geistMono.variable,
-        notoSans.variable
+        notoSans.variable,
+        shantellSans.variable
       )}
       lang="zh-CN"
       suppressHydrationWarning
     >
-      <head>
-        <link
-          href="https://cdn.jsdelivr.net/gh/syabro/neat-annotations/neat-annotations.css"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <RootProvider>{children}</RootProvider>
       </body>

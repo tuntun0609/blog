@@ -336,7 +336,7 @@ export function AvatarSticker() {
   return (
     <span
       className={`ann ann-sw ann-blue ann-no-mark ${styles.peelHint}`}
-      data-note="从这里撕开"
+      data-note="这里可以撕开"
     >
       <div
         aria-busy={status === 'loading'}
