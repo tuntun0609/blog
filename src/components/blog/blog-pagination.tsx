@@ -1,5 +1,3 @@
-'use client'
-
 import {
   Pagination,
   PaginationContent,
@@ -8,18 +6,17 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+import { getBlogListHref } from '@/lib/blog-url'
 import styles from './blog.module.css'
 
 interface BlogPaginationProps {
+  activeTag?: string
   currentPage: number
   totalPages: number
 }
 
-function pageHref(page: number) {
-  return page === 1 ? '/blog' : `/blog?page=${page}`
-}
-
 export function BlogPagination({
+  activeTag,
   currentPage,
   totalPages,
 }: BlogPaginationProps) {
@@ -29,7 +26,7 @@ export function BlogPagination({
         {currentPage > 1 ? (
           <PaginationItem>
             <PaginationPrevious
-              href={pageHref(currentPage - 1)}
+              href={getBlogListHref(currentPage - 1, activeTag)}
               text="上一页"
             />
           </PaginationItem>
@@ -38,7 +35,7 @@ export function BlogPagination({
           (pageNumber) => (
             <PaginationItem key={pageNumber}>
               <PaginationLink
-                href={pageHref(pageNumber)}
+                href={getBlogListHref(pageNumber, activeTag)}
                 isActive={pageNumber === currentPage}
               >
                 {pageNumber}
@@ -48,7 +45,10 @@ export function BlogPagination({
         )}
         {currentPage < totalPages ? (
           <PaginationItem>
-            <PaginationNext href={pageHref(currentPage + 1)} text="下一页" />
+            <PaginationNext
+              href={getBlogListHref(currentPage + 1, activeTag)}
+              text="下一页"
+            />
           </PaginationItem>
         ) : null}
       </PaginationContent>

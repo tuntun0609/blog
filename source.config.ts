@@ -13,6 +13,12 @@ export const posts = defineDocs({
       cover: z.string().startsWith('/'),
       date: z.string().date(),
       published: z.boolean().default(true),
+      tags: z
+        .array(z.string().trim().min(1))
+        .min(1)
+        .refine((tags) => new Set(tags).size === tags.length, {
+          message: 'Tags must be unique',
+        }),
     }),
   },
 })

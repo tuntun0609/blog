@@ -2,7 +2,12 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { BlogPagination } from '@/components/blog/blog-pagination'
 import { PostCard } from '@/components/blog/post-card'
-import { getPublishedPosts, POSTS_PER_PAGE } from '@/lib/blog'
+import { TagFilter } from '@/components/blog/tag-filter'
+import {
+  getPublishedPosts,
+  getPublishedTagFacets,
+  POSTS_PER_PAGE,
+} from '@/lib/blog'
 import styles from '@/components/blog/blog.module.css'
 
 export const metadata: Metadata = {
@@ -11,14 +16,31 @@ export const metadata: Metadata = {
 }
 
 interface BlogPageProps {
-  searchParams: Promise<{ page?: string | string[] }>
+  searchParams: Promise<{
+    page?: string | string[]
+    tag?: string | string[]
+  }>
 }
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
   const posts = getPublishedPosts()
-  const totalPages = Math.max(1, Math.ceil(posts.length / POSTS_PER_PAGE))
-  const { page } = await searchParams
+  const tags = getPublishedTagFacets()
+  const { page, tag } = await searchParams
   const pageValue = Array.isArray(page) ? page[0] : page
+  const tagValue = Array.isArray(tag) ? tag[0] : tag
+  const activeTag = tagValue?.trim() || undefined
+
+  if (activeTag && !tags.some((item) => item.name === activeTag)) {
+    notFound()
+  }
+
+  const filteredPosts = activeTag
+    ? posts.filter((post) => post.data.tags.includes(activeTag))
+    : posts
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredPosts.length / POSTS_PER_PAGE)
+  )
   const currentPage = pageValue === undefined ? 1 : Number(pageValue)
 
   if (
@@ -30,7 +52,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   }
 
   const start = (currentPage - 1) * POSTS_PER_PAGE
-  const visiblePosts = posts.slice(start, start + POSTS_PER_PAGE)
+  const visiblePosts = filteredPosts.slice(start, start + POSTS_PER_PAGE)
   const categories = new Set(posts.map((post) => post.data.category)).size
 
   return (
@@ -57,6 +79,13 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
         </div>
       </header>
 
+      <TagFilter
+        activeTag={activeTag}
+        resultCount={filteredPosts.length}
+        tags={tags}
+        totalPosts={posts.length}
+      />
+
       <section aria-label="文章列表" className={styles.postList}>
         {visiblePosts.map((post, index) => (
           <PostCard
@@ -69,7 +98,11 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
       </section>
 
       {totalPages > 1 ? (
-        <BlogPagination currentPage={currentPage} totalPages={totalPages} />
+        <BlogPagination
+          activeTag={activeTag}
+          currentPage={currentPage}
+          totalPages={totalPages}
+        />
       ) : null}
     </div>
   )

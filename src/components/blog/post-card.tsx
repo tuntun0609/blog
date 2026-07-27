@@ -1,6 +1,7 @@
 import { ArrowUpRightIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Badge } from '@/components/ui/badge'
 import { formatPostDate } from '@/lib/blog'
 import styles from './blog.module.css'
 
@@ -14,6 +15,7 @@ interface PostCardProps {
       date: string
       category: string
       cover: string
+      tags: string[]
     }
   }
   preload?: boolean
@@ -37,6 +39,13 @@ export function PostCard({ index, post, preload = false }: PostCardProps) {
           </div>
           <h2 className={styles.postTitle}>{title}</h2>
           <p className={styles.postDescription}>{post.data.description}</p>
+          <ul aria-label="文章标签" className={styles.postTags}>
+            {post.data.tags.map((tag) => (
+              <li key={tag}>
+                <Badge variant="secondary">{tag}</Badge>
+              </li>
+            ))}
+          </ul>
         </div>
         <div className={styles.postImage}>
           <Image
