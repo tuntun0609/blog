@@ -792,7 +792,7 @@
   .profile {
     display: flex;
     gap: 1.5rem;
-    align-items: flex-end;
+    align-items: center;
     padding-top: 0;
     margin-bottom: 3.25rem;
   }
@@ -800,7 +800,6 @@
   .profileIdentity {
     gap: 0.85rem;
     padding-top: 0;
-    padding-bottom: 0.2rem;
   }
 
   .socials {

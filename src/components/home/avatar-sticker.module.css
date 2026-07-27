@@ -74,9 +74,12 @@
 
 @media (max-width: 680px) {
   .peelHint.peelHint {
-    --ann-arrow-x: 1.75rem;
-    --ann-text-x: 1.25rem;
     width: 9.25rem;
+  }
+
+  .peelHint.peelHint::before,
+  .peelHint.peelHint::after {
+    display: none;
   }
 
   .avatarSticker {
@@ -87,8 +90,6 @@
 
 @media (max-width: 360px) {
   .peelHint.peelHint {
-    --ann-arrow-x: 0.25rem;
-    --ann-text-x: -0.25rem;
     width: 7rem;
   }
 
