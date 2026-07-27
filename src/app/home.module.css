@@ -99,14 +99,18 @@
 }
 
 .socials a:nth-child(2) {
-  color: var(--home-pink);
+  color: var(--home-ink);
 }
 
 .socials a:nth-child(3) {
-  color: var(--home-blue);
+  color: var(--home-pink);
 }
 
 .socials a:nth-child(4) {
+  color: var(--home-blue);
+}
+
+.socials a:nth-child(5) {
   color: var(--home-amber);
 }
 

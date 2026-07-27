@@ -5,33 +5,39 @@ import {
   Code2Icon,
   MailIcon,
   MapPinIcon,
-  PlayCircleIcon,
 } from 'lucide-react'
 import Link from 'next/link'
+import { BilibiliIcon } from '@/components/bilibili-icon'
 import { GitHubIcon } from '@/components/github-icon'
 import { AvatarStickerClient } from '@/components/home/avatar-sticker-client'
+import { XIcon } from '@/components/x-icon'
 import styles from '@/app/home.module.css'
 
 const socialLinks = [
   {
     href: 'https://github.com/tuntun0609',
     icon: GitHubIcon,
-    label: 'GitHub',
+    name: 'GitHub',
+  },
+  {
+    href: 'https://x.com/TunTun669664',
+    icon: XIcon,
+    name: 'X',
   },
   {
     href: 'https://space.bilibili.com/47706697',
-    icon: PlayCircleIcon,
-    label: 'Bilibili',
+    icon: BilibiliIcon,
+    name: 'Bilibili',
   },
   {
     href: 'https://www.yuque.com/tuntun-nozomi/document',
     icon: BookOpenIcon,
-    label: '语雀',
+    name: '语雀',
   },
   {
     href: 'mailto:tun.nozomi@gmail.com',
     icon: MailIcon,
-    label: '邮箱',
+    name: '邮箱',
   },
 ] as const
 
@@ -47,14 +53,14 @@ export function HeroSection() {
             <p className={styles.handle}>@tuntun0609</p>
           </div>
           <div className={styles.socials}>
-            {socialLinks.map(({ href, icon: Icon, label }) => (
+            {socialLinks.map(({ href, icon: Icon, name }) => (
               <a
-                aria-label={label}
+                aria-label={name}
                 href={href}
                 key={href}
                 rel={href.startsWith('mailto:') ? undefined : 'noopener'}
                 target={href.startsWith('mailto:') ? undefined : '_blank'}
-                title={label}
+                title={name}
               >
                 <Icon aria-hidden="true" />
               </a>
