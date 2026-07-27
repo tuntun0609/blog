@@ -66,11 +66,11 @@ export function HeroSection() {
       <div className={styles.heroCopy}>
         <p className={styles.eyebrow}>WEB FRONT-END DEVELOPER</p>
         <h1 className={styles.heroTitle} id="hero-title">
-          把复杂的产品问题，做成清晰、可靠的界面。
+          FullStack Developer
         </h1>
         <p className={styles.heroLead}>
-          我是 Tuntun，一名前端开发者。专注于
-          React、Next.js、浏览器扩展与交互工具，也持续把实践写成能被复用的文章。
+          Hello, 我是 Tuntun，一名前端开发者。专注于
+          React、Next.js、浏览器扩展。
         </p>
 
         <div className={styles.heroActions}>
