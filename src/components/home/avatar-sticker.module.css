@@ -7,6 +7,17 @@
   isolation: isolate;
 }
 
+.peelHint.peelHint {
+  --ann-arrow-x: 4.75rem;
+  --ann-arrow-y: 0.25rem;
+  --ann-label-max-width: 7rem;
+  --ann-rotate: -7deg;
+  --ann-text-x: 4rem;
+  --ann-text-y: 0.6rem;
+  display: block;
+  width: min(100%, 11.75rem);
+}
+
 .avatarFallback {
   position: absolute;
   inset: 0;
@@ -61,6 +72,12 @@
 }
 
 @media (max-width: 680px) {
+  .peelHint.peelHint {
+    --ann-arrow-x: 1.75rem;
+    --ann-text-x: 1.25rem;
+    width: 9.25rem;
+  }
+
   .avatarSticker {
     flex: 0 0 auto;
     width: 9.25rem;
@@ -68,6 +85,12 @@
 }
 
 @media (max-width: 360px) {
+  .peelHint.peelHint {
+    --ann-arrow-x: 0.25rem;
+    --ann-text-x: -0.25rem;
+    width: 7rem;
+  }
+
   .avatarSticker {
     width: 7rem;
   }

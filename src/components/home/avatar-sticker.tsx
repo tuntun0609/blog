@@ -334,33 +334,38 @@ export function AvatarSticker() {
   }, [isRuntimeReady])
 
   return (
-    <div
-      aria-busy={status === 'loading'}
-      className={styles.avatarSticker}
-      data-status={status}
-      ref={frameRef}
+    <span
+      className={`ann ann-sw ann-blue ann-no-mark ${styles.peelHint}`}
+      data-note="从这里撕开"
     >
-      <div className={styles.avatarFallback}>
-        <Image
-          alt={status === 'ready' ? '' : 'Tuntun 的头像'}
-          fill
-          loading="eager"
-          sizes="(max-width: 360px) 7rem, (max-width: 680px) 9.25rem, 11.75rem"
-          src={avatarStickerPoster}
-          unoptimized
+      <div
+        aria-busy={status === 'loading'}
+        className={styles.avatarSticker}
+        data-status={status}
+        ref={frameRef}
+      >
+        <div className={styles.avatarFallback}>
+          <Image
+            alt={status === 'ready' ? '' : 'Tuntun 的头像'}
+            fill
+            loading="eager"
+            sizes="(max-width: 360px) 7rem, (max-width: 680px) 9.25rem, 11.75rem"
+            src={avatarStickerPoster}
+            unoptimized
+          />
+        </div>
+        <div className={styles.engineHost} ref={hostRef} />
+        <span aria-live="polite" className={styles.statusText}>
+          {STATUS_LABELS[status]}
+        </span>
+        <Script
+          id="sticker-forge-runtime"
+          onError={handleRuntimeError}
+          onReady={handleRuntimeReady}
+          src={STICKER_RUNTIME_SRC}
+          strategy="afterInteractive"
         />
       </div>
-      <div className={styles.engineHost} ref={hostRef} />
-      <span aria-live="polite" className={styles.statusText}>
-        {STATUS_LABELS[status]}
-      </span>
-      <Script
-        id="sticker-forge-runtime"
-        onError={handleRuntimeError}
-        onReady={handleRuntimeReady}
-        src={STICKER_RUNTIME_SRC}
-        strategy="afterInteractive"
-      />
-    </div>
+    </span>
   )
 }
