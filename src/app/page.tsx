@@ -134,9 +134,10 @@ export default function HomePage() {
           </div>
 
           <div className={styles.projectList}>
-            {projects.map((project) => (
+            {projects.map((project, index) => (
               <article
                 className={styles.projectRow}
+                data-delay={index}
                 data-reveal
                 key={project.href}
               >
@@ -180,6 +181,7 @@ export default function HomePage() {
             {recentPosts.map((post, index) => (
               <Link
                 className={styles.noteRow}
+                data-delay={index}
                 data-reveal
                 href={post.url}
                 key={post.url}

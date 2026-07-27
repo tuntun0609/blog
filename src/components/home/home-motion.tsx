@@ -14,14 +14,11 @@ export function HomeMotion({ rootId }: HomeMotionProps) {
       return
     }
 
-    const reduceMotion = window.matchMedia(
+    const motionPreference = window.matchMedia(
       '(prefers-reduced-motion: reduce)'
-    ).matches
+    )
     const revealElements = Array.from(
       root.querySelectorAll<HTMLElement>('[data-reveal]')
-    )
-    const parallaxElements = Array.from(
-      root.querySelectorAll<HTMLElement>('[data-parallax]')
     )
 
     for (const element of revealElements) {
@@ -31,7 +28,12 @@ export function HomeMotion({ rootId }: HomeMotionProps) {
       }
     }
 
-    root.dataset.motion = reduceMotion ? 'reduced' : 'ready'
+    const updateMotionPreference = (): void => {
+      root.dataset.motion = motionPreference.matches ? 'reduced' : 'ready'
+    }
+
+    updateMotionPreference()
+    motionPreference.addEventListener('change', updateMotionPreference)
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -51,47 +53,9 @@ export function HomeMotion({ rootId }: HomeMotionProps) {
       }
     }
 
-    let frame = 0
-
-    const updateMotion = () => {
-      frame = 0
-
-      if (reduceMotion) {
-        return
-      }
-
-      for (const element of parallaxElements) {
-        const rect = element.getBoundingClientRect()
-
-        if (rect.bottom < -100 || rect.top > window.innerHeight + 100) {
-          continue
-        }
-
-        const speed = Number(element.dataset.parallaxSpeed ?? 0.04)
-        const distanceFromCenter =
-          rect.top + rect.height / 2 - window.innerHeight / 2
-        const offset = Math.max(-48, Math.min(48, -distanceFromCenter * speed))
-        element.style.setProperty('--parallax-y', `${offset.toFixed(2)}px`)
-      }
-    }
-
-    const queueUpdate = () => {
-      if (frame === 0) {
-        frame = window.requestAnimationFrame(updateMotion)
-      }
-    }
-
-    updateMotion()
-    window.addEventListener('scroll', queueUpdate, { passive: true })
-    window.addEventListener('resize', queueUpdate)
-
     return () => {
       observer.disconnect()
-      window.removeEventListener('scroll', queueUpdate)
-      window.removeEventListener('resize', queueUpdate)
-      if (frame !== 0) {
-        window.cancelAnimationFrame(frame)
-      }
+      motionPreference.removeEventListener('change', updateMotionPreference)
       delete root.dataset.motion
     }
   }, [rootId])

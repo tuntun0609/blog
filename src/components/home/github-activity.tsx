@@ -166,6 +166,7 @@ export function GithubActivity() {
   )
   const periodLabel =
     selectedYear === CURRENT_YEAR ? '最近一年' : `${selectedYear} 年`
+  const hasActivityData = activities.length > 0
 
   return (
     <div className={styles.activity} data-delay="1" data-reveal>
@@ -196,20 +197,30 @@ export function GithubActivity() {
       </div>
 
       <div className={styles.panel}>
-        {status === 'loading' ? (
-          <p aria-live="polite" className={styles.stateMessage}>
-            正在读取 GitHub 活动…
-          </p>
-        ) : null}
+        <p
+          aria-hidden={status !== 'loading'}
+          aria-live="polite"
+          className={`${styles.stateMessage} ${styles.panelState}`}
+          data-active={status === 'loading'}
+        >
+          正在读取 GitHub 活动…
+        </p>
 
-        {status === 'error' ? (
-          <p aria-live="polite" className={styles.stateMessage}>
-            暂时无法读取 GitHub 活动，请稍后再试。
-          </p>
-        ) : null}
+        <p
+          aria-hidden={status !== 'error'}
+          aria-live="polite"
+          className={`${styles.stateMessage} ${styles.panelState}`}
+          data-active={status === 'error'}
+        >
+          暂时无法读取 GitHub 活动，请稍后再试。
+        </p>
 
-        {status === 'ready' ? (
-          <>
+        {hasActivityData ? (
+          <div
+            aria-hidden={status !== 'ready'}
+            className={styles.panelState}
+            data-active={status === 'ready'}
+          >
             <section
               aria-label={`${periodLabel} GitHub 贡献日历`}
               className={styles.scrollArea}
@@ -246,7 +257,7 @@ export function GithubActivity() {
               </strong>{' '}
               次贡献 · {periodLabel}
             </p>
-          </>
+          </div>
         ) : null}
       </div>
     </div>

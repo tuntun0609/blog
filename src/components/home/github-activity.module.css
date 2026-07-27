@@ -30,11 +30,34 @@
 }
 
 .panel {
+  display: grid;
   min-height: 13.5rem;
   padding: 1.35rem 1.4rem 1.1rem;
   background: var(--home-paper);
   border: 1px solid var(--home-line);
   border-radius: var(--radius-3xl);
+}
+
+.panelState {
+  visibility: hidden;
+  grid-area: 1 / 1;
+  min-width: 0;
+  opacity: 0;
+  transform: scale(0.985);
+  transition:
+    opacity 140ms var(--ease-out),
+    transform 180ms var(--ease-out),
+    visibility 0s linear 180ms;
+}
+
+.panelState[data-active="true"] {
+  visibility: visible;
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 180ms var(--ease-out),
+    visibility 0s linear;
 }
 
 .stateMessage {
@@ -96,5 +119,21 @@
 
   .panel {
     padding: 1.1rem 1rem 0.95rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panelState {
+    transform: none;
+    transition:
+      opacity 180ms var(--ease-out),
+      visibility 0s linear 180ms;
+  }
+
+  .panelState[data-active="true"] {
+    transform: none;
+    transition:
+      opacity 180ms var(--ease-out),
+      visibility 0s linear;
   }
 }

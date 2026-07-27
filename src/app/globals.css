@@ -68,6 +68,11 @@
   --home-offset: #dfe8fb;
   --home-on-accent: #fff;
   --home-white: #fff;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --duration-press: 120ms;
+  --duration-fast: 160ms;
+  --duration-ui: 240ms;
+  --duration-reveal: 420ms;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
