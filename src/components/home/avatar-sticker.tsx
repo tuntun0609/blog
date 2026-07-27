@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Script from 'next/script'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import avatarStickerPoster from '../../../public/avatar-sticker-poster.webp'
+import avatarStickerPoster from '../../../public/avatar-sticker-poster@3x.webp'
 import avatarImageSource from '../../../public/avatar-tuntun.jpg'
 import styles from './avatar-sticker.module.css'
 
@@ -338,6 +338,7 @@ export function AvatarSticker({ isRuntimeEnabled }: AvatarStickerProps) {
     <span
       className={`ann ann-sw ann-blue ann-no-mark ${styles.peelHint}`}
       data-note="这里可以撕开"
+      data-status={status}
     >
       <div
         aria-busy={isRuntimeEnabled && status === 'loading'}

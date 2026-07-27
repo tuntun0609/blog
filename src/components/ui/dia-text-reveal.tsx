@@ -17,30 +17,33 @@ const DEFAULT_COLORS = ["#c679c4", "#fa3d1d", "#ffb005", "#e1e1fe", "#0358f7"]
 const BAND_HALF = 17
 const SWEEP_START = -BAND_HALF
 const SWEEP_END = 100 + BAND_HALF
+const GRADIENT_WIDTH = SWEEP_END * 2
+const COLOR_BAND_START = ((SWEEP_END - BAND_HALF) / GRADIENT_WIDTH) * 100
+const COLOR_BAND_END = ((SWEEP_END + BAND_HALF) / GRADIENT_WIDTH) * 100
+const FINAL_BACKGROUND_POSITION = `${-100 / (SWEEP_END - SWEEP_START)}%`
 
 const sweepEase = (t: number) =>
   t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2
 
-function buildGradient(pos: number, colors: string[], textColor: string) {
-  const bandStart = pos - BAND_HALF
-  const bandEnd = pos + BAND_HALF
+function buildSweepGradient(colors: string[], textColor: string) {
+  const parts = [
+    `${textColor} 0%`,
+    `${textColor} ${COLOR_BAND_START.toFixed(2)}%`,
+  ]
+  const colorBandWidth = COLOR_BAND_END - COLOR_BAND_START
 
-  if (bandStart >= 100) {
-    return `linear-gradient(90deg, ${textColor}, ${textColor})`
+  for (const [index, color] of colors.entries()) {
+    const position =
+      colors.length === 1
+        ? COLOR_BAND_START
+        : COLOR_BAND_START + (index / (colors.length - 1)) * colorBandWidth
+    parts.push(`${color} ${position.toFixed(2)}%`)
   }
-  const n = colors.length
-  const parts: string[] = []
 
-  if (bandStart > 0)
-    parts.push(`${textColor} 0%`, `${textColor} ${bandStart.toFixed(2)}%`)
-
-  colors.forEach((c, i) => {
-    const pct = n === 1 ? pos : bandStart + (i / (n - 1)) * BAND_HALF * 2
-    parts.push(`${c} ${pct.toFixed(2)}%`)
-  })
-
-  if (bandEnd < 100)
-    parts.push(`transparent ${bandEnd.toFixed(2)}%`, `transparent 100%`)
+  parts.push(
+    `transparent ${COLOR_BAND_END.toFixed(2)}%`,
+    "transparent 100%"
+  )
 
   return `linear-gradient(90deg, ${parts.join(", ")})`
 }
@@ -179,10 +182,12 @@ export function DiaTextReveal({
   const [measuredWidths, setMeasuredWidths] = useState<number[]>([])
 
   const sweepPos = useMotionValue(SWEEP_START)
-
-  const backgroundImage = useTransform(sweepPos, (pos) =>
-    buildGradient(pos, optsRef.current.colors, optsRef.current.textColor)
+  const backgroundPositionX = useTransform(
+    sweepPos,
+    [SWEEP_START, SWEEP_END + 1],
+    ["100%", FINAL_BACKGROUND_POSITION]
   )
+  const backgroundImage = buildSweepGradient(colors, textColor)
 
   const isInView = useInView(spanRef, { once, amount: 0.1 })
 
@@ -255,7 +260,8 @@ export function DiaTextReveal({
         color: "transparent",
         backgroundClip: "text",
         WebkitBackgroundClip: "text",
-        backgroundSize: "100% 100%",
+        backgroundPositionX,
+        backgroundSize: `${GRADIENT_WIDTH}% 100%`,
         backgroundImage,
         ...(isMulti && {
           display: "inline-block",

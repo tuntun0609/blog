@@ -19,6 +19,20 @@
   width: min(100%, 11.75rem);
 }
 
+.peelHint.peelHint::before,
+.peelHint.peelHint::after {
+  opacity: 0;
+  transition: opacity var(--duration-reveal) var(--ease-out);
+}
+
+.peelHint.peelHint[data-status="ready"]::before {
+  opacity: 1;
+}
+
+.peelHint.peelHint[data-status="ready"]::after {
+  opacity: 0.9;
+}
+
 .avatarFallback {
   position: absolute;
   inset: 0;
