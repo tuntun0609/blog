@@ -12,6 +12,11 @@ export type KeyboardVisualPass =
   | 'interaction-pass'
   | 'optimization-pass'
 
+export const KEYCAP_TRAVEL = {
+  hover: 0.065,
+  press: 0.12,
+} as const
+
 export interface TechnologySlot {
   readonly skill: TechnologySkill | null
   readonly slotIndex: number
@@ -48,14 +53,22 @@ const KEY_PITCH = 1.3
 const KEY_WIDTH = 1.28
 const KEY_HEIGHT = 0.9
 const KEY_DEPTH = 1.28
+/** 键床向键帽阵列内收，避免从最外圈键帽底部露出。 */
+const KEYBED_EDGE_INSET = 0.16
+const KEYBED_WIDTH =
+  (KEY_COLUMNS - 1) * KEY_PITCH + KEY_WIDTH - KEYBED_EDGE_INSET
+const KEYBED_DEPTH = (KEY_ROWS - 1) * KEY_PITCH + KEY_DEPTH - KEYBED_EDGE_INSET
+/** 完全按下时仍保留的安全间隙，避免键帽与键床或底盘相交。 */
+const PRESSED_KEYCAP_CLEARANCE = 0.018
+const KEYCAP_DECK_CLEARANCE = KEYCAP_TRAVEL.press + PRESSED_KEYCAP_CLEARANCE
 /** 键帽顶面相对于底面的缩放比例，使侧面形成清晰的梯形收腰。 */
 const KEYCAP_TOP_SURFACE_SCALE = 0.8
 /** 键盘外壳的总高度。 */
 const CHASSIS_HEIGHT = 0.8
 /** 内凹键床顶面高度，略高于外壳顶面以避免深度冲突。 */
 const KEYBED_SURFACE_Y = CHASSIS_HEIGHT / 2 + 0.006
-/** 键帽底部的静止高度，留出与键床之间的细小装配缝隙。 */
-const KEY_BASE_Y = KEYBED_SURFACE_Y + 0.014
+/** 键帽底部的静止高度，为完整按压行程预留空间。 */
+const KEY_BASE_Y = KEYBED_SURFACE_Y + KEYCAP_DECK_CLEARANCE
 /** 绘制技术图标时使用的离屏画布分辨率。 */
 const ICON_TEXTURE_SIZE = 256
 /** 结构检视阶段统一使用的中性色。 */
@@ -85,6 +98,9 @@ const isAtLeastPass = (
 
   return passes.indexOf(currentPass) >= passes.indexOf(targetPass)
 }
+
+const getSwitchStemColor = (visualPass: KeyboardVisualPass): string =>
+  visualPass === 'blockout' ? '#7E8083' : '#0B0C0E'
 
 const createNoiseTexture = (
   kind: 'normal' | 'roughness'
@@ -221,7 +237,7 @@ const createBeveledSlabGeometry = ({
 
 const createKeybedGeometry = (): THREE.ShapeGeometry => {
   const geometry = new THREE.ShapeGeometry(
-    createRoundedRectangleShape(7.62, 6.02, 0.28),
+    createRoundedRectangleShape(KEYBED_WIDTH, KEYBED_DEPTH, 0.28),
     8
   )
 
@@ -346,6 +362,7 @@ export const createTechnologiesKeyboard = ({
     width: 8.5, // 左右宽度（X 轴）
   })
   const keybedGeometry = createKeybedGeometry()
+  const switchStemGeometry = new THREE.BoxGeometry(0.42, 0.16, 0.42)
   const keycapGeometry = hasRefinedForm
     ? createTaperedKeycapGeometry()
     : new RoundedBoxGeometry(KEY_WIDTH, KEY_HEIGHT, KEY_DEPTH, 3, 0.1)
@@ -365,7 +382,12 @@ export const createTechnologiesKeyboard = ({
     materialTextures.push(roughnessMap)
   }
 
-  geometries.push(chassisGeometry, keybedGeometry, keycapGeometry)
+  geometries.push(
+    chassisGeometry,
+    keybedGeometry,
+    keycapGeometry,
+    switchStemGeometry
+  )
 
   const chassisMaterial = createPlasticMaterial({
     color: visualPass === 'blockout' ? BLOCKOUT_COLOR : '#090909',
@@ -381,7 +403,20 @@ export const createTechnologiesKeyboard = ({
     roughness: MATTE_KEYBED_ROUGHNESS,
     roughnessMap,
   })
-  materials.push(chassisMaterial, keybedMaterial)
+  const switchStemMaterial = createPlasticMaterial({
+    color: getSwitchStemColor(visualPass),
+    name: 'switch-stem-plastic',
+    normalMap,
+    roughness: MATTE_KEYBED_ROUGHNESS,
+    roughnessMap,
+  })
+  const switchStems = new THREE.InstancedMesh(
+    switchStemGeometry,
+    switchStemMaterial,
+    slots.length
+  )
+  const switchStemMatrix = new THREE.Matrix4()
+  materials.push(chassisMaterial, keybedMaterial, switchStemMaterial)
 
   const chassis = new THREE.Mesh(chassisGeometry, chassisMaterial)
   chassis.castShadow = true
@@ -395,6 +430,11 @@ export const createTechnologiesKeyboard = ({
   keybed.position.y = KEYBED_SURFACE_Y
   keybed.receiveShadow = true
   root.add(keybed)
+
+  switchStems.castShadow = true
+  switchStems.name = 'switch-stems'
+  switchStems.receiveShadow = true
+  root.add(switchStems)
 
   for (const slot of slots) {
     const row = Math.floor(slot.slotIndex / KEY_COLUMNS)
@@ -414,6 +454,8 @@ export const createTechnologiesKeyboard = ({
     const pivot = new THREE.Group()
     const mesh = new THREE.Mesh(keycapGeometry, keyMaterial)
 
+    switchStemMatrix.makeTranslation(x, KEYBED_SURFACE_Y + 0.08, z)
+    switchStems.setMatrixAt(slot.slotIndex, switchStemMatrix)
     pivot.name = `keycap-r${row}c${column}-pivot`
     pivot.position.set(x, KEY_BASE_Y + KEY_HEIGHT / 2, z)
     pivot.userData.animationRole = 'pressable-key'
@@ -451,6 +493,8 @@ export const createTechnologiesKeyboard = ({
       travel: 0,
     })
   }
+
+  switchStems.instanceMatrix.needsUpdate = true
 
   const dispose = (): void => {
     for (const geometry of new Set(geometries)) {

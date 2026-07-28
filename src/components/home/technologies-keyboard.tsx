@@ -42,9 +42,10 @@ const TechnologiesKeyboardCanvas = dynamic(
   }
 )
 
-const createSkillStyle = (color: string): CSSProperties =>
+const createSkillStyle = (keyColor: string, iconColor: string): CSSProperties =>
   ({
-    '--skill-color': color,
+    '--skill-color': keyColor,
+    '--skill-icon-color': iconColor,
   }) as CSSProperties
 
 interface TechnologyLegendItemProps {
@@ -76,7 +77,7 @@ function TechnologyLegendItem({
         onFocus={activate}
         onPointerEnter={activate}
         onPointerLeave={onDeactivate}
-        style={createSkillStyle(skill.keyColor)}
+        style={createSkillStyle(skill.keyColor, skill.iconColor)}
         type="button"
       >
         <span aria-hidden="true" className={styles.legendIcon}>
@@ -112,9 +113,6 @@ export function TechnologiesKeyboard() {
       })),
     [visibleSkills]
   )
-  const activeSkill =
-    activeSlot === null ? null : (slots[activeSlot]?.skill ?? null)
-
   useEffect(() => {
     const activateAudio = (): void => {
       unlockKeyboardAudio()
@@ -193,7 +191,7 @@ export function TechnologiesKeyboard() {
     >
       <div className={styles.inner} data-reveal>
         <div className={styles.copy}>
-          <p className={styles.kicker}>TECHNOLOGIES / 20-KEY MACRO PAD</p>
+          <p className={styles.kicker}>TECHNOLOGIES / 24-KEY MACRO PAD</p>
           <h2 id="technologies-title">把日常技术栈，放进一把会回应的键盘。</h2>
           <p className={styles.description}>
             每个技能都是一个独立键位。悬停会压下键帽；首次点击或轻触后，还会听见短促的机械轴体声。
@@ -268,11 +266,6 @@ export function TechnologiesKeyboard() {
             slots={slots}
             soundEnabled={soundEnabled}
           />
-          <p aria-live="polite" className={styles.activeStatus}>
-            {activeSkill
-              ? `${activeSkill.name} · ${activeSkill.description}`
-              : '悬停键帽查看技能'}
-          </p>
         </div>
       </div>
     </section>

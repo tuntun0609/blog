@@ -8,6 +8,7 @@ import {
 } from './technologies-keyboard-audio'
 import {
   createTechnologiesKeyboard,
+  KEYCAP_TRAVEL,
   type KeyboardVisualPass,
   type TechnologySlot,
 } from './technologies-keyboard-model'
@@ -54,8 +55,6 @@ const KEYBOARD_VIEW = {
   userFacingTiltRadians: THREE.MathUtils.degToRad(2),
 } as const
 const MAX_PIXEL_RATIO = 1.7
-const HOVER_TRAVEL = 0.105
-const PRESS_TRAVEL = 0.18
 
 const getKeyTravelTarget = ({
   isActive,
@@ -65,11 +64,11 @@ const getKeyTravelTarget = ({
   isPressed: boolean
 }): number => {
   if (isPressed) {
-    return PRESS_TRAVEL
+    return KEYCAP_TRAVEL.press
   }
 
   if (isActive) {
-    return HOVER_TRAVEL
+    return KEYCAP_TRAVEL.hover
   }
 
   return 0
