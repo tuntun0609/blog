@@ -1,0 +1,538 @@
+---
+title: "生产级 Agent 的 Message 表：持久化、压缩与上下文工程"
+description: "用 PostgreSQL、Drizzle ORM 与 Vercel AI SDK 7 设计可审计、可压缩、可重放的 Agent 消息系统。"
+date: "2026-07-28"
+category: "AI 工程"
+cover: "/blog/agent-message-store.svg"
+published: true
+tags: ["Agent", "PostgreSQL", "Drizzle ORM", "Vercel AI SDK", "上下文工程"]
+---
+
+一个能演示聊天的 `message` 表，通常只有 `id`、`role`、`content` 和 `created_at`。一个能长期运行的 Agent 系统却要同时处理流式写入、工具调用、重试、分支、人工审批、隐私删除、上下文压缩和线上重放。
+
+真正困难的不是“消息怎么存”，而是先分清三种完全不同的数据：**用户看到的会话记录、系统保存的历史事实，以及某一次模型调用实际收到的上下文**。
+
+本文以 PostgreSQL、Drizzle ORM 0.45 和 Vercel AI SDK 7 为基线，给出一套可以从中小规模平滑演进到生产环境的设计。核心结论只有一句：
+
+> 原始消息是事实日志；压缩摘要是可失效的派生物；模型上下文是按策略编译出来的一次性视图。三者不要覆盖彼此。
+
+## 先建立两个消息模型
+
+AI SDK 中最容易混淆的是 `UIMessage` 与 `ModelMessage`。
+
+- `UIMessage` 面向产品界面和持久化，包含稳定 `id`、`role`、`metadata` 与结构化 `parts`。
+- `ModelMessage` 面向模型调用，可能包含 `user`、`assistant`、`tool` 等模型协议角色，是经过转换、过滤和裁剪后的输入。
+- AI SDK 7 的 `UIMessage` 只有 `system`、`user`、`assistant` 三种角色。工具调用、输出、审批状态、reasoning、source 和 file 都是 `parts`，不是一条 `role = tool` 的 UI 消息。
+
+因此，数据库中的主消息表应保存 `UIMessage` 语义，而不是把某个模型供应商当前接受的 `ModelMessage` JSON 当作永久格式。调用模型前，再通过 `validateUIMessages` 与 `convertToModelMessages` 建立投影。
+
+AI SDK 7 还默认拒绝 `messages` 中的 system 消息。可信系统指令应由服务端通过 `instructions` 注入，并另外保存 `agent_version` 或 `prompt_version`；不要允许客户端借历史消息写入系统指令。兼容旧数据时虽然可以启用 `allowSystemInMessages`，但它只适合已经过信任校验的内容。
+
+## 不要选择两个看似省事的极端
+
+把整段 `UIMessage[]` 塞进 `conversation.messages jsonb`，最初写起来很快，但每次回复都要重写整行。并发会话会互相覆盖，单条删除、幂等重试、分页、审计和归档也会越来越困难。
+
+另一个极端是把每个 text、file、tool input、tool output 都完全拆成关系表。它能精确查询，却会让 SDK 每增加一种 part 都触发迁移，渲染一条消息还要做多次 join。
+
+更稳妥的中间方案是：
+
+1. 一条 `agent_message` 对应一条 `UIMessage`。
+2. 稳定且常用于过滤、排序、约束的字段使用普通列。
+3. 变化快、需要原样还原界面的 `parts` 与 `metadata` 使用 `jsonb`。
+4. 工具审批、文件、成本等有独立生命周期的“热数据”再抽到专表，不把整个 parts 系统做成 EAV。
+
+## 核心表应该保存什么
+
+下面的 schema 刻意保留了 `thread` 和 `run`，因为脱离它们讨论 message，会把顺序分配、模型成本和流式状态错误地塞进消息行。
+
+```ts title="db/schema/agent.ts"
+import { sql } from 'drizzle-orm'
+import type { UIMessage } from 'ai'
+import {
+  bigint,
+  check,
+  foreignKey,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core'
+
+type StoredMessageParts = UIMessage['parts']
+type StoredMessageMetadata = Record<string, unknown>
+
+export const messageRole = pgEnum('agent_message_role', [
+  'system',
+  'user',
+  'assistant',
+])
+
+export const messageStatus = pgEnum('agent_message_status', [
+  'pending',
+  'streaming',
+  'completed',
+  'failed',
+  'cancelled',
+])
+
+export const contextState = pgEnum('agent_message_context_state', [
+  'eligible',
+  'excluded',
+  'redacted',
+])
+
+export const runStatus = pgEnum('agent_run_status', [
+  'queued',
+  'running',
+  'completed',
+  'failed',
+  'cancelled',
+])
+
+export const agentThreads = pgTable(
+  'agent_thread',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: uuid('tenant_id').notNull(),
+    nextSequence: bigint('next_sequence', { mode: 'number' })
+      .notNull()
+      .default(0),
+    lastMessageAt: timestamp('last_message_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique('agent_thread_id_tenant_unique').on(table.id, table.tenantId),
+    index('agent_thread_tenant_recent_idx').on(
+      table.tenantId,
+      table.lastMessageAt.desc()
+    ),
+  ]
+)
+
+export const agentRuns = pgTable(
+  'agent_run',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: uuid('tenant_id').notNull(),
+    threadId: uuid('thread_id').notNull(),
+    status: runStatus('status').notNull().default('queued'),
+    provider: text('provider').notNull(),
+    model: text('model').notNull(),
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique('agent_run_id_tenant_thread_unique').on(
+      table.id,
+      table.tenantId,
+      table.threadId
+    ),
+    foreignKey({
+      columns: [table.threadId, table.tenantId],
+      foreignColumns: [agentThreads.id, agentThreads.tenantId],
+      name: 'agent_run_thread_tenant_fk',
+    }).onDelete('cascade'),
+    index('agent_run_tenant_thread_created_idx').on(
+      table.tenantId,
+      table.threadId,
+      table.createdAt.desc()
+    ),
+  ]
+)
+
+export const agentMessages = pgTable(
+  'agent_message',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: uuid('tenant_id').notNull(),
+    threadId: uuid('thread_id').notNull(),
+    runId: uuid('run_id'),
+    sequence: bigint('sequence', { mode: 'number' }).notNull(),
+    clientRequestId: text('client_request_id'),
+    role: messageRole('role').notNull(),
+    status: messageStatus('status').notNull().default('pending'),
+    parts: jsonb('parts')
+      .$type<StoredMessageParts>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    metadata: jsonb('metadata')
+      .$type<StoredMessageMetadata>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    contextState: contextState('context_state')
+      .notNull()
+      .default('eligible'),
+    exclusionReason: text('exclusion_reason'),
+    schemaVersion: integer('schema_version').notNull().default(1),
+    contentVersion: integer('content_version').notNull().default(1),
+    byteSize: integer('byte_size').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    redactedAt: timestamp('redacted_at', { withTimezone: true }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.threadId, table.tenantId],
+      foreignColumns: [agentThreads.id, agentThreads.tenantId],
+      name: 'agent_message_thread_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.runId, table.tenantId, table.threadId],
+      foreignColumns: [agentRuns.id, agentRuns.tenantId, agentRuns.threadId],
+      name: 'agent_message_run_tenant_thread_fk',
+    }).onDelete('restrict'),
+    uniqueIndex('agent_message_thread_sequence_uidx').on(
+      table.threadId,
+      table.sequence
+    ),
+    uniqueIndex('agent_message_client_request_uidx')
+      .on(table.tenantId, table.threadId, table.clientRequestId)
+      .where(sql`${table.clientRequestId} is not null`),
+    index('agent_message_tenant_thread_recent_idx')
+      .on(table.tenantId, table.threadId, table.sequence.desc())
+      .where(sql`${table.deletedAt} is null`),
+    index('agent_message_run_idx')
+      .on(table.runId)
+      .where(sql`${table.runId} is not null`),
+    check('agent_message_sequence_positive', sql`${table.sequence} > 0`),
+    check(
+      'agent_message_parts_is_array',
+      sql`jsonb_typeof(${table.parts}) = 'array'`
+    ),
+    check(
+      'agent_message_content_version_positive',
+      sql`${table.contentVersion} > 0`
+    ),
+  ]
+)
+```
+
+这段 schema 中有几个比字段名更重要的决定。
+
+### 用 sequence 排序，不用 created_at
+
+时间戳是观测信息，不是严格顺序。并发请求、数据库时钟精度、重试与流式更新都可能让时间相同或倒置。每个 thread 用单调递增的 `sequence` 排序，并用唯一索引保证不会出现两个相同位置。
+
+可以在事务里原子分配序号：
+
+```ts
+import { and, eq, sql } from 'drizzle-orm'
+
+const [slot] = await tx
+  .update(agentThreads)
+  .set({
+    nextSequence: sql`${agentThreads.nextSequence} + 1`,
+  })
+  .where(
+    and(
+      eq(agentThreads.id, threadId),
+      eq(agentThreads.tenantId, tenantId)
+    )
+  )
+  .returning({ sequence: agentThreads.nextSequence })
+
+if (!slot) {
+  throw new Error('Agent thread not found')
+}
+```
+
+更新 thread 行会自然串行化同一会话内的序号分配，不同会话之间则不会互相阻塞。超高吞吐的机器会话可以改用独立 sequence、分段号段或事件流，但不要用 `max(sequence) + 1`。
+
+### parts 是事实，metadata 不是权限来源
+
+`parts` 保存恢复 UI 所需的结构化内容；`metadata` 只适合 trace ID、展示标签、客户端版本等扩展信息。租户 ID、用户 ID、权限、消息状态、删除状态和顺序必须是可约束的普通列，不能依赖客户端可提交的 JSON。
+
+不要默认给 `parts` 建 GIN 索引。绝大多数请求只是按 thread 和 sequence 读取整条消息，GIN 会放大写入和存储成本。只有出现稳定、可观测的 JSON 包含查询后，才增加针对表达式或路径的索引。全文检索也应使用单独的、脱敏后的搜索投影。
+
+### token 不属于 message 的单一真值
+
+同一条消息在不同模型、tokenizer、工具定义与转换策略下，token 数可能不同。模型返回的准确 usage 应进入 `agent_run` 或更细的 `agent_run_step`；估算缓存则应以 `(message_id, content_version, tokenizer_key)` 为联合键。一个没有模型维度的 `message.token_count` 很快会变成误导数据。
+
+## 生产系统还需要三类辅助表
+
+只靠 message 无法解释“模型为什么看到了这些内容”。至少还应准备以下数据结构：
+
+| 表 | 关键字段 | 作用 |
+| --- | --- | --- |
+| `context_artifact` | `kind`、覆盖序号范围、`source_hash`、`content`、`prompt_version`、`model`、`invalidated_at` | 保存摘要、工具结果 digest、长期记忆等可失效派生物 |
+| `context_snapshot` | `run_id`、`step_number`、`policy_version`、`budget_tokens`、`estimated_tokens` | 记录一次模型调用采用的上下文策略 |
+| `context_snapshot_item` | `snapshot_id`、`ordinal`、`message_id` 或 `artifact_id`、`token_estimate` | 按精确顺序记录本次真正发送的消息与压缩产物 |
+
+如果 Agent 有工具审批、重试和异步执行，再增加 `tool_invocation`：保存 `tool_call_id`、工具名、参数、输出引用、审批人、状态、幂等键和耗时。消息 parts 可以保留 UI 快照，但工具执行表才负责状态机与唯一约束。
+
+这里最重要的是 `context_snapshot_item`。只保存“使用了 1 到 80 条消息的摘要”无法处理消息编辑、分支和选择性召回；保存有序 message/artifact ID，才能回答一次错误调用究竟看到了什么。
+
+## 完成消息尽量不可变
+
+“事实日志不可变”不等于一行永远不能更新。assistant 流式输出在完成前需要更新，隐私法规也可能要求真正移除敏感 payload。更准确的规则是：
+
+- `pending → streaming → completed | failed | cancelled` 是允许的状态迁移。
+- streaming 期间按时间片或内容块合并写入，不要每个 token 执行一次 `UPDATE`。
+- completed 后的用户编辑生成 `message_revision` 或一条替代消息，并增加 `content_version`，不要静默覆盖历史。
+- 普通删除先写 `deleted_at`；安全或合规删除应清空/加密销毁敏感 parts，同时保留不含内容的审计墓碑。
+- 摘要的 `source_hash` 应由有序的 `(message_id, content_version)` 计算。来源变化时，将相关 artifact 标记失效。
+
+这样既保留可追踪性，也不会用“append-only”口号阻止必要的数据治理。
+
+## 流式写入要有恢复路径
+
+一次可靠的写入流程通常是：
+
+1. 服务端鉴权，检查 thread 的 tenant 与成员关系。
+2. 用 `client_request_id` 幂等插入 user message，并在同一事务中分配 sequence。
+3. 创建 `agent_run` 与 `streaming` 状态的 assistant message，预先得到稳定 ID。
+4. 流式阶段把 chunks 放在内存或 Redis，按 250–1000ms 合并 checkpoint；不要逐 token 写 PostgreSQL。
+5. AI SDK 的 `onEnd` 中以最终 `responseMessage` 完成数据库行，记录 `finishReason`、usage 和状态。
+6. worker 定期把长时间停留在 streaming 的消息改为 failed，并保留最后 checkpoint。
+
+AI SDK 官方示例允许客户端只提交最后一条消息，再由服务端加载历史。生产环境应进一步做到：**客户端提交的是候选新消息，不是权威历史**。服务端只接受它有权创建的 user parts，不能信任客户端回传的 assistant、tool output、system role 或 usage。
+
+下面展示的是边界，而不是完整路由：
+
+```ts
+import {
+  convertToModelMessages,
+  createUIMessageStreamResponse,
+  streamText,
+  toUIMessageStream,
+  validateUIMessages,
+} from 'ai'
+
+const storedMessages = await loadAuthorizedMessages({ tenantId, threadId })
+const candidateMessages = [...storedMessages, incomingUserMessage]
+
+const uiMessages = await validateUIMessages({
+  messages: candidateMessages,
+  metadataSchema,
+  dataSchemas,
+  tools,
+})
+
+const modelMessages = await convertToModelMessages(uiMessages, { tools })
+const result = streamText({
+  model,
+  instructions: trustedServerInstructions,
+  messages: modelMessages,
+  tools,
+})
+
+// 需要“断开后继续生成”时显式消费；同时要提供真正的取消接口。
+void result.consumeStream()
+
+return createUIMessageStreamResponse({
+  stream: toUIMessageStream({
+    stream: result.stream,
+    originalMessages: uiMessages,
+    generateMessageId: () => crypto.randomUUID(),
+    onEnd: async ({ responseMessage, isAborted, finishReason }) => {
+      await finalizeAssistantMessage({
+        finishReason,
+        isAborted,
+        message: responseMessage,
+        runId,
+      })
+    },
+  }),
+})
+```
+
+AI SDK 7 已将这类生命周期回调的首选名称从 `onFinish` 改为 `onEnd`，并把顶层 `system` 改为 `instructions`。旧名字可能仍作为兼容别名存在，但新代码不应继续扩大迁移成本。
+
+如果要在刷新页面后恢复同一条 SSE 流，仅有 PostgreSQL 消息表还不够。官方方案需要保存 active stream ID，并用 Redis 一类的流存储连接 publisher/subscriber。此时“关闭页面”只是断开连接；真正停止生成必须有独立 cancel endpoint，更新 run/message 状态并终止后台任务。
+
+## 上下文构建是一条编译管线
+
+从数据库读取最近 100 条消息直接传给模型，不是上下文管理。生产级 context builder 应按固定顺序工作：
+
+```text
+鉴权与租户隔离
+  → schema 验证与版本迁移
+  → context_state / 隐私 / 可见性过滤
+  → UIMessage 转 ModelMessage
+  → 无损裁剪 reasoning、旧工具轨迹和空消息
+  → 选择最近对话、固定事实、相关记忆与未完成任务
+  → 必要时生成或复用摘要 artifact
+  → 按原子 turn 做最终硬截断
+  → 写入 context snapshot
+  → 调用模型
+```
+
+顺序不能随便交换。权限过滤必须发生在摘要之前，否则一条已无权访问的消息可能继续泄漏在历史摘要里。工具调用与结果要成对处理，不能截断出孤立的 tool result。当前用户请求、可信 instructions、尚未解决的审批和当前 step 的工具结果通常拥有最高保留优先级。
+
+### 先分配预算，再谈截断
+
+上下文预算不是模型窗口的全部：
+
+```text
+可用输入预算
+= 模型上下文上限
+- 最大输出预留
+- instructions 与工具定义
+- 当前用户输入和附件
+- 安全余量
+```
+
+安全余量可先设为总窗口的 10%–20%，再根据真实 usage 调整。`JSON.stringify(messages).length / 4` 只能作为触发压缩的粗略启发式，不能用于计费或精确防溢出。
+
+Agent 每执行一次工具都会产生新输入，因此预算检查必须在每个 step 重新运行。AI SDK 的 `ToolLoopAgent`、`generateText` 与 `streamText` 都支持在 `prepareStep` 中返回新的 messages，适合执行 step 内压缩：
+
+```ts
+import { pruneMessages, ToolLoopAgent, type ModelMessage } from 'ai'
+
+const agent = new ToolLoopAgent({
+  model,
+  instructions: trustedServerInstructions,
+  tools,
+  prepareStep: async ({ messages, stepNumber }) => {
+    const budget = await calculateStepBudget({ messages, model, stepNumber })
+
+    if (budget.fits) {
+      return {}
+    }
+
+    const prunedMessages = pruneMessages({
+      messages,
+      reasoning: 'all',
+      toolCalls: 'before-last-3-messages',
+      emptyMessages: 'remove',
+    })
+
+    const compactedMessages: ModelMessage[] = await compactWithArtifacts({
+      budget,
+      messages: prunedMessages,
+    })
+
+    await saveContextSnapshot({
+      messages: compactedMessages,
+      policyVersion: 'context-v3',
+      stepNumber,
+    })
+
+    return { messages: compactedMessages }
+  },
+})
+```
+
+`pruneMessages` 只处理 `ModelMessage[]`。它可以移除 reasoning、旧 tool call/result/approval 和裁剪后为空的消息，但不会判断业务相关性，也不会自动生成可信摘要。它是压缩管线中的一层，不是完整的 memory 系统。
+
+## 压缩应该分成四个等级
+
+### 第一级：无损过滤
+
+优先移除不应进入模型的内容：UI-only data parts、展示 metadata、重复状态通知、provider 原始调试字段、旧 reasoning、已完成且无后续价值的工具轨迹。对于超大的工具输出，把原始对象放对象存储或业务表，context 中只保留受控摘要与引用 ID。
+
+### 第二级：相关性选择
+
+保留最近窗口之外，还要保留 pinned constraints、用户稳定偏好、未完成计划、当前引用的文档，以及与新请求相关的历史片段。语义召回不能替代 recent window，因为最新的否定、纠正和指代通常不适合仅靠 embedding 找回。
+
+### 第三级：可追溯摘要
+
+摘要 artifact 至少记录来源消息 ID/版本、覆盖范围、摘要 prompt 版本、生成模型、创建时间、token 估算与 source hash。摘要内容应尽量区分：
+
+- 已确认事实与用户约束；
+- 已完成动作与可验证结果；
+- 未完成任务、失败与阻塞；
+- 不确定推断和待确认信息。
+
+摘要是有损缓存，不是历史真相。用户要求查看原话、执行审计或重新生成时，仍然回到原始消息。
+
+### 第四级：原子截断
+
+硬截断是最后保险。按完整 turn 或完整工具交互单元删除最旧、最低优先级内容，不按字符从中间切一条 JSON，也不留下只有 tool call 没有 result 的协议残片。如果最后仍超预算，应缩短附件、工具输出或最大输出预留，并显式记录降级原因，而不是静默发送一份不可解释的上下文。
+
+## 过滤无用信息也要可解释
+
+不要只用 `is_context_eligible boolean`。布尔值不能回答为什么一条消息被排除，也无法区分策略排除、用户删除、安全脱敏和临时预算不足。
+
+主表可以保存稳定的 `context_state` 与 `exclusion_reason`；单次预算造成的未选择则只写入 context snapshot。这样可以区分：
+
+- 永久不应进入模型：敏感数据、UI 事件、已撤回内容；
+- 当前策略不需要：旧工具噪音、低相关历史；
+- 本次预算放不下：仍保留在历史中，下次可能重新入选。
+
+过滤器还应输出 reason code，例如 `authorization_denied`、`ui_only`、`stale_tool_trace`、`superseded`、`low_relevance`、`budget_cut`。线上质量下降时，才能统计到底是召回失败、摘要失真还是预算过紧。
+
+## 多租户安全从表结构开始
+
+`tenant_id` 在 thread、run、message 上看似重复，却能让每次查询和 RLS 都在本表完成，并通过复合外键阻止跨租户挂接。
+
+PostgreSQL 可以再加行级安全作为纵深防御：
+
+```sql
+alter table agent_message enable row level security;
+
+create policy agent_message_tenant_policy on agent_message
+using (tenant_id = current_setting('app.tenant_id', true)::uuid)
+with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
+```
+
+连接池中必须在事务范围使用 `set_config(..., true)` 设置租户，并在缺少租户上下文时默认拒绝，而不是复用上一个请求的 session 值。
+
+工具输出尤其容易包含 access token、内部 URL、个人数据或整份文档。进入 parts、日志、trace、摘要和 embedding 之前都要做统一脱敏。数据库静态加密不能替代应用层字段保护；如果使用 envelope encryption，应把需要检索的脱敏投影与密文正文分开。
+
+## 索引、归档与分区
+
+先服务真实查询，不要一次性给每列建索引。大多数消息系统的热路径只有：
+
+- 按 tenant/thread/sequence 读取一页；
+- 用 client request ID 做幂等去重；
+- 按 run 查 assistant 输出；
+- 找到超时的 streaming 消息；
+- 按 retention policy 扫描旧数据。
+
+前三类已经由示例索引覆盖；超时任务可以增加只覆盖 `status = 'streaming'` 的部分索引。PostgreSQL 只有在查询条件能推出 partial index 的 predicate 时才会使用它，因此应用查询应与索引条件保持一致，并用 `EXPLAIN (ANALYZE, BUFFERS)` 验证。
+
+不要因为“数据可能很多”就提前分区。分区会影响主键、唯一约束、外键和迁移。只有消息达到数亿级、按月删除形成明显 vacuum 压力，或冷热存储成本成为问题时，再按 retention 方式选择 created_at 范围分区，或按 tenant/thread 做 hash 分区。归档前还要确认摘要、审计和删除请求能够跨冷热层追踪。
+
+## 一份可以用于评审的检查清单
+
+上线前，至少确认这些问题都有明确答案：
+
+- 数据库保存的是可恢复的 `UIMessage`，还是供应商相关的临时 `ModelMessage`？
+- parts 是否能完整表达 text、file、tool、approval、source 与 data？
+- user 与 assistant ID 是否稳定，重试是否有唯一幂等键？
+- 同一 thread 的顺序是否由数据库约束，而不是时间戳猜测？
+- 客户端是否只提交新 user message，服务端是否重新加载权威历史？
+- 完整消息、压缩 artifact 与模型调用 snapshot 是否彼此独立？
+- 权限过滤是否早于摘要、embedding 和日志写入？
+- tool call/result/approval 是否按完整生命周期裁剪？
+- 每个 agent step 是否重新计算 token 预算？
+- 是否能从 run 定位到 prompt 版本、模型、usage、上下文快照与最终消息？
+- streaming 卡死、客户端断开、主动取消与进程崩溃是否各有恢复状态？
+- 编辑、删除、脱敏和摘要失效是否会更新 `content_version` 或 source hash？
+
+## 结语
+
+生产级 Agent 的 message 表不应该承担所有职责。它最重要的工作，是稳定保存用户可见、可审计、可迁移的消息事实；run 记录执行，artifact 保存有损压缩，snapshot 解释每次模型输入。
+
+一旦把“历史”与“上下文”拆开，压缩、截断和过滤就不再是破坏数据的清理脚本，而会成为一条可版本化、可测试、可观测的编译管线。这也是 Agent 从 demo 走向长期可靠服务的关键分界线。
+
+## 参考资料
+
+- [AI SDK：Chatbot Message Persistence](https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-message-persistence)
+- [AI SDK：Loop Control 与 prepareStep](https://ai-sdk.dev/docs/agents/loop-control)
+- [AI SDK：pruneMessages](https://ai-sdk.dev/docs/reference/ai-sdk-ui/prune-messages)
+- [AI SDK 7 Migration Guide](https://ai-sdk.dev/docs/migration-guides/migration-guide-7-0)
+- [Drizzle ORM：Indexes & Constraints](https://orm.drizzle.team/docs/indexes-constraints)
+- [PostgreSQL：JSON Types](https://www.postgresql.org/docs/current/datatype-json.html)
+- [PostgreSQL：Partial Indexes](https://www.postgresql.org/docs/current/indexes-partial.html)
+- [PostgreSQL：Row Security Policies](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)

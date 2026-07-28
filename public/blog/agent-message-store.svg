@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="860" viewBox="0 0 1600 860" fill="none">
+  <defs>
+    <linearGradient id="paper" x1="80" y1="20" x2="1510" y2="840" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8F4EC"/>
+      <stop offset="1" stop-color="#E8EEF8"/>
+    </linearGradient>
+    <linearGradient id="database" x1="485" y1="212" x2="965" y2="682" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2F6FED"/>
+      <stop offset="1" stop-color="#174CB8"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#22304A" flood-opacity="0.16"/>
+    </filter>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" stroke="#224A88" stroke-opacity="0.07"/>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="860" rx="40" fill="url(#paper)"/>
+  <rect width="1600" height="860" rx="40" fill="url(#grid)"/>
+
+  <circle cx="1472" cy="102" r="172" fill="#FFCB77" fill-opacity="0.34"/>
+  <circle cx="116" cy="770" r="196" fill="#7BC7B7" fill-opacity="0.24"/>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">
+    <text x="92" y="104" fill="#1D2A3D" font-size="30" font-weight="700" letter-spacing="3">AGENT MESSAGE STORE</text>
+    <text x="94" y="145" fill="#59677A" font-size="19" letter-spacing="1.5">FACT LOG → CONTEXT COMPILER → MODEL VIEW</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="88" y="232" width="310" height="398" rx="28" fill="#FFFDF8" stroke="#1D2A3D" stroke-width="3"/>
+    <rect x="112" y="258" width="116" height="36" rx="18" fill="#E6EEFF"/>
+    <text x="170" y="283" text-anchor="middle" fill="#2157BD" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" font-weight="700">UIMessage</text>
+
+    <rect x="116" y="330" width="254" height="66" rx="16" fill="#F4F6FA"/>
+    <circle cx="144" cy="363" r="10" fill="#F19A5B"/>
+    <rect x="166" y="349" width="138" height="10" rx="5" fill="#31435C" fill-opacity="0.75"/>
+    <rect x="166" y="369" width="92" height="9" rx="4.5" fill="#8290A2" fill-opacity="0.55"/>
+
+    <rect x="116" y="414" width="254" height="84" rx="16" fill="#EAF1FF"/>
+    <circle cx="144" cy="447" r="10" fill="#2F6FED"/>
+    <rect x="166" y="433" width="152" height="10" rx="5" fill="#234C95" fill-opacity="0.78"/>
+    <rect x="166" y="453" width="119" height="9" rx="4.5" fill="#5377B7" fill-opacity="0.55"/>
+    <rect x="134" y="474" width="206" height="8" rx="4" fill="#7D9DD5" fill-opacity="0.42"/>
+
+    <rect x="116" y="516" width="254" height="84" rx="16" fill="#F3EEE6"/>
+    <circle cx="144" cy="549" r="10" fill="#6EB7A9"/>
+    <rect x="166" y="535" width="112" height="10" rx="5" fill="#365F5B" fill-opacity="0.72"/>
+    <rect x="166" y="555" width="160" height="9" rx="4.5" fill="#6D8E88" fill-opacity="0.52"/>
+    <rect x="134" y="576" width="176" height="8" rx="4" fill="#8FA7A2" fill-opacity="0.42"/>
+  </g>
+
+  <path d="M414 431H486" stroke="#27415F" stroke-width="4" stroke-linecap="round" stroke-dasharray="9 12"/>
+  <path d="M471 417L488 431L471 445" stroke="#27415F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g filter="url(#shadow)">
+    <path d="M514 290C514 245.817 617.124 210 744.5 210C871.876 210 975 245.817 975 290V582C975 626.183 871.876 662 744.5 662C617.124 662 514 626.183 514 582V290Z" fill="url(#database)"/>
+    <ellipse cx="744.5" cy="290" rx="230.5" ry="80" fill="#5B8AF1"/>
+    <ellipse cx="744.5" cy="290" rx="184.5" ry="52" fill="#DCE8FF" fill-opacity="0.98"/>
+    <ellipse cx="744.5" cy="290" rx="141.5" ry="34" fill="#2F6FED" fill-opacity="0.22"/>
+    <path d="M514 396C514 440.183 617.124 476 744.5 476C871.876 476 975 440.183 975 396" stroke="#A8C1FA" stroke-width="3" stroke-opacity="0.72"/>
+    <path d="M514 500C514 544.183 617.124 580 744.5 580C871.876 580 975 544.183 975 500" stroke="#A8C1FA" stroke-width="3" stroke-opacity="0.72"/>
+
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" fill="#FFFFFF">
+      <text x="744" y="388" text-anchor="middle" font-size="26" font-weight="700" letter-spacing="2">POSTGRESQL</text>
+      <text x="744" y="430" text-anchor="middle" font-size="18" fill="#DCE8FF">thread · run · message</text>
+      <text x="744" y="527" text-anchor="middle" font-size="18" fill="#DCE8FF">parts jsonb + typed columns</text>
+      <text x="744" y="626" text-anchor="middle" font-size="18" fill="#DCE8FF">immutable after completion</text>
+    </g>
+  </g>
+
+  <path d="M997 431H1068" stroke="#27415F" stroke-width="4" stroke-linecap="round" stroke-dasharray="9 12"/>
+  <path d="M1053 417L1070 431L1053 445" stroke="#27415F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g filter="url(#shadow)" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">
+    <rect x="1094" y="220" width="418" height="430" rx="28" fill="#1D2A3D"/>
+    <text x="1126" y="268" fill="#FFFFFF" font-size="18" font-weight="700" letter-spacing="1.4">CONTEXT COMPILER</text>
+
+    <rect x="1126" y="304" width="354" height="58" rx="14" fill="#2A3A51"/>
+    <circle cx="1155" cy="333" r="12" fill="#6EB7A9"/>
+    <text x="1181" y="340" fill="#E8EDF5" font-size="18">01  FILTER</text>
+
+    <rect x="1126" y="380" width="354" height="58" rx="14" fill="#2A3A51"/>
+    <circle cx="1155" cy="409" r="12" fill="#FFCB77"/>
+    <text x="1181" y="416" fill="#E8EDF5" font-size="18">02  PRUNE</text>
+
+    <rect x="1126" y="456" width="354" height="58" rx="14" fill="#2A3A51"/>
+    <circle cx="1155" cy="485" r="12" fill="#F19A5B"/>
+    <text x="1181" y="492" fill="#E8EDF5" font-size="18">03  SUMMARIZE</text>
+
+    <rect x="1126" y="532" width="354" height="58" rx="14" fill="#355B9D"/>
+    <circle cx="1155" cy="561" r="12" fill="#B9CEFF"/>
+    <text x="1181" y="568" fill="#FFFFFF" font-size="18">04  SNAPSHOT</text>
+
+    <text x="1128" y="622" fill="#9AA8BA" font-size="15">policy=v3 · budget=96k · step=07</text>
+  </g>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">
+    <rect x="1096" y="694" width="416" height="76" rx="20" fill="#FFFDF8" stroke="#1D2A3D" stroke-width="3"/>
+    <text x="1126" y="725" fill="#5F6D80" font-size="14" letter-spacing="1">MODEL VIEW</text>
+    <text x="1126" y="752" fill="#1D2A3D" font-size="18" font-weight="700">recent + facts + artifacts</text>
+  </g>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#66758A">
+    <text x="94" y="808">CANONICAL HISTORY</text>
+    <text x="704" y="808">AUDITABLE</text>
+    <text x="1370" y="808">REPLAYABLE</text>
+  </g>
+</svg>
