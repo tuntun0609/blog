@@ -1,22 +1,22 @@
 ---
 title: "Docker 入门：从第一个容器到 Docker Compose"
-description: "用一条可操作的学习路线掌握 Docker 的核心概念、常用命令、镜像构建、数据持久化与多容器编排。"
+description: "从实际操作入手，认识 Docker 的常用概念、命令、镜像、数据卷和 Compose。"
 date: "2026-07-28"
 category: "工程实践"
-cover: "/blog/docker-getting-started.svg"
+cover: "/blog/docker-getting-started-v2.png"
 published: true
 tags: ["Docker", "容器", "Docker Compose", "开发工具"]
 ---
 
-“在我的电脑上明明能运行”，往往意味着运行环境没有被完整交付。应用依赖的系统库、运行时版本、配置和启动方式，只要有一项不同，就可能在另一台机器上失败。
+“我这里明明能跑”这句话，多半是在说：程序依赖的环境没有一起交出去。系统库、运行时版本、配置和启动命令，只要有一个不一样，换台电脑就可能出问题。
 
-Docker 的做法是把应用及其运行环境制作成**镜像**，再从镜像启动相互隔离的**容器**。团队交付的不再是一份“请自行配置环境”的说明，而是一套可以重复创建的运行环境。
+Docker 会把应用和它需要的环境打包成**镜像**，再用镜像启动相互隔离的**容器**。这样交付的就不只是一份“你照着配一下”的说明，而是一套能反复跑起来的环境。
 
-这篇文章不试图列完 Docker 的所有功能。我们沿着一条最短实践路线，依次完成：运行现成镜像、管理容器、持久化数据、构建自己的镜像，以及用 Docker Compose 启动多个服务。
+Docker 的功能很多，刚开始不用全学。下面按最常用的顺序来：先跑一个现成服务，再看容器和数据怎么管，最后自己构建镜像，并用 Docker Compose 一次启动多个服务。
 
 ## 先建立一张概念地图
 
-初学 Docker，最容易混淆的是镜像和容器。可以先记住下面这组关系：
+刚接触 Docker 时，最容易混的是镜像和容器。先把下面几件事记住就够了：
 
 - **镜像（Image）**是只读模板，包含文件系统、依赖和默认启动命令。
 - **容器（Container）**是镜像的一次运行实例，本质上仍是宿主机上的隔离进程。
@@ -26,9 +26,9 @@ Docker 的做法是把应用及其运行环境制作成**镜像**，再从镜像
 - **网络（Network）**让容器之间能够按名称通信。
 - **Docker Compose**用一个 YAML 文件描述并管理一组相关容器。
 
-同一个镜像可以创建许多容器，就像同一个类可以产生多个实例。删除容器不会自动删除镜像，删除容器也不应该导致数据库数据丢失——需要长期保留的数据应放进卷。
+一个镜像可以启动很多个容器。删容器不会删镜像；更重要的是，删容器也不该把数据库数据一起删掉，所以要长期保留的数据得放进卷里。
 
-Docker 通常以客户端—服务端方式工作：终端里的 `docker` 命令是客户端，Docker daemon 负责构建镜像、创建容器和管理网络与存储。Docker Desktop 会在 macOS 和 Windows 上准备好这一整套环境。
+终端里的 `docker` 命令只是发号施令，真正干活的是 Docker daemon：它负责构建镜像、创建容器、管理网络和存储。macOS、Windows 上安装 Docker Desktop 后，这些都会准备好。
 
 ## 安装并确认 Docker 可用
 
@@ -40,9 +40,9 @@ docker info
 docker run --rm hello-world
 ```
 
-`docker version` 会显示客户端与服务端版本；`docker info` 会显示当前 Docker 环境；最后一条命令会下载 `hello-world` 镜像、创建容器并输出欢迎信息。`--rm` 表示进程退出后自动删除这个容器。
+`docker version` 会显示客户端和服务端的版本，`docker info` 会显示当前环境。最后一条会下载 `hello-world` 镜像、启动容器并打印欢迎信息。`--rm` 的意思是：命令跑完后，顺手把这个容器删掉。
 
-如果只能看到 Client 信息，或者出现 `Cannot connect to the Docker daemon`，通常不是命令写错，而是 Docker Desktop 尚未启动，或者当前用户无权访问 Linux 上的 Docker daemon。
+如果只能看到 Client 信息，或者报 `Cannot connect to the Docker daemon`，一般不是命令写错了。多半是 Docker Desktop 还没启动，或者 Linux 当前用户没有访问 Docker daemon 的权限。
 
 ## 运行第一个真正的服务
 
@@ -52,7 +52,7 @@ docker run --rm hello-world
 docker run --name web-demo -d -p 127.0.0.1:8080:80 nginx:alpine
 ```
 
-浏览器打开 [http://localhost:8080](http://localhost:8080)，应该能看到 Nginx 欢迎页。第一次执行时，本地没有 `nginx:alpine`，Docker 会先从仓库拉取镜像，再创建容器。
+浏览器打开 [http://localhost:8080](http://localhost:8080)，应该能看到 Nginx 欢迎页。第一次运行时，本地还没有 `nginx:alpine`，Docker 会先下载镜像，再启动容器。
 
 把这条命令拆开看：
 
@@ -62,11 +62,11 @@ docker run --name web-demo -d -p 127.0.0.1:8080:80 nginx:alpine
 - `-p 127.0.0.1:8080:80`：把宿主机的 `8080` 端口映射到容器的 `80` 端口，并只绑定本机地址。
 - `nginx:alpine`：镜像名是 `nginx`，标签是 `alpine`。
 
-端口顺序始终是 `宿主机端口:容器端口`。`127.0.0.1` 会把访问范围限制在本机；直接写 `-p 8080:80` 通常会监听所有宿主机地址，开发时不要在不知情的情况下暴露数据库或管理端口。
+端口的顺序永远是 `宿主机端口:容器端口`。`127.0.0.1` 表示只让本机访问；如果直接写 `-p 8080:80`，通常会监听机器的所有地址。开发时别一不小心把数据库或管理端口暴露出去。
 
 ## 查看、调试和管理容器
 
-容器启动后，下面几条命令最常用：
+容器跑起来后，最常用的是下面几条命令：
 
 ```bash
 # 只看正在运行的容器
@@ -85,7 +85,7 @@ docker exec -it web-demo sh
 docker inspect web-demo
 ```
 
-`docker exec` 不会创建新容器，而是在现有容器中执行额外命令。精简镜像通常只有 `sh`，不一定安装了 `bash`。
+`docker exec` 不会新建容器，它只是在已经运行的容器里执行一条命令。很多精简镜像只有 `sh`，没有 `bash`。
 
 容器生命周期可以用下面几条命令控制：
 
@@ -96,18 +96,18 @@ docker restart web-demo
 docker rm web-demo
 ```
 
-`docker stop` 只停止容器，容器仍然存在，因此可以用 `docker start` 再次启动。`docker rm` 删除的是已经停止的容器；需要强制删除运行中的容器时可以用 `docker rm -f web-demo`，但日常操作优先正常停止，让应用有机会完成清理。
+`docker stop` 只是停掉容器，容器本身还在，所以能用 `docker start` 再次启动。`docker rm` 用来删除已经停止的容器。运行中的容器也能用 `docker rm -f web-demo` 强制删除，但平时最好先正常停止，给应用一点收尾时间。
 
 这里有一个非常关键的区别：
 
 - `docker run nginx:alpine` 会创建一个**新的**容器。
 - `docker start web-demo` 会重新启动一个**已有的**容器。
 
-如果反复执行 `docker run`，看到多个停止的容器并不是 Docker 出错，而是每次都创建了新实例。
+反复执行 `docker run` 后看到一堆停止的容器，并不是 Docker 出错了，而是你每次都新建了一个实例。
 
 ## 管理镜像
 
-镜像和容器有各自独立的命令：
+镜像和容器要分开管：
 
 ```bash
 # 下载镜像，但不创建容器
@@ -123,13 +123,13 @@ docker image inspect nginx:alpine
 docker image rm nginx:alpine
 ```
 
-一个完整镜像引用可以写成 `仓库地址/命名空间/名称:标签`。省略仓库地址时默认从 Docker Hub 拉取；省略标签时通常使用 `latest`。`latest` 只是一个普通标签，不等于“运行时永远自动更新”，也不能保证每次指向同一份内容。学习时可以使用它，生产环境更适合固定明确版本，要求完全可复现时还可以固定 digest。
+完整的镜像名可以写成 `仓库地址/命名空间/名称:标签`。不写仓库地址时，默认从 Docker Hub 下载；不写标签时，通常会用 `latest`。不过 `latest` 只是个普通标签，不代表会自动更新，也不保证每次都是同一个版本。练习时可以用，线上环境最好写明版本；如果需要完全可复现，还可以固定 digest。
 
 ## 容器会消失，重要数据不能跟着消失
 
-容器有自己的可写层，但它适合临时运行状态，不适合保存数据库、上传文件等重要数据。删除容器后，这个可写层也会消失。
+容器里虽然能写文件，但那块空间更适合放临时数据。数据库、上传文件这类重要内容别放那里：容器一删，里面的可写数据也会跟着没掉。
 
-Docker 常用两种挂载方式：
+Docker 里常见的挂载有两种：
 
 - **命名卷**由 Docker 管理位置，适合数据库和需要长期保存的数据。
 - **绑定挂载**把宿主机的某个路径映射进容器，适合开发时同步源码或配置文件。
@@ -148,7 +148,7 @@ docker run --rm \
   alpine cat /data/message.txt
 ```
 
-第一个容器退出后已经被 `--rm` 删除，第二个容器仍能读到文件，说明数据保存在容器之外。查看和删除卷可以使用：
+第一个容器退出后已经被 `--rm` 删掉了，第二个容器却还能读到文件，说明数据不在容器里。查看和删除卷可以用：
 
 ```bash
 docker volume ls
@@ -165,11 +165,11 @@ docker run --rm -d --name local-site \
   nginx:alpine
 ```
 
-修改当前目录的文件后，容器会立即看到变化。`readonly` 可以避免容器反过来修改宿主机文件。绑定挂载依赖宿主机的真实路径，而命名卷更容易跨不同开发环境复用。
+改完当前目录的文件，容器马上就能看到变化。`readonly` 能防止容器反过来改宿主机文件。绑定挂载依赖本机路径，命名卷则更容易在不同环境里复用。
 
 ## 用 Dockerfile 构建自己的镜像
 
-假设有一个 Node.js 项目，依赖已记录在 `package.json` 和 lockfile 中，入口是 `server.js`。可以在项目根目录创建下面的 `Dockerfile`：
+假设你有一个 Node.js 项目，依赖写在 `package.json` 和 lockfile 里，入口文件是 `server.js`。在项目根目录新建这个 `Dockerfile`：
 
 ```dockerfile title="Dockerfile"
 FROM node:24-alpine
@@ -188,18 +188,18 @@ USER node
 CMD ["node", "server.js"]
 ```
 
-每条指令的职责都很明确：
+这些指令分别做什么：
 
 - `FROM` 选择基础镜像。
-- `WORKDIR` 设置后续指令和容器启动后的工作目录。
+- `WORKDIR` 设置后续命令和容器启动后的工作目录。
 - `COPY` 把构建上下文中的文件复制进镜像。
-- `RUN` 在构建阶段执行命令并形成新的镜像层。
+- `RUN` 在构建时执行命令，并生成新的镜像层。
 - `ENV` 设置默认环境变量。
-- `EXPOSE` 记录应用监听的容器端口，但**不会自动发布端口**。
+- `EXPOSE` 说明应用监听哪个容器端口，但**不会自动把端口开放出去**。
 - `USER` 避免应用进程以 root 身份运行。
-- `CMD` 定义容器默认启动命令；JSON 数组形式能更正确地接收停止信号。
+- `CMD` 定义容器默认怎么启动；JSON 数组写法能更好地接收停止信号。
 
-先复制依赖清单再安装依赖，最后复制源码，是为了利用构建缓存。只修改业务代码时，依赖安装层通常可以复用。还应创建 `.dockerignore`，避免把无关或敏感文件发送到构建上下文：
+先复制依赖清单、安装依赖，最后再复制源码，是为了利用构建缓存。以后只改业务代码时，安装依赖那一步通常就不用重跑。还要加一个 `.dockerignore`，别把无关文件或敏感文件一起交给 Docker：
 
 ```text title=".dockerignore"
 node_modules
@@ -216,15 +216,15 @@ docker run --rm -d --name hello-app -p 127.0.0.1:3000:3000 hello-docker:1.0
 docker logs -f hello-app
 ```
 
-`-t` 给镜像设置名称和标签，最后的 `.` 是构建上下文。Docker 只能在这个上下文中读取 `COPY` 所需的文件，因此不要随意把包含大量文件的上级目录作为构建上下文。
+`-t` 是给镜像起名字、打标签；最后的 `.` 是构建上下文。Docker 只能从这里读取 `COPY` 要用的文件，所以别随手把文件特别多的上级目录当作上下文。
 
-环境变量可以在运行时传入，例如 `docker run -e PORT=3000 ...`。密码、令牌和私钥不要写进 Dockerfile，也不要复制进镜像；镜像层会被缓存和分发，事后删除文件也不代表它从历史层中消失。
+环境变量可以在运行时传，例如 `docker run -e PORT=3000 ...`。密码、令牌和私钥别写进 Dockerfile，也别复制进镜像。镜像层会被缓存、分发，后来把文件删掉也不等于它从历史层里消失了。
 
 ## 用 Docker Compose 管理多个服务
 
-当应用需要数据库、缓存或消息队列时，把所有参数塞进多条 `docker run` 命令很快会变得难以维护。Compose 可以把服务、网络和卷声明在一个 `compose.yaml` 中。
+应用一旦还要数据库、缓存或消息队列，多条 `docker run` 很快就看不明白了。Compose 可以把服务、网络和卷都写进一个 `compose.yaml`。
 
-下面的示例会启动 WordPress 和 MySQL，适合在本机观察多容器协作：
+下面这个例子会在本机启动 WordPress 和 MySQL，正好可以看看多个容器怎么配合：
 
 ```yaml title="compose.yaml"
 services:
@@ -271,13 +271,13 @@ docker compose exec wordpress php --version
 docker compose down
 ```
 
-Compose 默认会为项目创建网络。`wordpress` 容器可以用服务名 `db` 访问数据库，所以配置写成 `db:3306`，而不是 `localhost:3306`。容器里的 `localhost` 指向容器自己，这是初学者最常遇到的网络误区之一。
+Compose 默认会给项目建一个网络。`wordpress` 容器通过服务名 `db` 访问数据库，所以这里写 `db:3306`，不是 `localhost:3306`。容器里的 `localhost` 指的是它自己，这个坑刚开始很常见。
 
-`depends_on` 控制启动顺序，但不能保证数据库已经完成初始化。真实项目应为依赖服务配置 `healthcheck`，并让应用能够重试连接。
+`depends_on` 只保证启动顺序，不保证数据库已经初始化完。真实项目里要给依赖服务加 `healthcheck`，应用本身也要能重试连接。
 
 执行 `docker compose down -v` 会连声明的命名卷一起删除，示例中的数据库数据也会消失。先确认数据不再需要，再加 `-v`。
 
-示例把密码直接写在文件里只是为了便于本地练习。实际项目应使用未提交到版本控制的环境文件、Compose secrets 或部署平台提供的密钥管理能力。
+例子里把密码直接写出来，只是为了方便本地练习。实际项目请用不提交到仓库的环境文件、Compose secrets 或部署平台的密钥管理功能。
 
 ## 一张日常命令速查表
 
@@ -298,9 +298,9 @@ Compose 默认会为项目创建网络。`wordpress` 容器可以用服务名 `d
 | 停止 Compose 项目 | `docker compose down` |
 | 查看磁盘占用 | `docker system df` |
 
-磁盘空间不足时，先用 `docker system df` 看清占用，再按需删除容器、镜像或卷。`docker system prune` 会批量清理未使用资源，不要把它当作无需确认的日常命令；尤其不要随意添加 `--volumes`。
+磁盘快满时，先用 `docker system df` 看看是谁占了空间，再按需要删容器、镜像或卷。`docker system prune` 会一口气清理没在用的资源，运行前要确认；尤其别随便加 `--volumes`。
 
-## 初学时最值得记住的五件事
+## 刚开始记住这五件事就行
 
 1. 镜像是模板，容器是运行实例；`run` 创建新实例，`start` 启动旧实例。
 2. `-p` 的顺序是宿主机端口在前、容器端口在后；`EXPOSE` 本身不发布端口。
@@ -308,7 +308,7 @@ Compose 默认会为项目创建网络。`wordpress` 容器可以用服务名 `d
 4. 同一 Compose 网络中的服务用服务名通信；容器里的 `localhost` 只代表它自己。
 5. Dockerfile、Compose 文件和明确的镜像版本应该进入版本控制，密钥不应该进入镜像或仓库。
 
-掌握这些内容后，你已经不需要背诵更多命令。遇到问题时，按“容器是否在运行 → 日志说了什么 → 端口是否正确发布 → 挂载是否正确 → 服务名和网络是否正确”的顺序检查，通常就能定位大部分入门阶段的问题。
+这些先用熟，不用急着背更多命令。出问题时可以按这个顺序查：容器有没有在跑 → 日志怎么说 → 端口有没有映射对 → 挂载对不对 → 服务名和网络对不对。大部分入门问题都能这样查出来。
 
 ## 继续学习
 
@@ -320,4 +320,4 @@ Compose 默认会为项目创建网络。`wordpress` 容器可以用服务名 `d
 - [Docker Compose](https://docs.docker.com/compose/)
 - [Docker CLI 参考](https://docs.docker.com/reference/cli/docker/)
 
-这些链接都是 Docker 官方文档。命令参数和镜像版本会随时间变化，准备把配置用于生产环境前，应再以对应版本的官方文档为准。
+上面都是 Docker 官方文档。命令参数和镜像版本会变，准备上生产前，记得再核对对应版本的说明。

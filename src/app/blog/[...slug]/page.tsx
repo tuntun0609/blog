@@ -58,6 +58,7 @@ export default async function PostPage({ params }: PostPageProps) {
   const currentPostIndex = posts.findIndex((item) => item.url === post.url)
   const nextPost = posts[currentPostIndex + 1]
   const readTime = readingTime(await post.data.getText('processed'))
+  const readTimeInMinutes = Math.ceil(readTime.minutes)
 
   return (
     <div className={styles.postPage}>
@@ -89,7 +90,7 @@ export default async function PostPage({ params }: PostPageProps) {
               <dt>阅读时间</dt>
               <dd>
                 <Clock3Icon aria-hidden="true" />
-                {readTime.text}
+                {readTimeInMinutes} 分钟
               </dd>
             </div>
             <div>
@@ -126,6 +127,9 @@ export default async function PostPage({ params }: PostPageProps) {
                       className={styles.tocLink}
                       href={item.url}
                       key={item.url}
+                      style={{
+                        paddingInlineStart: `${Math.max(item.depth - 2, 0) * 0.75}rem`,
+                      }}
                     >
                       {item.title}
                     </a>

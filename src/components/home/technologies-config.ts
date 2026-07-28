@@ -22,8 +22,6 @@ export interface TechnologySkill {
   readonly name: string
 }
 
-const toBrandColor = (hex: string): `#${string}` => `#${hex}`
-
 // 技能数量
 export const TECHNOLOGIES_PER_PAGE = 24
 
@@ -33,7 +31,7 @@ export const technologySkills: readonly TechnologySkill[] = [
     iconColor: '#FFFFFF',
     iconPath: siHtml5.path,
     id: 'html',
-    keyColor: '#8A2C15',
+    keyColor: '#E34C26',
     name: 'HTML',
   },
   {
@@ -41,15 +39,15 @@ export const technologySkills: readonly TechnologySkill[] = [
     iconColor: '#FFFFFF',
     iconPath: siCss.path,
     id: 'css',
-    keyColor: '#3F205F',
+    keyColor: '#563D7C',
     name: 'CSS',
   },
   {
     description: '浏览器交互与应用逻辑',
-    iconColor: toBrandColor(siJavascript.hex),
+    iconColor: '#241407',
     iconPath: siJavascript.path,
     id: 'javascript',
-    keyColor: '#4A400A',
+    keyColor: '#EC903A',
     name: 'JavaScript',
   },
   {
@@ -57,15 +55,15 @@ export const technologySkills: readonly TechnologySkill[] = [
     iconColor: '#FFFFFF',
     iconPath: siTypescript.path,
     id: 'typescript',
-    keyColor: '#1D4970',
+    keyColor: '#007ACC',
     name: 'TypeScript',
   },
   {
     description: '组件、状态与交互界面',
-    iconColor: toBrandColor(siReact.hex),
+    iconColor: '#13333D',
     iconPath: siReact.path,
     id: 'react',
-    keyColor: '#242938',
+    keyColor: '#61DAFB',
     name: 'React',
   },
   {
@@ -73,15 +71,15 @@ export const technologySkills: readonly TechnologySkill[] = [
     iconColor: '#FFFFFF',
     iconPath: siNextdotjs.path,
     id: 'nextjs',
-    keyColor: toBrandColor(siNextdotjs.hex),
+    keyColor: '#000000',
     name: 'Next.js',
   },
   {
     description: '设计系统与响应式样式',
-    iconColor: toBrandColor(siTailwindcss.hex),
+    iconColor: '#083344',
     iconPath: siTailwindcss.path,
     id: 'tailwindcss',
-    keyColor: '#124A59',
+    keyColor: '#06B6D4',
     name: 'Tailwind CSS',
   },
   {
@@ -89,23 +87,23 @@ export const technologySkills: readonly TechnologySkill[] = [
     iconColor: '#FFFFFF',
     iconPath: siNodedotjs.path,
     id: 'nodejs',
-    keyColor: '#234A2A',
+    keyColor: '#3C873A',
     name: 'Node.js',
   },
   {
     description: '快速 JavaScript 运行时与一体化工具链',
-    iconColor: '#FBF0DF',
+    iconColor: '#000000',
     iconPath: siBun.path,
     id: 'bun',
-    keyColor: '#302824',
+    keyColor: '#FBF0DF',
     name: 'Bun',
   },
   {
     description: '高效、节省磁盘空间的包管理',
-    iconColor: toBrandColor(siPnpm.hex),
+    iconColor: '#301801',
     iconPath: siPnpm.path,
     id: 'pnpm',
-    keyColor: '#6B3308',
+    keyColor: '#F69220',
     name: 'pnpm',
   },
   {
@@ -113,7 +111,7 @@ export const technologySkills: readonly TechnologySkill[] = [
     iconColor: '#FFFFFF',
     iconPath: siPostgresql.path,
     id: 'postgresql',
-    keyColor: '#1E3A5F',
+    keyColor: '#336791',
     name: 'PostgreSQL',
   },
   {
@@ -121,7 +119,7 @@ export const technologySkills: readonly TechnologySkill[] = [
     iconColor: '#FFFFFF',
     iconPath: siGooglechrome.path,
     id: 'browser-extensions',
-    keyColor: '#243B73',
+    keyColor: '#4285F4',
     name: 'Browser Extensions',
   },
 ] as const

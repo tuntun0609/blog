@@ -1,6 +1,6 @@
 ---
-title: "生产级 Agent 的 Message 表：持久化、压缩与上下文工程"
-description: "用 PostgreSQL、Drizzle ORM 与 Vercel AI SDK 7 设计可审计、可压缩、可重放的 Agent 消息系统。"
+title: "Agent 的 Message 表怎么设计：持久化、压缩与上下文"
+description: "用 PostgreSQL、Drizzle ORM 与 Vercel AI SDK 7，把 Agent 的消息存得可靠、查得明白。"
 date: "2026-07-28"
 category: "AI 工程"
 cover: "/blog/agent-message-store.svg"
@@ -8,42 +8,42 @@ published: true
 tags: ["Agent", "PostgreSQL", "Drizzle ORM", "Vercel AI SDK", "上下文工程"]
 ---
 
-一个能演示聊天的 `message` 表，通常只有 `id`、`role`、`content` 和 `created_at`。一个能长期运行的 Agent 系统却要同时处理流式写入、工具调用、重试、分支、人工审批、隐私删除、上下文压缩和线上重放。
+做聊天演示时，`message` 表有 `id`、`role`、`content`、`created_at` 就够了。但 Agent 真正跑到线上后，流式输出、工具调用、重试、人工审批、删除隐私数据、压缩上下文，都会找上门来。
 
-真正困难的不是“消息怎么存”，而是先分清三种完全不同的数据：**用户看到的会话记录、系统保存的历史事实，以及某一次模型调用实际收到的上下文**。
+难点不在于“怎么存一条消息”，而在于别把三样东西混在一起：**用户看到的聊天记录、系统保存的原始历史、某次调用实际发给模型的上下文**。
 
-本文以 PostgreSQL、Drizzle ORM 0.45 和 Vercel AI SDK 7 为基线，给出一套可以从中小规模平滑演进到生产环境的设计。核心结论只有一句：
+本文用 PostgreSQL、Drizzle ORM 0.45 和 Vercel AI SDK 7 举例，聊一套从小项目也能开始用的设计。先说结论：
 
-> 原始消息是事实日志；压缩摘要是可失效的派生物；模型上下文是按策略编译出来的一次性视图。三者不要覆盖彼此。
+> 原始消息是底稿；摘要是可以重新生成的副本；模型上下文则是每次临时拼出来的输入。别让它们互相覆盖。
 
-## 先建立两个消息模型
+## 先分清两种消息
 
-AI SDK 中最容易混淆的是 `UIMessage` 与 `ModelMessage`。
+在 AI SDK 里，`UIMessage` 和 `ModelMessage` 很容易混。
 
-- `UIMessage` 面向产品界面和持久化，包含稳定 `id`、`role`、`metadata` 与结构化 `parts`。
-- `ModelMessage` 面向模型调用，可能包含 `user`、`assistant`、`tool` 等模型协议角色，是经过转换、过滤和裁剪后的输入。
-- AI SDK 7 的 `UIMessage` 只有 `system`、`user`、`assistant` 三种角色。工具调用、输出、审批状态、reasoning、source 和 file 都是 `parts`，不是一条 `role = tool` 的 UI 消息。
+- `UIMessage` 用来展示和保存，里面有稳定的 `id`、`role`、`metadata` 和结构化的 `parts`。
+- `ModelMessage` 才是发给模型的内容，可能有 `user`、`assistant`、`tool` 等协议角色。它是从历史里转换、过滤、裁剪出来的。
+- AI SDK 7 的 `UIMessage` 只有 `system`、`user`、`assistant` 三种角色。工具调用、工具结果、审批状态、reasoning、source、file 都放在 `parts` 里，不是一条 `role = tool` 的 UI 消息。
 
-因此，数据库中的主消息表应保存 `UIMessage` 语义，而不是把某个模型供应商当前接受的 `ModelMessage` JSON 当作永久格式。调用模型前，再通过 `validateUIMessages` 与 `convertToModelMessages` 建立投影。
+所以主消息表最好按 `UIMessage` 的语义来存，不要把某个模型供应商眼下接受的 `ModelMessage` JSON 当成永久格式。真正调用模型前，再用 `validateUIMessages` 和 `convertToModelMessages` 转一遍。
 
-AI SDK 7 还默认拒绝 `messages` 中的 system 消息。可信系统指令应由服务端通过 `instructions` 注入，并另外保存 `agent_version` 或 `prompt_version`；不要允许客户端借历史消息写入系统指令。兼容旧数据时虽然可以启用 `allowSystemInMessages`，但它只适合已经过信任校验的内容。
+AI SDK 7 默认不接受 `messages` 里的 system 消息。可信的系统提示词应该由服务端通过 `instructions` 加进去，并单独记录 `agent_version` 或 `prompt_version`。别让客户端借着历史消息写入系统提示词。旧数据确实要兼容时可以开 `allowSystemInMessages`，但前提是内容已经过信任校验。
 
-## 不要选择两个看似省事的极端
+## 别走两个省事但后患多的极端
 
-把整段 `UIMessage[]` 塞进 `conversation.messages jsonb`，最初写起来很快，但每次回复都要重写整行。并发会话会互相覆盖，单条删除、幂等重试、分页、审计和归档也会越来越困难。
+把整段 `UIMessage[]` 都塞进 `conversation.messages jsonb`，一开始很快，但每次回复都得重写一整行。并发时容易互相覆盖，想单独删一条、做幂等重试、分页、审计和归档，也会越来越麻烦。
 
-另一个极端是把每个 text、file、tool input、tool output 都完全拆成关系表。它能精确查询，却会让 SDK 每增加一种 part 都触发迁移，渲染一条消息还要做多次 join。
+另一个极端是把 text、file、tool input、tool output 全拆成关系表。查询是细了，但 SDK 每多一种 part 你都要迁移，渲染一条消息也要做一堆 join。
 
-更稳妥的中间方案是：
+比较实用的折中是：
 
 1. 一条 `agent_message` 对应一条 `UIMessage`。
 2. 稳定且常用于过滤、排序、约束的字段使用普通列。
 3. 变化快、需要原样还原界面的 `parts` 与 `metadata` 使用 `jsonb`。
-4. 工具审批、文件、成本等有独立生命周期的“热数据”再抽到专表，不把整个 parts 系统做成 EAV。
+4. 工具审批、文件、成本这类有自己生命周期的数据，再单独建表；别把整个 parts 系统拆成 EAV。
 
-## 核心表应该保存什么
+## 主表里放什么
 
-下面的 schema 刻意保留了 `thread` 和 `run`，因为脱离它们讨论 message，会把顺序分配、模型成本和流式状态错误地塞进消息行。
+下面的 schema 保留了 `thread` 和 `run`。没有它们，消息顺序、模型成本、流式状态就很容易全被硬塞进 message 一行里。
 
 ```ts title="db/schema/agent.ts"
 import { sql } from 'drizzle-orm'
@@ -226,11 +226,11 @@ export const agentMessages = pgTable(
 )
 ```
 
-这段 schema 中有几个比字段名更重要的决定。
+这段 schema 里，有几件事比具体字段名更重要。
 
-### 用 sequence 排序，不用 created_at
+### 排序用 sequence，别只看 created_at
 
-时间戳是观测信息，不是严格顺序。并发请求、数据库时钟精度、重试与流式更新都可能让时间相同或倒置。每个 thread 用单调递增的 `sequence` 排序，并用唯一索引保证不会出现两个相同位置。
+时间戳只能参考，不能当严格顺序。并发请求、时钟精度、重试和流式更新，都可能让两条消息时间一样，甚至看起来倒过来。每个 thread 用递增的 `sequence` 排序，再用唯一索引兜底，顺序才不会乱。
 
 可以在事务里原子分配序号：
 
@@ -255,21 +255,21 @@ if (!slot) {
 }
 ```
 
-更新 thread 行会自然串行化同一会话内的序号分配，不同会话之间则不会互相阻塞。超高吞吐的机器会话可以改用独立 sequence、分段号段或事件流，但不要用 `max(sequence) + 1`。
+更新 thread 这一行时，同一个会话的序号会自然排队；不同会话不会互相卡住。吞吐量特别高时，可以换成独立 sequence、分段号段或事件流，但别用 `max(sequence) + 1`，并发下很容易撞车。
 
-### parts 是事实，metadata 不是权限来源
+### parts 存内容，metadata 别管权限
 
-`parts` 保存恢复 UI 所需的结构化内容；`metadata` 只适合 trace ID、展示标签、客户端版本等扩展信息。租户 ID、用户 ID、权限、消息状态、删除状态和顺序必须是可约束的普通列，不能依赖客户端可提交的 JSON。
+`parts` 用来存恢复 UI 所需的结构化内容；`metadata` 适合放 trace ID、展示标签、客户端版本之类的扩展信息。租户 ID、用户 ID、权限、消息状态、删除状态、顺序这些关键数据，必须是能加约束的普通列，不能放在客户端可提交的 JSON 里。
 
-不要默认给 `parts` 建 GIN 索引。绝大多数请求只是按 thread 和 sequence 读取整条消息，GIN 会放大写入和存储成本。只有出现稳定、可观测的 JSON 包含查询后，才增加针对表达式或路径的索引。全文检索也应使用单独的、脱敏后的搜索投影。
+不要一开始就给 `parts` 建 GIN 索引。大多数请求只是按 thread 和 sequence 把整条消息读出来，GIN 反而会增加写入和存储成本。等真的有稳定的 JSON 查询，再针对表达式或路径加索引。全文搜索也应该查单独、脱敏后的搜索字段。
 
-### token 不属于 message 的单一真值
+### token 数别只挂在 message 上
 
-同一条消息在不同模型、tokenizer、工具定义与转换策略下，token 数可能不同。模型返回的准确 usage 应进入 `agent_run` 或更细的 `agent_run_step`；估算缓存则应以 `(message_id, content_version, tokenizer_key)` 为联合键。一个没有模型维度的 `message.token_count` 很快会变成误导数据。
+同一条消息换个模型、tokenizer、工具定义或转换策略，token 数都可能不一样。模型返回的准确 usage 应该记到 `agent_run` 或更细的 `agent_run_step`；估算缓存则用 `(message_id, content_version, tokenizer_key)` 做联合键。只放一个 `message.token_count`，过不了多久就不可信了。
 
-## 生产系统还需要三类辅助表
+## 还需要三类辅助表
 
-只靠 message 无法解释“模型为什么看到了这些内容”。至少还应准备以下数据结构：
+只靠 message 表，解释不了“这次模型为什么看到了这些内容”。至少再准备下面三类数据：
 
 | 表 | 关键字段 | 作用 |
 | --- | --- | --- |
@@ -277,36 +277,36 @@ if (!slot) {
 | `context_snapshot` | `run_id`、`step_number`、`policy_version`、`budget_tokens`、`estimated_tokens` | 记录一次模型调用采用的上下文策略 |
 | `context_snapshot_item` | `snapshot_id`、`ordinal`、`message_id` 或 `artifact_id`、`token_estimate` | 按精确顺序记录本次真正发送的消息与压缩产物 |
 
-如果 Agent 有工具审批、重试和异步执行，再增加 `tool_invocation`：保存 `tool_call_id`、工具名、参数、输出引用、审批人、状态、幂等键和耗时。消息 parts 可以保留 UI 快照，但工具执行表才负责状态机与唯一约束。
+如果 Agent 还有工具审批、重试、异步执行，再加一张 `tool_invocation` 表：存 `tool_call_id`、工具名、参数、输出引用、审批人、状态、幂等键和耗时。消息 parts 可以留下 UI 快照，但状态机和唯一约束应该放在工具执行表里。
 
-这里最重要的是 `context_snapshot_item`。只保存“使用了 1 到 80 条消息的摘要”无法处理消息编辑、分支和选择性召回；保存有序 message/artifact ID，才能回答一次错误调用究竟看到了什么。
+这里最关键的是 `context_snapshot_item`。只记“用了第 1 到 80 条消息的摘要”，遇到消息编辑、分支或选择性召回就说不清了。把有顺序的 message/artifact ID 存下来，出问题时才能知道模型到底看到了什么。
 
-## 完成消息尽量不可变
+## 消息完成后尽量别改原文
 
-“事实日志不可变”不等于一行永远不能更新。assistant 流式输出在完成前需要更新，隐私法规也可能要求真正移除敏感 payload。更准确的规则是：
+“原始记录尽量不改”不等于一行永远不能更新。assistant 在流式输出结束前本来就要更新；隐私法规也可能要求真删敏感内容。更贴切的规则是：
 
 - `pending → streaming → completed | failed | cancelled` 是允许的状态迁移。
 - streaming 期间按时间片或内容块合并写入，不要每个 token 执行一次 `UPDATE`。
-- completed 后的用户编辑生成 `message_revision` 或一条替代消息，并增加 `content_version`，不要静默覆盖历史。
+- completed 后用户要编辑，就生成 `message_revision` 或替代消息，并增加 `content_version`，别悄悄覆盖历史。
 - 普通删除先写 `deleted_at`；安全或合规删除应清空/加密销毁敏感 parts，同时保留不含内容的审计墓碑。
-- 摘要的 `source_hash` 应由有序的 `(message_id, content_version)` 计算。来源变化时，将相关 artifact 标记失效。
+- 摘要的 `source_hash` 应从有序的 `(message_id, content_version)` 算出来。来源一变，相关 artifact 就要标记为失效。
 
-这样既保留可追踪性，也不会用“append-only”口号阻止必要的数据治理。
+这样既能追溯，又不会拿“只追加、不修改”当借口，妨碍必要的数据治理。
 
-## 流式写入要有恢复路径
+## 流式写入也要考虑中断后怎么办
 
-一次可靠的写入流程通常是：
+一套比较稳的写入流程可以是：
 
 1. 服务端鉴权，检查 thread 的 tenant 与成员关系。
 2. 用 `client_request_id` 幂等插入 user message，并在同一事务中分配 sequence。
 3. 创建 `agent_run` 与 `streaming` 状态的 assistant message，预先得到稳定 ID。
-4. 流式阶段把 chunks 放在内存或 Redis，按 250–1000ms 合并 checkpoint；不要逐 token 写 PostgreSQL。
+4. 流式输出先放在内存或 Redis，隔 250–1000ms 合并写一次 checkpoint；不要每个 token 都写 PostgreSQL。
 5. AI SDK 的 `onEnd` 中以最终 `responseMessage` 完成数据库行，记录 `finishReason`、usage 和状态。
-6. worker 定期把长时间停留在 streaming 的消息改为 failed，并保留最后 checkpoint。
+6. worker 定期把卡在 streaming 太久的消息改成 failed，并留下最后一次 checkpoint。
 
-AI SDK 官方示例允许客户端只提交最后一条消息，再由服务端加载历史。生产环境应进一步做到：**客户端提交的是候选新消息，不是权威历史**。服务端只接受它有权创建的 user parts，不能信任客户端回传的 assistant、tool output、system role 或 usage。
+AI SDK 官方示例允许客户端只提交最后一条消息，让服务端加载历史。线上还要再收紧一步：**客户端发来的是一条候选新消息，不是权威历史**。服务端只接受它有权创建的 user parts，不能相信客户端回传的 assistant、tool output、system role 或 usage。
 
-下面展示的是边界，而不是完整路由：
+下面只展示边界处理，不是一份完整路由：
 
 ```ts
 import {
@@ -355,13 +355,13 @@ return createUIMessageStreamResponse({
 })
 ```
 
-AI SDK 7 已将这类生命周期回调的首选名称从 `onFinish` 改为 `onEnd`，并把顶层 `system` 改为 `instructions`。旧名字可能仍作为兼容别名存在，但新代码不应继续扩大迁移成本。
+AI SDK 7 把这类生命周期回调的推荐名称从 `onFinish` 改成了 `onEnd`，顶层 `system` 也改成了 `instructions`。旧名字也许还能兼容，但新代码就别继续往旧写法上加债了。
 
-如果要在刷新页面后恢复同一条 SSE 流，仅有 PostgreSQL 消息表还不够。官方方案需要保存 active stream ID，并用 Redis 一类的流存储连接 publisher/subscriber。此时“关闭页面”只是断开连接；真正停止生成必须有独立 cancel endpoint，更新 run/message 状态并终止后台任务。
+如果刷新页面后还想接回同一条 SSE 流，只有 PostgreSQL 消息表不够。官方方案需要保存 active stream ID，再用 Redis 一类的流存储连接 publisher 和 subscriber。这时“关掉页面”只是断开连接；要真的停止生成，得有独立的 cancel endpoint，更新 run/message 状态并停掉后台任务。
 
-## 上下文构建是一条编译管线
+## 上下文不是把最近消息一股脑塞进去
 
-从数据库读取最近 100 条消息直接传给模型，不是上下文管理。生产级 context builder 应按固定顺序工作：
+从数据库取最近 100 条消息直接发给模型，不叫上下文管理。比较靠谱的 context builder 要按固定顺序做事：
 
 ```text
 鉴权与租户隔离
@@ -376,9 +376,9 @@ AI SDK 7 已将这类生命周期回调的首选名称从 `onFinish` 改为 `onE
   → 调用模型
 ```
 
-顺序不能随便交换。权限过滤必须发生在摘要之前，否则一条已无权访问的消息可能继续泄漏在历史摘要里。工具调用与结果要成对处理，不能截断出孤立的 tool result。当前用户请求、可信 instructions、尚未解决的审批和当前 step 的工具结果通常拥有最高保留优先级。
+这个顺序别随便换。权限过滤一定要在做摘要之前，不然一条已经无权访问的消息，可能还会留在旧摘要里。工具调用和结果也要一起处理，不能只留半截 tool result。当前用户请求、可信 instructions、没处理完的审批、当前 step 的工具结果，通常优先级最高。
 
-### 先分配预算，再谈截断
+### 先算够不够放，再决定删什么
 
 上下文预算不是模型窗口的全部：
 
@@ -391,9 +391,9 @@ AI SDK 7 已将这类生命周期回调的首选名称从 `onFinish` 改为 `onE
 - 安全余量
 ```
 
-安全余量可先设为总窗口的 10%–20%，再根据真实 usage 调整。`JSON.stringify(messages).length / 4` 只能作为触发压缩的粗略启发式，不能用于计费或精确防溢出。
+安全余量可以先留总窗口的 10%–20%，再按真实 usage 调整。`JSON.stringify(messages).length / 4` 只能粗略判断要不要压缩，不能拿来计费，也不能精确防止超窗。
 
-Agent 每执行一次工具都会产生新输入，因此预算检查必须在每个 step 重新运行。AI SDK 的 `ToolLoopAgent`、`generateText` 与 `streamText` 都支持在 `prepareStep` 中返回新的 messages，适合执行 step 内压缩：
+Agent 每跑一次工具都会多出新输入，所以每个 step 都要重新检查预算。AI SDK 的 `ToolLoopAgent`、`generateText`、`streamText` 都能在 `prepareStep` 返回新的 messages，适合在这里做 step 内压缩：
 
 ```ts
 import { pruneMessages, ToolLoopAgent, type ModelMessage } from 'ai'
@@ -432,48 +432,48 @@ const agent = new ToolLoopAgent({
 })
 ```
 
-`pruneMessages` 只处理 `ModelMessage[]`。它可以移除 reasoning、旧 tool call/result/approval 和裁剪后为空的消息，但不会判断业务相关性，也不会自动生成可信摘要。它是压缩管线中的一层，不是完整的 memory 系统。
+`pruneMessages` 只处理 `ModelMessage[]`。它能删 reasoning、旧 tool call/result/approval，以及裁剪后空掉的消息；但它不会判断哪些业务信息重要，也不会自动写出可信摘要。它只是压缩中的一层，不是完整的 memory 系统。
 
-## 压缩应该分成四个等级
+## 压缩最好分四步做
 
 ### 第一级：无损过滤
 
-优先移除不应进入模型的内容：UI-only data parts、展示 metadata、重复状态通知、provider 原始调试字段、旧 reasoning、已完成且无后续价值的工具轨迹。对于超大的工具输出，把原始对象放对象存储或业务表，context 中只保留受控摘要与引用 ID。
+先移除本来就不该进模型的内容：UI-only data parts、展示 metadata、重复状态通知、provider 的原始调试字段、旧 reasoning、已经没后续价值的工具轨迹。工具输出特别大时，把原始对象放对象存储或业务表，上下文里只留受控摘要和引用 ID。
 
 ### 第二级：相关性选择
 
-保留最近窗口之外，还要保留 pinned constraints、用户稳定偏好、未完成计划、当前引用的文档，以及与新请求相关的历史片段。语义召回不能替代 recent window，因为最新的否定、纠正和指代通常不适合仅靠 embedding 找回。
+除了最近几轮，还要留下 pinned constraints、用户长期偏好、没完成的计划、当前引用的文档，以及和新请求有关的历史片段。语义召回不能代替 recent window：最新的否定、纠正和指代，单靠 embedding 往往找不准。
 
 ### 第三级：可追溯摘要
 
-摘要 artifact 至少记录来源消息 ID/版本、覆盖范围、摘要 prompt 版本、生成模型、创建时间、token 估算与 source hash。摘要内容应尽量区分：
+摘要 artifact 至少要记来源消息 ID/版本、覆盖范围、摘要 prompt 版本、生成模型、创建时间、token 估算和 source hash。摘要内容最好分清：
 
 - 已确认事实与用户约束；
 - 已完成动作与可验证结果；
 - 未完成任务、失败与阻塞；
 - 不确定推断和待确认信息。
 
-摘要是有损缓存，不是历史真相。用户要求查看原话、执行审计或重新生成时，仍然回到原始消息。
+摘要是有损缓存，不是历史原文。用户要看原话、做审计或重新生成时，还是得回到原始消息。
 
 ### 第四级：原子截断
 
-硬截断是最后保险。按完整 turn 或完整工具交互单元删除最旧、最低优先级内容，不按字符从中间切一条 JSON，也不留下只有 tool call 没有 result 的协议残片。如果最后仍超预算，应缩短附件、工具输出或最大输出预留，并显式记录降级原因，而不是静默发送一份不可解释的上下文。
+硬截断是最后一道保险。按完整 turn 或完整工具交互单元，删掉最旧、优先级最低的内容；别从一条 JSON 中间按字符硬切，也别只留 tool call 不留 result。还超预算的话，就缩短附件、工具输出或最大输出预留，并记下为什么降级，别悄悄发出一份谁都解释不清的上下文。
 
-## 过滤无用信息也要可解释
+## 为什么没选中，也要说得清
 
-不要只用 `is_context_eligible boolean`。布尔值不能回答为什么一条消息被排除，也无法区分策略排除、用户删除、安全脱敏和临时预算不足。
+别只放一个 `is_context_eligible boolean`。一个 true/false 说不清消息为什么被排除，也分不出是策略排除、用户删除、安全脱敏，还是这次预算不够。
 
-主表可以保存稳定的 `context_state` 与 `exclusion_reason`；单次预算造成的未选择则只写入 context snapshot。这样可以区分：
+主表可以保存稳定的 `context_state` 和 `exclusion_reason`；只是本次预算不够而没选中的内容，写进 context snapshot 就好。这样能区分：
 
 - 永久不应进入模型：敏感数据、UI 事件、已撤回内容；
 - 当前策略不需要：旧工具噪音、低相关历史；
 - 本次预算放不下：仍保留在历史中，下次可能重新入选。
 
-过滤器还应输出 reason code，例如 `authorization_denied`、`ui_only`、`stale_tool_trace`、`superseded`、`low_relevance`、`budget_cut`。线上质量下降时，才能统计到底是召回失败、摘要失真还是预算过紧。
+过滤器也应该输出 reason code，例如 `authorization_denied`、`ui_only`、`stale_tool_trace`、`superseded`、`low_relevance`、`budget_cut`。线上质量变差时，才能查出是召回没找对、摘要失真，还是预算卡得太紧。
 
-## 多租户安全从表结构开始
+## 多租户隔离，先从表结构做起
 
-`tenant_id` 在 thread、run、message 上看似重复，却能让每次查询和 RLS 都在本表完成，并通过复合外键阻止跨租户挂接。
+`tenant_id` 同时出现在 thread、run、message 上，看上去有点重复，但这样每次查询和 RLS 都能在当前表完成，复合外键也能阻止跨租户关联。
 
 PostgreSQL 可以再加行级安全作为纵深防御：
 
@@ -485,13 +485,13 @@ using (tenant_id = current_setting('app.tenant_id', true)::uuid)
 with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
 ```
 
-连接池中必须在事务范围使用 `set_config(..., true)` 设置租户，并在缺少租户上下文时默认拒绝，而不是复用上一个请求的 session 值。
+用了连接池时，必须在事务范围里用 `set_config(..., true)` 设置租户。没有租户上下文就默认拒绝，别复用上一个请求留下的 session 值。
 
-工具输出尤其容易包含 access token、内部 URL、个人数据或整份文档。进入 parts、日志、trace、摘要和 embedding 之前都要做统一脱敏。数据库静态加密不能替代应用层字段保护；如果使用 envelope encryption，应把需要检索的脱敏投影与密文正文分开。
+工具输出很容易带出 access token、内部 URL、个人数据，甚至整篇文档。在写入 parts、日志、trace、摘要、embedding 前，都要统一脱敏。数据库静态加密不能代替应用层字段保护；如果用 envelope encryption，就把用于检索的脱敏字段和密文正文分开。
 
-## 索引、归档与分区
+## 索引、归档和分区别抢跑
 
-先服务真实查询，不要一次性给每列建索引。大多数消息系统的热路径只有：
+先看真实查询，别一上来就给每列加索引。多数消息系统最常跑的就这几类：
 
 - 按 tenant/thread/sequence 读取一页；
 - 用 client request ID 做幂等去重；
@@ -499,13 +499,13 @@ with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
 - 找到超时的 streaming 消息；
 - 按 retention policy 扫描旧数据。
 
-前三类已经由示例索引覆盖；超时任务可以增加只覆盖 `status = 'streaming'` 的部分索引。PostgreSQL 只有在查询条件能推出 partial index 的 predicate 时才会使用它，因此应用查询应与索引条件保持一致，并用 `EXPLAIN (ANALYZE, BUFFERS)` 验证。
+前面三类已经有示例索引；查超时任务时，可以加一个只覆盖 `status = 'streaming'` 的部分索引。PostgreSQL 只有在查询条件能推出 partial index 的 predicate 时才会用它，所以应用里的查询条件要和索引条件对应，并用 `EXPLAIN (ANALYZE, BUFFERS)` 验证。
 
-不要因为“数据可能很多”就提前分区。分区会影响主键、唯一约束、外键和迁移。只有消息达到数亿级、按月删除形成明显 vacuum 压力，或冷热存储成本成为问题时，再按 retention 方式选择 created_at 范围分区，或按 tenant/thread 做 hash 分区。归档前还要确认摘要、审计和删除请求能够跨冷热层追踪。
+别因为“以后数据可能很多”就提前分区。分区会牵动主键、唯一约束、外键和迁移。等消息真到数亿级、按月删除造成明显的 vacuum 压力，或冷热存储成本成了问题，再按 retention 选择 created_at 范围分区，或按 tenant/thread 做 hash 分区。归档前也要确认摘要、审计、删除请求能跨冷热层追踪。
 
-## 一份可以用于评审的检查清单
+## 上线前过一遍这份清单
 
-上线前，至少确认这些问题都有明确答案：
+上线前，至少把这些问题答清楚：
 
 - 数据库保存的是可恢复的 `UIMessage`，还是供应商相关的临时 `ModelMessage`？
 - parts 是否能完整表达 text、file、tool、approval、source 与 data？
@@ -520,11 +520,11 @@ with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
 - streaming 卡死、客户端断开、主动取消与进程崩溃是否各有恢复状态？
 - 编辑、删除、脱敏和摘要失效是否会更新 `content_version` 或 source hash？
 
-## 结语
+## 最后
 
-生产级 Agent 的 message 表不应该承担所有职责。它最重要的工作，是稳定保存用户可见、可审计、可迁移的消息事实；run 记录执行，artifact 保存有损压缩，snapshot 解释每次模型输入。
+线上 Agent 的 message 表不该包办所有事。它最重要的职责，是稳定保存用户看得到、能审计、能迁移的原始消息；run 记录执行过程，artifact 存压缩结果，snapshot 说明每次给模型发了什么。
 
-一旦把“历史”与“上下文”拆开，压缩、截断和过滤就不再是破坏数据的清理脚本，而会成为一条可版本化、可测试、可观测的编译管线。这也是 Agent 从 demo 走向长期可靠服务的关键分界线。
+把“历史”和“上下文”分开后，压缩、截断、过滤就不再是可能伤到数据的清理脚本，而是一套能版本化、能测试、能观察的流程。Agent 能不能从 demo 变成长期稳定的服务，往往就差在这里。
 
 ## 参考资料
 

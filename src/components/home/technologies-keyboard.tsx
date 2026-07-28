@@ -7,18 +7,8 @@ import {
   VolumeXIcon,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
-import {
-  type CSSProperties,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
-import {
-  TECHNOLOGIES_PER_PAGE,
-  type TechnologySkill,
-  technologySkills,
-} from './technologies-config'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { TECHNOLOGIES_PER_PAGE, technologySkills } from './technologies-config'
 import { unlockKeyboardAudio } from './technologies-keyboard-audio'
 import type { TechnologySlot } from './technologies-keyboard-model'
 import styles from './technologies-keyboard.module.css'
@@ -41,56 +31,6 @@ const TechnologiesKeyboardCanvas = dynamic(
     ssr: false,
   }
 )
-
-const createSkillStyle = (keyColor: string, iconColor: string): CSSProperties =>
-  ({
-    '--skill-color': keyColor,
-    '--skill-icon-color': iconColor,
-  }) as CSSProperties
-
-interface TechnologyLegendItemProps {
-  readonly active: boolean
-  readonly onActivate: (slotIndex: number) => void
-  readonly onDeactivate: () => void
-  readonly skill: TechnologySkill
-  readonly slotIndex: number
-}
-
-function TechnologyLegendItem({
-  active,
-  onActivate,
-  onDeactivate,
-  skill,
-  slotIndex,
-}: TechnologyLegendItemProps) {
-  const activate = useCallback((): void => {
-    onActivate(slotIndex)
-  }, [onActivate, slotIndex])
-
-  return (
-    <li>
-      <button
-        aria-label={`${skill.name}：${skill.description}`}
-        className={styles.legendButton}
-        data-active={active}
-        onBlur={onDeactivate}
-        onFocus={activate}
-        onPointerEnter={activate}
-        onPointerLeave={onDeactivate}
-        style={createSkillStyle(skill.keyColor, skill.iconColor)}
-        type="button"
-      >
-        <span aria-hidden="true" className={styles.legendIcon}>
-          <svg viewBox="0 0 24 24">
-            <title>{skill.name}</title>
-            <path d={skill.iconPath} />
-          </svg>
-        </span>
-        <span className={styles.legendName}>{skill.name}</span>
-      </button>
-    </li>
-  )
-}
 
 export function TechnologiesKeyboard() {
   const [activePage, setActivePage] = useState(0)
@@ -144,14 +84,6 @@ export function TechnologiesKeyboard() {
     []
   )
 
-  const handleSkillActivate = useCallback((slotIndex: number): void => {
-    setActiveSlot(slotIndex)
-  }, [])
-
-  const handleSkillDeactivate = useCallback((): void => {
-    setActiveSlot(null)
-  }, [])
-
   const changePage = useCallback(
     (direction: -1 | 1): void => {
       setActivePage((currentPage) => {
@@ -204,19 +136,6 @@ export function TechnologiesKeyboard() {
             </span>
             <span>继续向配置数组添加即可扩展</span>
           </div>
-
-          <ul aria-label="当前页技术栈" className={styles.legend}>
-            {visibleSkills.map((skill, slotIndex) => (
-              <TechnologyLegendItem
-                active={activeSlot === slotIndex}
-                key={skill.id}
-                onActivate={handleSkillActivate}
-                onDeactivate={handleSkillDeactivate}
-                skill={skill}
-                slotIndex={slotIndex}
-              />
-            ))}
-          </ul>
 
           <div className={styles.controls}>
             <button
