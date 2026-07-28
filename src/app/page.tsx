@@ -5,6 +5,7 @@ import { GitHubIcon } from '@/components/github-icon'
 import { GithubActivity } from '@/components/home/github-activity'
 import { HeroSection } from '@/components/home/hero-section'
 import { HomeMotion } from '@/components/home/home-motion'
+import { TechnologiesKeyboard } from '@/components/home/technologies-keyboard'
 import { SiteHeader } from '@/components/site-header'
 import { formatPostDate, getPublishedPosts } from '@/lib/blog'
 import styles from './home.module.css'
@@ -13,15 +14,6 @@ export const metadata: Metadata = {
   description: 'Tuntun 的个人主页，记录 Web 前端开发、开源项目与持续学习。',
   title: 'Tuntun — Web 前端开发者',
 }
-
-const technologies = [
-  'TypeScript',
-  'React',
-  'Next.js',
-  'Tailwind CSS',
-  'Node.js',
-  'Browser Extensions',
-] as const
 
 const projects = [
   {
@@ -73,19 +65,7 @@ export default function HomePage() {
       <main id="main-content">
         <HeroSection />
 
-        <section aria-label="技术栈" className={styles.technologyBand}>
-          <div className={styles.technologyInner} data-reveal>
-            <p>Technologies</p>
-            <ul>
-              {technologies.map((technology, index) => (
-                <li data-tone={index % 3} key={technology}>
-                  <span aria-hidden="true" />
-                  {technology}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+        <TechnologiesKeyboard />
 
         <section
           aria-labelledby="about-title"

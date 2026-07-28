@@ -21,6 +21,9 @@
 # production
 /build
 
+# generated 3D-model working files and visual-review output
+/artifacts/img2threejs/
+
 # misc
 .DS_Store
 *.pem

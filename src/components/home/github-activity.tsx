@@ -11,6 +11,8 @@ import 'react-activity-calendar/tooltips.css'
 const ACTIVITY_API_URL =
   'https://github-contributions-api.jogruber.de/v4/tuntun0609'
 const ACTIVITY_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u
+const ISO_DATE_LENGTH = 10
+const MILLISECONDS_PER_MINUTE = 60_000
 const VISIBLE_YEAR_COUNT = 2
 const CURRENT_YEAR = new Date().getFullYear()
 const YEAR_OPTIONS = Array.from(
@@ -86,6 +88,49 @@ const parseActivities = (value: unknown): Activity[] => {
   })
 }
 
+const requestActivities = async (
+  year: number | 'last',
+  signal: AbortSignal
+): Promise<Activity[]> => {
+  const response = await fetch(`${ACTIVITY_API_URL}?y=${year}`, { signal })
+
+  if (!response.ok) {
+    throw new Error(`GitHub contribution request failed: ${response.status}`)
+  }
+
+  const responseData: unknown = await response.json()
+  return parseActivities(responseData)
+}
+
+const getCurrentActivityDate = (): string => {
+  const currentDate = new Date()
+  const localDate = new Date(
+    currentDate.getTime() -
+      currentDate.getTimezoneOffset() * MILLISECONDS_PER_MINUTE
+  )
+
+  return localDate.toISOString().slice(0, ISO_DATE_LENGTH)
+}
+
+const mergeCurrentDayActivity = (
+  lastYearActivities: Activity[],
+  currentYearActivities: Activity[]
+): Activity[] => {
+  const currentDate = getCurrentActivityDate()
+  const currentDayActivity = currentYearActivities.find(
+    (activity) => activity.date === currentDate
+  )
+
+  if (!currentDayActivity) {
+    return lastYearActivities
+  }
+
+  return [
+    ...lastYearActivities.filter((activity) => activity.date !== currentDate),
+    currentDayActivity,
+  ]
+}
+
 const formatActivityTooltip = (activity: Activity): string => {
   const date = new Date(`${activity.date}T00:00:00Z`)
   return `${activityDateFormatter.format(date)} · ${activity.count} 次贡献`
@@ -101,23 +146,22 @@ export function GithubActivity() {
   useEffect(() => {
     const controller = new AbortController()
 
-    const fetchActivities = async () => {
+    const loadActivities = async () => {
       setStatus('loading')
 
       try {
         const apiYear = selectedYear === CURRENT_YEAR ? 'last' : selectedYear
-        const response = await fetch(`${ACTIVITY_API_URL}?y=${apiYear}`, {
-          signal: controller.signal,
-        })
+        const nextActivities =
+          selectedYear === CURRENT_YEAR
+            ? mergeCurrentDayActivity(
+                ...(await Promise.all([
+                  requestActivities(apiYear, controller.signal),
+                  requestActivities(selectedYear, controller.signal),
+                ]))
+              )
+            : await requestActivities(apiYear, controller.signal)
 
-        if (!response.ok) {
-          throw new Error(
-            `GitHub contribution request failed: ${response.status}`
-          )
-        }
-
-        const responseData: unknown = await response.json()
-        setActivities(parseActivities(responseData))
+        setActivities(nextActivities)
         setStatus('ready')
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -128,7 +172,7 @@ export function GithubActivity() {
       }
     }
 
-    fetchActivities()
+    loadActivities()
 
     return () => controller.abort()
   }, [selectedYear])

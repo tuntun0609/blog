@@ -21,6 +21,7 @@
       "!build",
       "!public",
       "!types",
+      "!artifacts",
       "!.agents",
       "!.claude",
       "!src/components/ui",
