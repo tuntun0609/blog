@@ -14,7 +14,7 @@ export type KeyboardVisualPass =
 
 export const KEYCAP_TRAVEL = {
   hover: 0.065,
-  press: 0.12,
+  press: 0.15,
 } as const
 
 export interface TechnologySlot {
@@ -63,6 +63,8 @@ const PRESSED_KEYCAP_CLEARANCE = 0.018
 const KEYCAP_DECK_CLEARANCE = KEYCAP_TRAVEL.press + PRESSED_KEYCAP_CLEARANCE
 /** 键帽顶面相对于底面的缩放比例，使侧面形成清晰的梯形收腰。 */
 const KEYCAP_TOP_SURFACE_SCALE = 0.8
+/** 顶面中心内凹深度，模拟真实键帽承托指腹的浅弧。 */
+const KEYCAP_TOP_CONCAVITY = 0.045
 /** 键盘外壳的总高度。 */
 const CHASSIS_HEIGHT = 0.8
 /** 内凹键床顶面高度，略高于外壳顶面以避免深度冲突。 */
@@ -75,9 +77,14 @@ const ICON_TEXTURE_SIZE = 256
 const BLOCKOUT_COLOR = '#A9AAAC'
 /** 未配置技术栈的空键位使用的默认键帽颜色。 */
 const NEUTRAL_KEY_COLOR = '#E4E1DB'
+/** 统一压低键帽亮度，避免强光下品牌色显得过浅。 */
+const KEYCAP_COLOR_SCALE = 0.82
 const MATTE_CLEARCOAT = 0.012
 const MATTE_CLEARCOAT_ROUGHNESS = 0.92
-const MATTE_CHASSIS_ROUGHNESS = 0.8
+/** 外壳保留低饱和反射，让倒角在掠射光下显出哑光轮廓而非镜面高光。 */
+const MATTE_CHASSIS_CLEARCOAT = 0.032
+const MATTE_CHASSIS_CLEARCOAT_ROUGHNESS = 0.78
+const MATTE_CHASSIS_ROUGHNESS = 0.72
 const MATTE_KEYBED_ROUGHNESS = 0.76
 const MATTE_KEYCAP_ROUGHNESS = 0.82
 
@@ -101,6 +108,9 @@ const isAtLeastPass = (
 
 const getSwitchStemColor = (visualPass: KeyboardVisualPass): string =>
   visualPass === 'blockout' ? '#7E8083' : '#0B0C0E'
+
+const getKeycapColor = (color: string): string =>
+  `#${new THREE.Color(color).multiplyScalar(KEYCAP_COLOR_SCALE).getHexString()}`
 
 const createNoiseTexture = (
   kind: 'normal' | 'roughness'
@@ -163,8 +173,19 @@ const createTaperedKeycapGeometry = (): THREE.BufferGeometry => {
       1
     )
     const taper = THREE.MathUtils.lerp(1, KEYCAP_TOP_SURFACE_SCALE, normalizedY)
-    positions.setX(index, positions.getX(index) * taper)
-    positions.setZ(index, positions.getZ(index) * taper)
+    const x = positions.getX(index)
+    const z = positions.getZ(index)
+    const normalizedRadius = Math.min(
+      1,
+      Math.hypot(x / (KEY_WIDTH / 2), z / (KEY_DEPTH / 2))
+    )
+    const topSurfaceWeight = THREE.MathUtils.smoothstep(normalizedY, 0.88, 1)
+    const concavity =
+      (1 - normalizedRadius ** 2) * KEYCAP_TOP_CONCAVITY * topSurfaceWeight
+
+    positions.setX(index, x * taper)
+    positions.setY(index, positions.getY(index) - concavity)
+    positions.setZ(index, z * taper)
   }
 
   positions.needsUpdate = true
@@ -278,12 +299,16 @@ const createIconTexture = (
 }
 
 const createPlasticMaterial = ({
+  clearcoat = MATTE_CLEARCOAT,
+  clearcoatRoughness = MATTE_CLEARCOAT_ROUGHNESS,
   color,
   name,
   normalMap,
   roughness,
   roughnessMap,
 }: {
+  clearcoat?: number
+  clearcoatRoughness?: number
   color: string
   name: string
   normalMap: THREE.Texture | null
@@ -291,8 +316,8 @@ const createPlasticMaterial = ({
   roughnessMap: THREE.Texture | null
 }): THREE.MeshPhysicalMaterial => {
   const material = new THREE.MeshPhysicalMaterial({
-    clearcoat: MATTE_CLEARCOAT,
-    clearcoatRoughness: MATTE_CLEARCOAT_ROUGHNESS,
+    clearcoat,
+    clearcoatRoughness,
     color,
     metalness: 0,
     name,
@@ -390,7 +415,9 @@ export const createTechnologiesKeyboard = ({
   )
 
   const chassisMaterial = createPlasticMaterial({
-    color: visualPass === 'blockout' ? BLOCKOUT_COLOR : '#090909',
+    clearcoat: MATTE_CHASSIS_CLEARCOAT,
+    clearcoatRoughness: MATTE_CHASSIS_CLEARCOAT_ROUGHNESS,
+    color: visualPass === 'blockout' ? BLOCKOUT_COLOR : '#111214',
     name: 'black-chassis-plastic',
     normalMap,
     roughness: MATTE_CHASSIS_ROUGHNESS,
@@ -444,7 +471,8 @@ export const createTechnologiesKeyboard = ({
     const keyColor =
       hasMaterials && slot.skill ? slot.skill.keyColor : NEUTRAL_KEY_COLOR
     const keyMaterial = createPlasticMaterial({
-      color: visualPass === 'blockout' ? BLOCKOUT_COLOR : keyColor,
+      color:
+        visualPass === 'blockout' ? BLOCKOUT_COLOR : getKeycapColor(keyColor),
       name: `keycap-material-${slot.slotIndex}`,
       normalMap,
       roughness: MATTE_KEYCAP_ROUGHNESS,
