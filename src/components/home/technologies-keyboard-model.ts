@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import type { TechnologySkill } from './technologies-config'
 
 export type KeyboardVisualPass =
@@ -49,10 +50,14 @@ const KEY_ROWS = 4
 const KEY_COLUMNS = 6
 /** 相邻键帽中心的间距；调小可收紧键帽间的视觉留白。 */
 const KEY_PITCH = 1.3
+/** 键帽阵列相对底座沿前后方向的统一偏移；负值向后，正值向前。 */
+const KEYCAP_LAYOUT_OFFSET_Z = 0.23
 /** 键帽在 X / Y / Z 轴上的基础尺寸。 */
 const KEY_WIDTH = 1.28
 const KEY_HEIGHT = 0.9
 const KEY_DEPTH = 1.28
+/** 键帽侧边与顶面外缘的圆润半径；增大更圆润，减小则更利落。 */
+const KEYCAP_EDGE_RADIUS = 0.08
 /** 键床向键帽阵列内收，避免从最外圈键帽底部露出。 */
 const KEYBED_EDGE_INSET = 0.16
 const KEYBED_WIDTH =
@@ -62,9 +67,11 @@ const KEYBED_DEPTH = (KEY_ROWS - 1) * KEY_PITCH + KEY_DEPTH - KEYBED_EDGE_INSET
 const PRESSED_KEYCAP_CLEARANCE = 0.018
 const KEYCAP_DECK_CLEARANCE = KEYCAP_TRAVEL.press + PRESSED_KEYCAP_CLEARANCE
 /** 键帽顶面相对于底面的缩放比例，使侧面形成清晰的梯形收腰。 */
-const KEYCAP_TOP_SURFACE_SCALE = 0.8
+const KEYCAP_TOP_SURFACE_SCALE = 0.75
 /** 顶面中心内凹深度，模拟真实键帽承托指腹的浅弧。 */
-const KEYCAP_TOP_CONCAVITY = 0.045
+const KEYCAP_TOP_CONCAVITY = 0.1
+/** 顶面网格细分数；需要中心顶点才能表现内凹。 */
+const KEYCAP_TOP_SURFACE_SEGMENTS = 12
 /** 键盘外壳的总高度。 */
 const CHASSIS_HEIGHT = 0.8
 /** 内凹键床顶面高度，略高于外壳顶面以避免深度冲突。 */
@@ -78,13 +85,13 @@ const BLOCKOUT_COLOR = '#A9AAAC'
 /** 未配置技术栈的空键位使用的默认键帽颜色。 */
 const NEUTRAL_KEY_COLOR = '#E4E1DB'
 /** 统一压低键帽亮度，避免强光下品牌色显得过浅。 */
-const KEYCAP_COLOR_SCALE = 0.82
-const MATTE_CLEARCOAT = 0.012
+const KEYCAP_COLOR_SCALE = 0.7
+const MATTE_CLEARCOAT = 0
 const MATTE_CLEARCOAT_ROUGHNESS = 0.92
-/** 外壳保留低饱和反射，让倒角在掠射光下显出哑光轮廓而非镜面高光。 */
-const MATTE_CHASSIS_CLEARCOAT = 0.032
-const MATTE_CHASSIS_CLEARCOAT_ROUGHNESS = 0.78
-const MATTE_CHASSIS_ROUGHNESS = 0.72
+/** 外壳保留哑光基底，并以较集中的透明涂层勾出倒角边缘。 */
+const MATTE_CHASSIS_CLEARCOAT = 0.16
+const MATTE_CHASSIS_CLEARCOAT_ROUGHNESS = 0.38
+const MATTE_CHASSIS_ROUGHNESS = 0.58
 const MATTE_KEYBED_ROUGHNESS = 0.76
 const MATTE_KEYCAP_ROUGHNESS = 0.82
 
@@ -162,7 +169,7 @@ const createTaperedKeycapGeometry = (): THREE.BufferGeometry => {
     KEY_HEIGHT,
     KEY_DEPTH,
     5,
-    0.13
+    KEYCAP_EDGE_RADIUS
   )
   const positions = geometry.getAttribute('position')
 
@@ -175,23 +182,61 @@ const createTaperedKeycapGeometry = (): THREE.BufferGeometry => {
     const taper = THREE.MathUtils.lerp(1, KEYCAP_TOP_SURFACE_SCALE, normalizedY)
     const x = positions.getX(index)
     const z = positions.getZ(index)
-    const normalizedRadius = Math.min(
-      1,
-      Math.hypot(x / (KEY_WIDTH / 2), z / (KEY_DEPTH / 2))
-    )
-    const topSurfaceWeight = THREE.MathUtils.smoothstep(normalizedY, 0.88, 1)
-    const concavity =
-      (1 - normalizedRadius ** 2) * KEYCAP_TOP_CONCAVITY * topSurfaceWeight
-
     positions.setX(index, x * taper)
-    positions.setY(index, positions.getY(index) - concavity)
     positions.setZ(index, z * taper)
   }
 
   positions.needsUpdate = true
-  geometry.computeVertexNormals()
-  geometry.name = 'tall-tapered-keycap-geometry'
-  return geometry
+  const retainedIndices: number[] = []
+
+  for (let index = 0; index < positions.count; index += 3) {
+    const isFlatTopFace = [0, 1, 2].every(
+      (vertexOffset) =>
+        positions.getY(index + vertexOffset) > KEY_HEIGHT / 2 - 0.0001
+    )
+
+    if (!isFlatTopFace) {
+      retainedIndices.push(index, index + 1, index + 2)
+    }
+  }
+
+  geometry.setIndex(retainedIndices)
+
+  const topSurfaceWidth =
+    (KEY_WIDTH - KEYCAP_EDGE_RADIUS * 2) * KEYCAP_TOP_SURFACE_SCALE
+  const topSurfaceDepth =
+    (KEY_DEPTH - KEYCAP_EDGE_RADIUS * 2) * KEYCAP_TOP_SURFACE_SCALE
+  const topSurface = new THREE.PlaneGeometry(
+    topSurfaceWidth,
+    topSurfaceDepth,
+    KEYCAP_TOP_SURFACE_SEGMENTS,
+    KEYCAP_TOP_SURFACE_SEGMENTS
+  )
+
+  topSurface.rotateX(-Math.PI / 2)
+
+  const topSurfacePositions = topSurface.getAttribute('position')
+
+  for (let index = 0; index < topSurfacePositions.count; index += 1) {
+    const x = topSurfacePositions.getX(index)
+    const z = topSurfacePositions.getZ(index)
+    const normalizedRadius = Math.min(
+      1,
+      Math.hypot(x / (topSurfaceWidth / 2), z / (topSurfaceDepth / 2))
+    )
+    const concavity = (1 - normalizedRadius ** 2) * KEYCAP_TOP_CONCAVITY
+
+    topSurfacePositions.setY(index, KEY_HEIGHT / 2 - concavity)
+  }
+
+  topSurfacePositions.needsUpdate = true
+  topSurface.computeVertexNormals()
+
+  const mergedGeometry = mergeGeometries([geometry, topSurface])
+
+  mergedGeometry.computeVertexNormals()
+  mergedGeometry.name = 'tall-tapered-concave-keycap-geometry'
+  return mergedGeometry
 }
 
 const createRoundedRectangleShape = (
@@ -467,7 +512,7 @@ export const createTechnologiesKeyboard = ({
     const row = Math.floor(slot.slotIndex / KEY_COLUMNS)
     const column = slot.slotIndex % KEY_COLUMNS
     const x = (column - (KEY_COLUMNS - 1) / 2) * KEY_PITCH
-    const z = (row - (KEY_ROWS - 1) / 2) * KEY_PITCH
+    const z = (row - (KEY_ROWS - 1) / 2) * KEY_PITCH + KEYCAP_LAYOUT_OFFSET_Z
     const keyColor =
       hasMaterials && slot.skill ? slot.skill.keyColor : NEUTRAL_KEY_COLOR
     const keyMaterial = createPlasticMaterial({

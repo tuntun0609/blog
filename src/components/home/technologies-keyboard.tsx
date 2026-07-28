@@ -124,18 +124,10 @@ export function TechnologiesKeyboard() {
       <div className={styles.inner} data-reveal>
         <div className={styles.copy}>
           <p className={styles.kicker}>TECHNOLOGIES / 24-KEY MACRO PAD</p>
-          <h2 id="technologies-title">把日常技术栈，放进一把会回应的键盘。</h2>
+          <h2 id="technologies-title">Read more. Understand more.</h2>
           <p className={styles.description}>
             每个技能都是一个独立键位。悬停会压下键帽；首次点击或轻触后，还会听见短促的机械轴体声。
           </p>
-
-          <div className={styles.meta}>
-            <span>
-              {technologySkills.length} 项已配置 · {TECHNOLOGIES_PER_PAGE}{' '}
-              个键位
-            </span>
-            <span>继续向配置数组添加即可扩展</span>
-          </div>
 
           <div className={styles.controls}>
             <button

@@ -34,7 +34,8 @@
   display: grid;
   grid-template-columns: minmax(12rem, 0.55fr) minmax(0, 1.45fr);
   gap: clamp(2.5rem, 8vw, 7rem);
-  align-items: center;
+  align-content: center;
+  align-items: start;
   width: min(calc(100% - 2.5rem), 68rem);
   min-height: max(39rem, calc(100svh - 4.35rem));
   padding-block: 6.75rem 6.5rem;
@@ -43,7 +44,6 @@
 
 .profile {
   align-self: start;
-  padding-top: 1.25rem;
 }
 
 .profile,

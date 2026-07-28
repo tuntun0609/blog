@@ -55,6 +55,8 @@ const KEYBOARD_VIEW = {
   userFacingTiltRadians: THREE.MathUtils.degToRad(2),
 } as const
 const MAX_PIXEL_RATIO = 1.7
+/** 快速点击也至少保留一帧以上的按压状态，确保按键行程可见。 */
+const MINIMUM_KEYCAP_PRESS_DURATION_MS = 84
 
 const getKeyTravelTarget = ({
   isActive,
@@ -182,7 +184,7 @@ export function TechnologiesKeyboardCanvas({
     )
     const keyLight = new THREE.DirectionalLight('#FFF4E7', 3.35)
     const fillLight = new THREE.DirectionalLight('#DDE7F4', 1.05)
-    const rimLight = new THREE.DirectionalLight('#FFFFFF', 0.65)
+    const rimLight = new THREE.DirectionalLight('#E8F1FF', 1.45)
 
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -193,7 +195,7 @@ export function TechnologiesKeyboardCanvas({
 
     keyLight.position.set(-7, 11, 7)
     fillLight.position.set(8, 5, -5)
-    rimLight.position.set(2, 7, -10)
+    rimLight.position.set(4, 8, -10)
 
     scene.add(environmentLight, keyLight, fillLight, rimLight, runtime.root)
 
@@ -219,6 +221,8 @@ export function TechnologiesKeyboardCanvas({
     let animationFrame = 0
     let hoveredSlot: number | null = null
     let pressedSlot: number | null = null
+    let pressStartedAt = 0
+    let pressReleaseAt = 0
     let isVisible = true
     let isDestroyed = false
     let lastFrameAt = window.performance.now()
@@ -277,6 +281,8 @@ export function TechnologiesKeyboardCanvas({
       unlockKeyboardAudio()
       const hitSlot = findHitSlot(event)
       pressedSlot = hitSlot
+      pressStartedAt = window.performance.now()
+      pressReleaseAt = Number.POSITIVE_INFINITY
       setHoveredSlot(hitSlot)
 
       if (hitSlot !== null && soundEnabledRef.current) {
@@ -287,16 +293,25 @@ export function TechnologiesKeyboardCanvas({
     }
 
     const handlePointerUp = (event: PointerEvent): void => {
-      pressedSlot = null
+      pressReleaseAt = Math.max(
+        window.performance.now(),
+        pressStartedAt + MINIMUM_KEYCAP_PRESS_DURATION_MS
+      )
 
       if (canvas.hasPointerCapture(event.pointerId)) {
         canvas.releasePointerCapture(event.pointerId)
       }
     }
 
+    const handlePointerCancel = (): void => {
+      pressedSlot = null
+      pressReleaseAt = 0
+    }
+
     const handlePointerLeave = (): void => {
       pointerTilt.set(0, 0)
       pressedSlot = null
+      pressReleaseAt = 0
       setHoveredSlot(null)
     }
 
@@ -358,6 +373,10 @@ export function TechnologiesKeyboardCanvas({
       lastFrameAt = frameAt
       const reducedMotion = motionPreference.matches
       const response = reducedMotion ? 1 : 1 - Math.exp(-delta * 24)
+
+      if (pressedSlot !== null && frameAt >= pressReleaseAt) {
+        pressedSlot = null
+      }
 
       updateKeyAnimations(response, activeSlotRef.current)
       updateAssemblyTilt(response, reducedMotion)
@@ -428,7 +447,7 @@ export function TechnologiesKeyboardCanvas({
     canvas.addEventListener('pointermove', handlePointerMove)
     canvas.addEventListener('pointerdown', handlePointerDown)
     canvas.addEventListener('pointerup', handlePointerUp)
-    canvas.addEventListener('pointercancel', handlePointerUp)
+    canvas.addEventListener('pointercancel', handlePointerCancel)
     canvas.addEventListener('pointerleave', handlePointerLeave)
     canvas.addEventListener('webglcontextlost', handleContextLost)
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -447,7 +466,7 @@ export function TechnologiesKeyboardCanvas({
       canvas.removeEventListener('pointermove', handlePointerMove)
       canvas.removeEventListener('pointerdown', handlePointerDown)
       canvas.removeEventListener('pointerup', handlePointerUp)
-      canvas.removeEventListener('pointercancel', handlePointerUp)
+      canvas.removeEventListener('pointercancel', handlePointerCancel)
       canvas.removeEventListener('pointerleave', handlePointerLeave)
       canvas.removeEventListener('webglcontextlost', handleContextLost)
       document.removeEventListener('visibilitychange', handleVisibilityChange)

@@ -29,7 +29,7 @@
 .copy h2 {
   max-width: 24rem;
   margin: 1.1rem 0 0;
-  font-size: clamp(2rem, 4vw, 3.15rem);
+  font-size: clamp(2rem, 3.5vw, 2.5rem);
   font-weight: 750;
   line-height: 1.08;
   text-wrap: balance;
