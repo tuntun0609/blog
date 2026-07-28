@@ -520,6 +520,12 @@
   align-self: start;
 }
 
+.toc nav {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 7.5rem);
+}
+
 .tocTitle {
   padding-bottom: 0.9rem;
   margin: 0;
@@ -529,9 +535,13 @@
 
 .tocLinks {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 0.8rem;
+  min-height: 0;
   padding-top: 1rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .tocLink {
