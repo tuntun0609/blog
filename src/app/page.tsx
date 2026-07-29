@@ -5,6 +5,7 @@ import { GitHubIcon } from '@/components/github-icon'
 import { GithubActivity } from '@/components/home/github-activity'
 import { HeroSection } from '@/components/home/hero-section'
 import { HomeMotion } from '@/components/home/home-motion'
+import { ProjectsShowcase } from '@/components/home/projects-showcase'
 import { TechnologiesKeyboard } from '@/components/home/technologies-keyboard'
 import { SiteHeader } from '@/components/site-header'
 import { formatPostDate, getPublishedPosts } from '@/lib/blog'
@@ -14,40 +15,6 @@ export const metadata: Metadata = {
   description: 'Tuntun 的个人主页，记录 Web 前端开发、开源项目与持续学习。',
   title: 'Tuntun — Web 前端开发者',
 }
-
-const projects = [
-  {
-    description:
-      '探索内容与视觉表达结合方式的 TypeScript 项目，持续打磨信息图生成体验。',
-    href: 'https://github.com/tuntun0609/infographic-ai',
-    index: '01',
-    meta: 'TypeScript · 7 stars',
-    title: 'infographic-ai',
-  },
-  {
-    description:
-      '一个便于快速构建 SaaS 产品的 Next.js 模板，关注清晰的项目结构与开发体验。',
-    href: 'https://github.com/tuntun0609/easy-saas-next',
-    index: '02',
-    meta: 'Next.js · TypeScript',
-    title: 'easy-saas-next',
-  },
-  {
-    description:
-      'Bilibili 网页优化浏览器扩展，用更顺手的交互改善日常观看体验。',
-    href: 'https://github.com/tuntun0609/tun-bili-tool',
-    index: '03',
-    meta: 'Browser Extension · 40 stars',
-    title: 'tun-bili-tool',
-  },
-  {
-    description: '为 Leafer 元素提供吸附能力，让画布编辑中的对齐操作更自然。',
-    href: 'https://github.com/tuntun0609/leafer-x-snap',
-    index: '04',
-    meta: 'TypeScript · 24 stars',
-    title: 'leafer-x-snap',
-  },
-] as const
 
 export default function HomePage() {
   const recentPosts = getPublishedPosts().slice(0, 4)
@@ -113,32 +80,7 @@ export default function HomePage() {
             <h2 id="projects-title">正在构建的东西</h2>
           </div>
 
-          <div className={styles.projectList}>
-            {projects.map((project, index) => (
-              <article
-                className={styles.projectRow}
-                data-delay={index}
-                data-reveal
-                key={project.href}
-              >
-                <span className={styles.projectIndex}>{project.index}</span>
-                <div className={styles.projectCopy}>
-                  <h3>{project.title}</h3>
-                  <p>{project.description}</p>
-                </div>
-                <p className={styles.projectMeta}>{project.meta}</p>
-                <a
-                  aria-label={`在 GitHub 查看 ${project.title}`}
-                  className={styles.projectLink}
-                  href={project.href}
-                  rel="noopener"
-                  target="_blank"
-                >
-                  <ArrowUpRightIcon aria-hidden="true" />
-                </a>
-              </article>
-            ))}
-          </div>
+          <ProjectsShowcase />
 
           <a
             className={styles.allProjectsLink}

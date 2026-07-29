@@ -1,0 +1,265 @@
+.projectGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.projectCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem;
+  overflow: hidden;
+  background: var(--home-paper);
+  border: 1px dashed color-mix(in srgb, var(--home-ink) 18%, transparent);
+  border-radius: 0.75rem;
+}
+
+.previewFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--home-ink) 4%, var(--home-paper));
+  border: 1px solid color-mix(in srgb, var(--home-ink) 16%, transparent);
+  border-radius: 0.5rem;
+}
+
+.previewImage,
+.codePreview,
+.bilibiliPreview {
+  width: 100%;
+  height: 100%;
+  transition: filter 500ms var(--ease-out);
+}
+
+.previewImage {
+  object-fit: cover;
+}
+
+.projectCopy {
+  padding-inline: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.projectCopy h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 430;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+}
+
+.projectCopy p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  margin: 0.25rem 0 0;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--home-muted);
+}
+
+.stack {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  min-height: 1.25rem;
+  padding-inline: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.technology {
+  display: grid;
+  place-items: center;
+  color: var(--home-muted);
+  transition: color 160ms ease;
+}
+
+.technology:hover {
+  color: var(--home-ink);
+}
+
+.technology svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentColor;
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  margin-block: 0.25rem 0.05rem;
+  background: color-mix(in srgb, var(--home-ink) 13%, transparent);
+}
+
+.projectFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2rem;
+  padding: 0 0.5rem 0.35rem;
+}
+
+.githubLink,
+.detailsLink {
+  color: var(--home-muted);
+  outline: none;
+  transition: color 160ms ease;
+}
+
+.githubLink {
+  display: grid;
+  place-items: center;
+}
+
+.githubLink svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.detailsLink {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.69rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.detailsLink svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  transition: transform 180ms var(--ease-out);
+}
+
+.githubLink:hover,
+.githubLink:focus-visible,
+.detailsLink:hover,
+.detailsLink:focus-visible {
+  color: var(--home-ink);
+}
+
+.githubLink:focus-visible,
+.detailsLink:focus-visible {
+  outline: 2px solid var(--home-blue);
+  outline-offset: 4px;
+}
+
+.detailsLink:hover svg,
+.detailsLink:focus-visible svg {
+  transform: translate(2px, -2px);
+}
+
+.codePreview {
+  padding: clamp(0.85rem, 2.5vw, 1.3rem);
+  color: #f4f4f5;
+  background: #171717;
+}
+
+.codeTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.65rem;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.55rem;
+  color: #a3a3a3;
+  border-bottom: 1px solid #303030;
+}
+
+.codeAccent {
+  color: #67d4df;
+}
+
+.codePreview pre {
+  margin: 0.8rem 0 0;
+  overflow: hidden;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(0.55rem, 1.1vw, 0.72rem);
+  line-height: 1.7;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+}
+
+.bilibiliPreview {
+  display: grid;
+  grid-template-columns: 40% minmax(0, 1fr);
+  align-items: center;
+  padding: clamp(0.85rem, 2.5vw, 1.25rem);
+  color: #fff;
+  background: #fb7299;
+}
+
+.bilibiliIcon {
+  width: min(100%, 7.25rem);
+  height: auto;
+  border: 2px solid #fff;
+  border-radius: 0.4rem;
+  box-shadow: 0.45rem 0.45rem 0 #171717;
+}
+
+.bilibiliType {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.bilibiliLabel {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.48rem;
+  letter-spacing: 0.04em;
+}
+
+.bilibiliType strong {
+  max-width: 10rem;
+  font-size: clamp(1.4rem, 3vw, 2.4rem);
+  line-height: 0.86;
+  letter-spacing: -0.06em;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .projectCard:hover .previewImage,
+  .projectCard:hover .codePreview,
+  .projectCard:hover .bilibiliPreview {
+    filter: blur(4px);
+  }
+}
+
+@media (max-width: 639px) {
+  .projectGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .previewImage,
+  .codePreview,
+  .bilibiliPreview,
+  .technology,
+  .githubLink,
+  .detailsLink,
+  .detailsLink svg {
+    transition: none;
+  }
+}

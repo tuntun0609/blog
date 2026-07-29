@@ -275,7 +275,6 @@
 .allNotesLink svg,
 .githubCta svg,
 .contactLink svg,
-.projectLink svg,
 .noteRow > svg {
   width: 1rem;
   height: 1rem;
@@ -288,14 +287,12 @@
 .allNotesLink:focus-visible svg,
 .githubCta:focus-visible svg,
 .contactLink:focus-visible svg,
-.projectRow:focus-within .projectLink svg,
 .noteRow:focus-visible > svg {
   transform: translate(2px, -2px);
 }
 
 .primaryAction:active,
-.socials a:active,
-.projectLink:active {
+.socials a:active {
   transform: scale(0.97);
   transition-duration: var(--duration-press);
 }
@@ -404,27 +401,9 @@
 
 .projectsSection {
   padding-block: 0 7.5rem;
+  scroll-margin-top: 6rem;
 }
 
-.projectList {
-  border-bottom: 1px solid var(--home-line);
-}
-
-.projectRow {
-  --reveal-duration: 300ms;
-  position: relative;
-  display: grid;
-  grid-template-columns: 3rem minmax(0, 1fr) 12rem 2.5rem;
-  gap: 1.25rem;
-  align-items: center;
-  min-height: 8.25rem;
-  padding-block: 1.35rem;
-  border-bottom: 1px solid var(--home-soft-line);
-  border-radius: var(--radius-2xl);
-  isolation: isolate;
-}
-
-.projectRow::before,
 .noteRow::before {
   position: absolute;
   inset: 0;
@@ -437,16 +416,10 @@
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-.projectRow:focus-within::before,
 .noteRow:focus-visible::before {
   opacity: 1;
 }
 
-.projectRow:last-child {
-  border-bottom: 0;
-}
-
-.projectIndex,
 .noteIndex {
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.7rem;
@@ -454,49 +427,10 @@
   color: var(--home-blue);
 }
 
-.projectCopy h3,
 .noteRow h3 {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 700;
-}
-
-.projectCopy p {
-  max-width: 36rem;
-  margin: 0.45rem 0 0;
-  font-size: 0.82rem;
-  line-height: 1.65;
-  color: var(--home-muted);
-}
-
-.projectMeta {
-  margin: 0;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 0.66rem;
-  line-height: 1.5;
-  color: var(--home-muted);
-}
-
-.projectLink {
-  display: grid;
-  place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  color: var(--home-ink);
-  border: 1px solid var(--home-line);
-  border-radius: var(--radius-2xl);
-  transition:
-    color 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease,
-    transform var(--duration-fast) var(--ease-out);
-}
-
-.projectLink:hover,
-.projectLink:focus-visible {
-  color: var(--home-paper);
-  background: var(--home-ink);
-  border-color: var(--home-ink);
 }
 
 .allProjectsLink {
@@ -745,12 +679,10 @@
   .allNotesLink:hover svg,
   .githubCta:hover svg,
   .contactLink:hover svg,
-  .projectRow:hover .projectLink svg,
   .noteRow:hover > svg {
     transform: translate(2px, -2px);
   }
 
-  .projectRow:hover::before,
   .noteRow:hover::before {
     opacity: 1;
   }
@@ -775,21 +707,6 @@
 
   .contactCopy h2 {
     font-size: 2.75rem;
-  }
-
-  .projectRow {
-    grid-template-columns: 2.25rem minmax(0, 1fr) 2.1rem;
-  }
-
-  .projectMeta {
-    grid-row: 2;
-    grid-column: 2;
-    margin-top: -1rem;
-  }
-
-  .projectLink {
-    grid-row: 1 / span 2;
-    grid-column: 3;
   }
 
   .githubSection {
@@ -881,28 +798,12 @@
     padding-bottom: 5.5rem;
   }
 
-  .projectRow {
-    grid-template-columns: 2rem minmax(0, 1fr) 2rem;
-    gap: 0.75rem;
-    min-height: 8.75rem;
-  }
-
-  .projectRow:hover,
   .noteRow:hover {
     padding-inline: 0.45rem;
   }
 
-  .projectCopy h3,
   .noteRow h3 {
     font-size: 0.95rem;
-  }
-
-  .projectCopy p {
-    font-size: 0.78rem;
-  }
-
-  .projectMeta {
-    font-size: 0.61rem;
   }
 
   .noteRow {
@@ -999,8 +900,7 @@
   }
 
   .primaryAction:active,
-  .socials a:active,
-  .projectLink:active {
+  .socials a:active {
     opacity: 0.82;
     transform: none;
     transition: opacity var(--duration-press) var(--ease-out);
