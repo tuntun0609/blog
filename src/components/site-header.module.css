@@ -7,6 +7,10 @@
   backdrop-filter: blur(14px);
 }
 
+.homeHeader {
+  border-bottom: 0;
+}
+
 .headerInner {
   display: flex;
   align-items: center;

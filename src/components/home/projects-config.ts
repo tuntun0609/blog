@@ -36,6 +36,37 @@ export interface ProjectDefinition {
 
 export const projects: readonly ProjectDefinition[] = [
   {
+    description:
+      '本地优先的手绘动画工具：在浏览器中绘制、预览笔画过程，并导出图片或视频。',
+    href: 'https://github.com/tuntun0609/dranimo',
+    preview: {
+      kind: 'image',
+      src: '/projects/dranimo-preview.png',
+    },
+    technologies: [
+      { name: 'Next.js', path: siNextdotjs.path },
+      { name: 'React', path: siReact.path },
+      { name: 'TypeScript', path: siTypescript.path },
+      { name: 'Tailwind CSS', path: siTailwindcss.path },
+    ],
+    title: 'dranimo',
+  },
+  {
+    description:
+      '这个持续记录前端开发、开源项目与学习笔记的个人网站，使用 MDX 构建内容。',
+    href: 'https://github.com/tuntun0609/blog',
+    preview: {
+      kind: 'image',
+      src: '/projects/blog-preview.png',
+    },
+    technologies: [
+      { name: 'Next.js', path: siNextdotjs.path },
+      { name: 'React', path: siReact.path },
+      { name: 'TypeScript', path: siTypescript.path },
+    ],
+    title: 'blog',
+  },
+  {
     description: '用自然语言创建和编辑信息图、幻灯片，并将成果导出为 PPTX。',
     href: 'https://github.com/tuntun0609/infographic-ai',
     preview: {

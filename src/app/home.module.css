@@ -302,9 +302,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
   max-width: 39rem;
-  padding-top: 1.15rem;
   margin: 3.25rem 0 0;
-  border-top: 1px solid var(--home-line);
 }
 
 .heroFacts div {
@@ -350,7 +348,6 @@
   align-items: flex-start;
   justify-content: space-between;
   padding-bottom: 2.3rem;
-  border-bottom: 1px solid var(--home-line);
 }
 
 .sectionHeading h2,
@@ -449,10 +446,6 @@
   padding-block: 0 7.5rem;
 }
 
-.noteList {
-  border-bottom: 1px solid var(--home-line);
-}
-
 .noteRow {
   --reveal-duration: 300ms;
   position: relative;
@@ -462,13 +455,8 @@
   align-items: center;
   min-height: 6.5rem;
   padding-block: 1.1rem;
-  border-bottom: 1px solid var(--home-soft-line);
   border-radius: var(--radius-2xl);
   isolation: isolate;
-}
-
-.noteRow:last-child {
-  border-bottom: 0;
 }
 
 .noteRow > div {
@@ -514,7 +502,6 @@
   padding-block: 5.5rem;
   padding-inline: clamp(1.5rem, 5vw, 4rem);
   background: transparent;
-  border-block: 1px solid var(--home-line);
 }
 
 .githubIntro {
@@ -611,7 +598,6 @@
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.65rem;
   color: var(--home-muted);
-  border-top: 1px solid var(--home-line);
 }
 
 .footer p,

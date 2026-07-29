@@ -11,7 +11,9 @@ export function SiteHeader({ isHomePage = false }: SiteHeaderProps) {
   const sectionPrefix = isHomePage ? '' : '/'
 
   return (
-    <header className={styles.header}>
+    <header
+      className={`${styles.header} ${isHomePage ? styles.homeHeader : ''}`}
+    >
       <div className={styles.headerInner}>
         <Link aria-label="Tuntun 的个人主页" className={styles.brand} href="/">
           @tuntun0609

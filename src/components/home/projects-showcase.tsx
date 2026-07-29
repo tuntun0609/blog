@@ -33,8 +33,6 @@ export function ProjectsShowcase() {
             ))}
           </ul>
 
-          <div className={styles.divider} />
-
           <div className={styles.projectFooter}>
             <a
               aria-label={`在 GitHub 查看 ${project.title}`}
