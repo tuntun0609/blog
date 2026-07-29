@@ -1,8 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import Script from 'next/script'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import avatarStickerPoster from '../../../public/avatar-sticker-poster@3x.webp'
 import avatarImageSource from '../../../public/avatar-tuntun.jpg'
 import styles from './avatar-sticker.module.css'
@@ -10,7 +9,6 @@ import styles from './avatar-sticker.module.css'
 const AVATAR_SOURCE_SIZE = 460
 const AVATAR_CORNER_RADIUS = 44
 const DISPLAY_SIZE_RATIO = 0.84
-const STICKER_RUNTIME_SRC = '/vendor/sticker-forge/sticker-forge.iife.js'
 
 type LoadStatus = 'error' | 'idle' | 'loading' | 'ready'
 
@@ -93,19 +91,6 @@ interface StickerOptions {
   wind?: number
 }
 
-interface StickerForgeApi {
-  createSticker: (
-    target: HTMLElement,
-    options?: StickerOptions
-  ) => Promise<StickerInstance>
-}
-
-declare global {
-  interface Window {
-    StickerForge?: StickerForgeApi
-  }
-}
-
 let avatarSourcePromise: Promise<string> | null = null
 
 const createAvatarSource = async (): Promise<string> => {
@@ -150,19 +135,9 @@ interface AvatarStickerProps {
 }
 
 export function AvatarSticker({ isRuntimeEnabled }: AvatarStickerProps) {
-  const [isRuntimeReady, setIsRuntimeReady] = useState(false)
   const [status, setStatus] = useState<LoadStatus>('idle')
   const frameRef = useRef<HTMLDivElement | null>(null)
   const hostRef = useRef<HTMLDivElement | null>(null)
-
-  const handleRuntimeReady = useCallback((): void => {
-    setStatus('loading')
-    setIsRuntimeReady(true)
-  }, [])
-
-  const handleRuntimeError = useCallback((): void => {
-    setStatus('error')
-  }, [])
 
   useEffect(() => {
     if (isRuntimeEnabled) {
@@ -171,10 +146,13 @@ export function AvatarSticker({ isRuntimeEnabled }: AvatarStickerProps) {
   }, [isRuntimeEnabled])
 
   useEffect(() => {
+    if (!isRuntimeEnabled) {
+      return
+    }
+
     const frame = frameRef.current
     const host = hostRef.current
-    const stickerForge = window.StickerForge
-    if (!(isRuntimeReady && frame && host && stickerForge)) {
+    if (!(frame && host)) {
       return
     }
 
@@ -241,13 +219,16 @@ export function AvatarSticker({ isRuntimeEnabled }: AvatarStickerProps) {
 
     const mountSticker = async (): Promise<void> => {
       try {
-        const avatarSource = await getAvatarSource()
+        const [{ createSticker }, avatarSource] = await Promise.all([
+          import('../../vendor/sticker-forge/sticker-forge.es.js'),
+          getAvatarSource(),
+        ])
         if (isCancelled) {
           return
         }
 
         const displaySize = getDisplaySize(frame)
-        const instance = await stickerForge.createSticker(host, {
+        const instance = await createSticker(host, {
           back: { color: '#f7f5f2', gloss: 0.7, roughness: 0.3 },
           display: { height: displaySize, width: displaySize },
           edge: { strength: 0.7, width: 2.4 },
@@ -332,7 +313,7 @@ export function AvatarSticker({ isRuntimeEnabled }: AvatarStickerProps) {
       host.removeEventListener('pointerdown', handlePointerDown, true)
       stickerInstance?.destroy()
     }
-  }, [isRuntimeReady])
+  }, [isRuntimeEnabled])
 
   return (
     <span
@@ -360,15 +341,6 @@ export function AvatarSticker({ isRuntimeEnabled }: AvatarStickerProps) {
         <span aria-live="polite" className={styles.statusText}>
           {STATUS_LABELS[status]}
         </span>
-        {isRuntimeEnabled ? (
-          <Script
-            id="sticker-forge-runtime"
-            onError={handleRuntimeError}
-            onReady={handleRuntimeReady}
-            src={STICKER_RUNTIME_SRC}
-            strategy="afterInteractive"
-          />
-        ) : null}
       </div>
     </span>
   )

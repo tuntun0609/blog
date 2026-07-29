@@ -24,6 +24,7 @@
       "!artifacts",
       "!.agents",
       "!.claude",
+      "!src/vendor",
       "!src/components/ui",
       "!src/components/ai-elements"
     ]
