@@ -340,9 +340,7 @@ export function TechnologiesKeyboard() {
         <div className={styles.copy}>
           <p className={styles.kicker}>TECHNOLOGIES / 24-KEY MACRO PAD</p>
           <h2 id="technologies-title">Learn more. Understand more.</h2>
-          <p className={styles.description}>
-            每个技能都是一个独立键位。悬停会压下键帽；点击后，上方投影会切换对应的技术内容，并响起短促的机械轴体声。
-          </p>
+          <p className={styles.description}>学的东西 说不定什么时候就用上了</p>
 
           <div className={styles.controls}>
             {pageCount > 1 ? (
