@@ -4,6 +4,7 @@ let lastSoundAt = 0
 
 const SOUND_COOLDOWN_MS = 42
 const NOISE_DURATION_SECONDS = 0.08
+const MASTER_GAIN = 0.28
 
 const getAudioContext = (): AudioContext | null => {
   if (typeof window === 'undefined' || !window.AudioContext) {
@@ -88,7 +89,8 @@ export const playMechanicalKeySound = (intensity = 1): void => {
   const lowGain = context.createGain()
   const normalizedIntensity = Math.min(1, Math.max(0.35, intensity))
 
-  master.gain.setValueAtTime(0.15 * normalizedIntensity, startAt)
+  // 保持短促的双段机械触感，同时让声音在常见笔记本扬声器上更清晰。
+  master.gain.setValueAtTime(MASTER_GAIN * normalizedIntensity, startAt)
   master.connect(context.destination)
 
   scheduleClickTransient(context, master, startAt, 0.72, 1950)

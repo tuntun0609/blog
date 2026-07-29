@@ -51,7 +51,7 @@ const KEY_COLUMNS = 6
 /** 相邻键帽中心的间距；调小可收紧键帽间的视觉留白。 */
 const KEY_PITCH = 1.3
 /** 键帽阵列相对底座沿前后方向的统一偏移；负值向后，正值向前。 */
-const KEYCAP_LAYOUT_OFFSET_Z = 0.23
+const KEYCAP_LAYOUT_OFFSET_Z = 0.15
 /** 键帽在 X / Y / Z 轴上的基础尺寸。 */
 const KEY_WIDTH = 1.28
 const KEY_HEIGHT = 0.9
@@ -69,7 +69,7 @@ const KEYCAP_DECK_CLEARANCE = KEYCAP_TRAVEL.press + PRESSED_KEYCAP_CLEARANCE
 /** 键帽顶面相对于底面的缩放比例，使侧面形成清晰的梯形收腰。 */
 const KEYCAP_TOP_SURFACE_SCALE = 0.75
 /** 顶面中心内凹深度，模拟真实键帽承托指腹的浅弧。 */
-const KEYCAP_TOP_CONCAVITY = 0.1
+const KEYCAP_TOP_CONCAVITY = 0
 /** 顶面网格细分数；需要中心顶点才能表现内凹。 */
 const KEYCAP_TOP_SURFACE_SEGMENTS = 12
 /** 键盘外壳的总高度。 */

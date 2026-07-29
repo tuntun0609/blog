@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { type RefObject, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   playMechanicalKeySound,
@@ -15,9 +15,9 @@ import {
 
 interface TechnologiesKeyboardCanvasProps {
   readonly activeSlot: number | null
-  readonly onHoveredSlotChange: (slotIndex: number | null) => void
+  readonly onSlotActivate: (slotIndex: number) => void
+  readonly presentationProgressRef: RefObject<number>
   readonly slots: readonly TechnologySlot[]
-  readonly soundEnabled: boolean
 }
 
 const REVIEW_PASSES = new Set<KeyboardVisualPass>([
@@ -43,10 +43,14 @@ const KEYBOARD_VIEW = {
   cameraTarget: new THREE.Vector3(0, 0.45, 0),
   /** 数值越小越接近产品图，越大则透视感越强。 */
   fieldOfViewDegrees: 30,
+  /** 第三屏居中展示时的正面机位；视线与水平底座保持 45°。 */
+  frontCameraPosition: new THREE.Vector3(0, 15.05, 14.6),
   /** 仅供 ?keyboardView=grazing 检视的低机位。 */
   grazingCameraPosition: new THREE.Vector3(9.4, 3.25, 10.3),
   /** 鼠标移动带来的额外倾斜强度，设为 0 可关闭此交互。 */
   pointerTiltSensitivity: 0.018,
+  /** 第三屏展示时底座保持水平，由相机机位形成 45° 夹角。 */
+  presentationTiltRadians: 0,
   /** 仅供 ?keyboardView=rear 检视的后方机位。 */
   rearCameraPosition: new THREE.Vector3(-8.7, 7.1, -10.8),
   /** 仅供 ?keyboardView=top 检视的俯视机位。 */
@@ -110,14 +114,13 @@ const getCameraPosition = (): THREE.Vector3 => {
 
 export function TechnologiesKeyboardCanvas({
   activeSlot,
-  onHoveredSlotChange,
+  onSlotActivate,
+  presentationProgressRef,
   slots,
-  soundEnabled,
 }: TechnologiesKeyboardCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const activeSlotRef = useRef(activeSlot)
-  const onHoveredSlotChangeRef = useRef(onHoveredSlotChange)
-  const soundEnabledRef = useRef(soundEnabled)
+  const onSlotActivateRef = useRef(onSlotActivate)
   const [isUnavailable, setIsUnavailable] = useState(false)
 
   useEffect(() => {
@@ -125,12 +128,8 @@ export function TechnologiesKeyboardCanvas({
   }, [activeSlot])
 
   useEffect(() => {
-    onHoveredSlotChangeRef.current = onHoveredSlotChange
-  }, [onHoveredSlotChange])
-
-  useEffect(() => {
-    soundEnabledRef.current = soundEnabled
-  }, [soundEnabled])
+    onSlotActivateRef.current = onSlotActivate
+  }, [onSlotActivate])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -162,6 +161,7 @@ export function TechnologiesKeyboardCanvas({
     )
     const raycaster = new THREE.Raycaster()
     const cameraPosition = getCameraPosition()
+    const presentationCameraPosition = KEYBOARD_VIEW.frontCameraPosition
     const pointer = new THREE.Vector2(2, 2)
     const pointerTilt = new THREE.Vector2()
     const currentTilt = new THREE.Vector2(
@@ -227,16 +227,27 @@ export function TechnologiesKeyboardCanvas({
     let isDestroyed = false
     let lastFrameAt = window.performance.now()
     let hasRecordedRenderStats = false
+    let cameraDistanceMultiplier = 1
+
+    const updatePresentationCamera = (presentationProgress: number): void => {
+      camera.position
+        .lerpVectors(
+          cameraPosition,
+          presentationCameraPosition,
+          presentationProgress
+        )
+        .multiplyScalar(cameraDistanceMultiplier)
+      camera.lookAt(KEYBOARD_VIEW.cameraTarget)
+    }
 
     const updateCamera = (): void => {
       const width = Math.max(1, canvas.clientWidth)
       const height = Math.max(1, canvas.clientHeight)
       const aspect = width / height
-      const narrowMultiplier = aspect < 1.05 ? 1.2 : 1
+      cameraDistanceMultiplier = aspect < 1.05 ? 1.2 : 1
 
       camera.aspect = aspect
-      camera.position.copy(cameraPosition).multiplyScalar(narrowMultiplier)
-      camera.lookAt(KEYBOARD_VIEW.cameraTarget)
+      updatePresentationCamera(presentationProgressRef.current)
       camera.updateProjectionMatrix()
       renderer.setPixelRatio(
         Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO)
@@ -266,9 +277,8 @@ export function TechnologiesKeyboardCanvas({
 
       hoveredSlot = slotIndex
       canvas.style.cursor = slotIndex === null ? 'grab' : 'pointer'
-      onHoveredSlotChangeRef.current(slotIndex)
 
-      if (slotIndex !== null && soundEnabledRef.current) {
+      if (slotIndex !== null) {
         playMechanicalKeySound(0.82)
       }
     }
@@ -285,7 +295,7 @@ export function TechnologiesKeyboardCanvas({
       pressReleaseAt = Number.POSITIVE_INFINITY
       setHoveredSlot(hitSlot)
 
-      if (hitSlot !== null && soundEnabledRef.current) {
+      if (hitSlot !== null) {
         playMechanicalKeySound(1)
       }
 
@@ -293,6 +303,12 @@ export function TechnologiesKeyboardCanvas({
     }
 
     const handlePointerUp = (event: PointerEvent): void => {
+      const releasedSlot = findHitSlot(event)
+
+      if (pressedSlot !== null && releasedSlot === pressedSlot) {
+        onSlotActivateRef.current(pressedSlot)
+      }
+
       pressReleaseAt = Math.max(
         window.performance.now(),
         pressStartedAt + MINIMUM_KEYCAP_PRESS_DURATION_MS
@@ -339,16 +355,27 @@ export function TechnologiesKeyboardCanvas({
 
     const updateAssemblyTilt = (
       response: number,
-      reducedMotion: boolean
+      reducedMotion: boolean,
+      presentationProgress: number
     ): void => {
+      const baseTilt = THREE.MathUtils.lerp(
+        KEYBOARD_VIEW.userFacingTiltRadians,
+        KEYBOARD_VIEW.presentationTiltRadians,
+        presentationProgress
+      )
+      const pointerInfluence = 1 - presentationProgress
       const targetTiltX =
-        KEYBOARD_VIEW.userFacingTiltRadians +
+        baseTilt +
         (reducedMotion
           ? 0
-          : pointerTilt.y * KEYBOARD_VIEW.pointerTiltSensitivity)
+          : pointerTilt.y *
+            KEYBOARD_VIEW.pointerTiltSensitivity *
+            pointerInfluence)
       const targetTiltZ = reducedMotion
         ? 0
-        : -pointerTilt.x * KEYBOARD_VIEW.pointerTiltSensitivity
+        : -pointerTilt.x *
+          KEYBOARD_VIEW.pointerTiltSensitivity *
+          pointerInfluence
       currentTilt.x = THREE.MathUtils.lerp(
         currentTilt.x,
         targetTiltX,
@@ -373,13 +400,15 @@ export function TechnologiesKeyboardCanvas({
       lastFrameAt = frameAt
       const reducedMotion = motionPreference.matches
       const response = reducedMotion ? 1 : 1 - Math.exp(-delta * 24)
+      const presentationProgress = presentationProgressRef.current
 
       if (pressedSlot !== null && frameAt >= pressReleaseAt) {
         pressedSlot = null
       }
 
       updateKeyAnimations(response, activeSlotRef.current)
-      updateAssemblyTilt(response, reducedMotion)
+      updatePresentationCamera(presentationProgress)
+      updateAssemblyTilt(response, reducedMotion, presentationProgress)
       renderer.render(scene, camera)
 
       if (!hasRecordedRenderStats) {
@@ -485,7 +514,7 @@ export function TechnologiesKeyboardCanvas({
 
   return (
     <canvas
-      aria-label="一把包含二十个独立键帽的 3D 技术栈机械键盘"
+      aria-label="一把包含二十四个独立键帽的 3D 技术栈机械键盘；点击键帽可切换上方技术信息"
       ref={canvasRef}
       role="img"
     />

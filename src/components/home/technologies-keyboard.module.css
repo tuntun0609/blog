@@ -1,4 +1,9 @@
 .section {
+  --keyboard-copy-opacity: 1;
+  --keyboard-copy-translate-y: 0px;
+  --keyboard-translate-x: 0px;
+  --keyboard-translate-y: 0px;
+  --keyboard-scale: 1;
   position: relative;
 }
 
@@ -15,7 +20,169 @@
 
 .copy {
   position: relative;
-  z-index: 2;
+  z-index: 4;
+  opacity: var(--keyboard-copy-opacity);
+  transform: translate3d(0, var(--keyboard-copy-translate-y), 0);
+  will-change: opacity, transform;
+}
+
+.section[data-scroll-stage="keyboard"] .copy {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.techDisplay {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  z-index: 1;
+  visibility: hidden;
+  width: min(36rem, calc(100% - 3rem));
+  color: #8ba8ff;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, calc(-50% - 0.55rem), 0) scale(0.98);
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 220ms var(--ease-out),
+    visibility 0s linear 220ms;
+}
+
+.techMonitor {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  filter: drop-shadow(
+    0 1.5rem 2.3rem color-mix(in srgb, var(--home-ink) 20%, transparent)
+  );
+}
+
+.techMonitorFrame {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.techMonitorScreen {
+  position: absolute;
+  inset: 12% 8.5%;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+  padding: 0.65rem 1rem 0.8rem;
+  overflow: hidden;
+  color: currentColor;
+  border-radius: 0.8rem;
+}
+
+.techMonitorLabel {
+  margin: 0;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.48rem;
+  font-weight: 680;
+  color: #8d929a;
+  letter-spacing: 0.03em;
+}
+
+.section[data-keyboard-facing="true"] .techDisplay {
+  visibility: visible;
+  opacity: 1;
+  transform: translate3d(-50%, -50%, 0) scale(1);
+  transition-delay: 0ms;
+}
+
+.techProjection {
+  position: relative;
+  display: grid;
+  align-items: center;
+  isolation: isolate;
+  animation: projection-rebuild 260ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* .techProjection::before {
+  position: absolute;
+  right: 10%;
+  bottom: -3.2rem;
+  left: 10%;
+  z-index: -1;
+  height: 3.8rem;
+  content: "";
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--home-blue) 16%, transparent),
+    transparent 90%
+  );
+  opacity: 0.52;
+  filter: blur(12px);
+  clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%);
+} */
+
+.techProjection::after {
+  position: absolute;
+  top: -20%;
+  right: 0;
+  left: 0;
+  height: 24%;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--home-blue) 20%, transparent),
+    transparent
+  );
+  opacity: 0;
+  transform: translate3d(0, -100%, 0);
+  animation: projection-scan 260ms linear;
+}
+
+.techReadout {
+  display: grid;
+  grid-template-columns: 3.75rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  min-height: 4.75rem;
+  filter: drop-shadow(
+    0 0.9rem 1.15rem color-mix(in srgb, var(--home-ink) 12%, transparent)
+  );
+}
+
+.techLogo {
+  width: 3.2rem;
+  height: 3.2rem;
+  overflow: visible;
+  fill: currentColor;
+}
+
+.techText {
+  min-width: 0;
+}
+
+.techName {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(1.55rem, 3vw, 2.15rem);
+  font-weight: 780;
+  line-height: 1;
+  color: #f7f7f5;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.techDescription {
+  margin: 0.5rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #a8adb5;
+  white-space: nowrap;
 }
 
 .kicker {
@@ -72,12 +239,11 @@
   display: flex;
   gap: 0.65rem;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   min-height: 2rem;
   margin-top: 1.1rem;
 }
 
-.soundButton,
 .pageButton {
   display: inline-flex;
   gap: 0.45rem;
@@ -99,8 +265,6 @@
     background-color var(--duration-fast) var(--ease-out);
 }
 
-.soundButton:hover,
-.soundButton:focus-visible,
 .pageButton:hover,
 .pageButton:focus-visible {
   color: var(--home-ink);
@@ -108,7 +272,6 @@
   border-color: currentColor;
 }
 
-.soundButton svg,
 .pageButton svg {
   width: 0.8rem;
   height: 0.8rem;
@@ -130,9 +293,18 @@
 
 .scene {
   position: relative;
+  z-index: 3;
   min-width: 0;
   height: clamp(28rem, 45vw, 36rem);
   isolation: isolate;
+  transform: translate3d(
+      var(--keyboard-translate-x),
+      var(--keyboard-translate-y),
+      0
+    )
+    scale(var(--keyboard-scale));
+  transform-origin: center;
+  will-change: transform;
 }
 
 .scene::before {
@@ -195,8 +367,64 @@
   }
 }
 
+@keyframes projection-rebuild {
+  0% {
+    filter: blur(3px);
+    opacity: 0.18;
+    transform: translate3d(0, 3px, 0) scale(0.985, 0.94);
+  }
+
+  36% {
+    filter: blur(1px);
+    opacity: 0.76;
+    transform: translate3d(0, -1px, 0) scale(1.004, 0.99);
+  }
+
+  58% {
+    filter: blur(0.4px);
+    opacity: 0.52;
+    transform: translate3d(0, 1px, 0) scale(0.998, 1);
+  }
+
+  100% {
+    filter: blur(0);
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes projection-scan {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -100%, 0);
+  }
+
+  22% {
+    opacity: 0.75;
+  }
+
+  78% {
+    opacity: 0.42;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 550%, 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .loadingSpinner {
+    animation: none;
+  }
+
+  .techDisplay {
+    transform: translate3d(-50%, -50%, 0);
+    transition: opacity 160ms var(--ease-out);
+  }
+
+  .techProjection,
+  .techProjection::after {
     animation: none;
   }
 }
@@ -247,8 +475,19 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .soundButton,
   .pageButton {
     transition: none;
+  }
+}
+
+@media (min-width: 821px) {
+  .section {
+    min-height: calc(max(38rem, 100svh - 4.35rem) + 150svh);
+  }
+
+  .inner {
+    position: sticky;
+    top: 4.35rem;
+    height: calc(100svh - 4.35rem);
   }
 }
