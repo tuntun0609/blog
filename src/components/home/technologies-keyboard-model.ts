@@ -84,8 +84,12 @@ const ICON_TEXTURE_SIZE = 256
 const BLOCKOUT_COLOR = '#A9AAAC'
 /** 未配置技术栈的空键位使用的默认键帽颜色。 */
 const NEUTRAL_KEY_COLOR = '#E4E1DB'
-/** 统一压低键帽亮度，避免强光下品牌色显得过浅。 */
-const KEYCAP_COLOR_SCALE = 0.7
+/**
+ * 保留品牌色本身的明度，并略微增加饱和度。直接缩暗线性色会让强光下的
+ * 键帽发灰，失去染色 PBT 的饱满感。
+ */
+const KEYCAP_SATURATION_BOOST = 0.14
+const KEYCAP_LIGHTNESS_OFFSET = -0.025
 const MATTE_CLEARCOAT = 0
 const MATTE_CLEARCOAT_ROUGHNESS = 0.92
 /** 外壳保留哑光基底，并以较集中的透明涂层勾出倒角边缘。 */
@@ -93,7 +97,12 @@ const MATTE_CHASSIS_CLEARCOAT = 0.16
 const MATTE_CHASSIS_CLEARCOAT_ROUGHNESS = 0.38
 const MATTE_CHASSIS_ROUGHNESS = 0.58
 const MATTE_KEYBED_ROUGHNESS = 0.76
-const MATTE_KEYCAP_ROUGHNESS = 0.82
+/**
+ * 染色 PBT 不是镜面塑料：保留微弱、宽阔的高光来描述圆角和凹面，
+ * 同时避免透明涂层带来的玩具感。
+ */
+const MATTE_KEYCAP_ROUGHNESS = 0.66
+const KEYCAP_NORMAL_SCALE = 0.075
 
 const isAtLeastPass = (
   currentPass: KeyboardVisualPass,
@@ -116,8 +125,13 @@ const isAtLeastPass = (
 const getSwitchStemColor = (visualPass: KeyboardVisualPass): string =>
   visualPass === 'blockout' ? '#7E8083' : '#0B0C0E'
 
-const getKeycapColor = (color: string): string =>
-  `#${new THREE.Color(color).multiplyScalar(KEYCAP_COLOR_SCALE).getHexString()}`
+const getKeycapColor = (color: string): string => {
+  const keycapColor = new THREE.Color(color)
+
+  keycapColor.offsetHSL(0, KEYCAP_SATURATION_BOOST, KEYCAP_LIGHTNESS_OFFSET)
+
+  return `#${keycapColor.getHexString()}`
+}
 
 const createNoiseTexture = (
   kind: 'normal' | 'roughness'
@@ -349,6 +363,7 @@ const createPlasticMaterial = ({
   color,
   name,
   normalMap,
+  normalScale = 0.16,
   roughness,
   roughnessMap,
 }: {
@@ -357,6 +372,7 @@ const createPlasticMaterial = ({
   color: string
   name: string
   normalMap: THREE.Texture | null
+  normalScale?: number
   roughness: number
   roughnessMap: THREE.Texture | null
 }): THREE.MeshPhysicalMaterial => {
@@ -372,7 +388,7 @@ const createPlasticMaterial = ({
   })
 
   if (normalMap) {
-    material.normalScale.set(0.16, 0.16)
+    material.normalScale.set(normalScale, normalScale)
   }
 
   return material
@@ -520,6 +536,7 @@ export const createTechnologiesKeyboard = ({
         visualPass === 'blockout' ? BLOCKOUT_COLOR : getKeycapColor(keyColor),
       name: `keycap-material-${slot.slotIndex}`,
       normalMap,
+      normalScale: KEYCAP_NORMAL_SCALE,
       roughness: MATTE_KEYCAP_ROUGHNESS,
       roughnessMap,
     })

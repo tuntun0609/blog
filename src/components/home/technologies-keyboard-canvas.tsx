@@ -180,15 +180,15 @@ export function TechnologiesKeyboardCanvas({
     const environmentLight = new THREE.HemisphereLight(
       '#F4F6FA',
       '#2C2E33',
-      2.25
+      1.65
     )
-    const keyLight = new THREE.DirectionalLight('#FFF4E7', 3.35)
-    const fillLight = new THREE.DirectionalLight('#DDE7F4', 1.05)
-    const rimLight = new THREE.DirectionalLight('#E8F1FF', 1.45)
+    const keyLight = new THREE.DirectionalLight('#FFF4E7', 3.8)
+    const fillLight = new THREE.DirectionalLight('#DDE7F4', 0.72)
+    const rimLight = new THREE.DirectionalLight('#E8F1FF', 1.15)
 
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.08
+    renderer.toneMappingExposure = 1.02
 
     camera.position.copy(cameraPosition)
     camera.lookAt(KEYBOARD_VIEW.cameraTarget)

@@ -4,7 +4,7 @@ let lastSoundAt = 0
 
 const SOUND_COOLDOWN_MS = 42
 const NOISE_DURATION_SECONDS = 0.08
-const MASTER_GAIN = 0.75
+const MASTER_GAIN = 2.5
 
 const getAudioContext = (): AudioContext | null => {
   if (typeof window === 'undefined' || !window.AudioContext) {
