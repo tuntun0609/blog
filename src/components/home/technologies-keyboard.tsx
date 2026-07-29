@@ -33,6 +33,13 @@ const HEADER_HEIGHT_REM = 4.35
 const KEYBOARD_LOWER_OFFSET_RATIO = 0.18
 const KEYBOARD_FINAL_SCALE = 1.25
 const DARK_MONITOR_FOREGROUND = '#F7F7F5'
+const DARK_MONITOR_TECHNOLOGY_IDS = new Set([
+  'bun',
+  'chatgpt',
+  'github',
+  'nextjs',
+  'vercel',
+])
 
 const clampProgress = (value: number): number => Math.min(1, Math.max(0, value))
 
@@ -71,7 +78,7 @@ export function TechnologiesKeyboard() {
   )
   const activeSkill = slots[activeSlot]?.skill ?? visibleSkills[0]
   const displayAccent =
-    activeSkill?.keyColor === '#000000' || activeSkill?.id === 'bun'
+    activeSkill && DARK_MONITOR_TECHNOLOGY_IDS.has(activeSkill.id)
       ? DARK_MONITOR_FOREGROUND
       : (activeSkill?.keyColor ?? '#8BA8FF')
   useEffect(() => {
@@ -332,7 +339,7 @@ export function TechnologiesKeyboard() {
 
         <div className={styles.copy}>
           <p className={styles.kicker}>TECHNOLOGIES / 24-KEY MACRO PAD</p>
-          <h2 id="technologies-title">Read more. Understand more.</h2>
+          <h2 id="technologies-title">Learn more. Understand more.</h2>
           <p className={styles.description}>
             每个技能都是一个独立键位。悬停会压下键帽；点击后，上方投影会切换对应的技术内容，并响起短促的机械轴体声。
           </p>

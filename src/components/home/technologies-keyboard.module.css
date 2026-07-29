@@ -162,17 +162,14 @@
 }
 
 .techName {
-  width: fit-content;
-  max-width: 100%;
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   font-size: clamp(1.55rem, 3vw, 2.15rem);
   font-weight: 780;
-  line-height: 1;
+  line-height: 1.08;
   color: #f7f7f5;
   letter-spacing: -0.045em;
-  white-space: nowrap;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .techDescription {
