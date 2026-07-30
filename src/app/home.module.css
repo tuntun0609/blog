@@ -197,10 +197,10 @@
 
 .heroTitle {
   max-width: 48rem;
-  margin: 1.45rem 0 1.6rem;
-  font-size: 4.2rem;
-  font-weight: 760;
-  line-height: 1.04;
+  margin: 1.15rem 0 1.35rem;
+  font-size: clamp(2.5rem, 5vw, 3.4rem);
+  font-weight: 650;
+  line-height: 1.1;
 }
 
 .heroLead {
@@ -352,10 +352,10 @@
 .githubIntro h2,
 .contactCopy h2 {
   max-width: 33rem;
-  margin: 0.85rem 0 0;
-  font-size: 2.5rem;
-  font-weight: 730;
-  line-height: 1.12;
+  margin: 0.7rem 0 0;
+  font-size: clamp(1.7rem, 2.5vw, 2rem);
+  font-weight: 650;
+  line-height: 1.2;
 }
 
 .aboutGrid {
@@ -555,10 +555,6 @@
   align-items: end;
 }
 
-.githubIntro h2 {
-  font-size: 2.15rem;
-}
-
 .githubCopy > p {
   max-width: 27rem;
   margin: 0;
@@ -588,10 +584,6 @@
 
 .contactCopy {
   max-width: 38rem;
-}
-
-.contactCopy h2 {
-  font-size: 3.35rem;
 }
 
 .contactCopy > p {
@@ -739,19 +731,6 @@
     padding-block: 5.5rem 5.75rem;
   }
 
-  .heroTitle {
-    font-size: 3.35rem;
-  }
-
-  .sectionHeading h2,
-  .githubIntro h2 {
-    font-size: 2.1rem;
-  }
-
-  .contactCopy h2 {
-    font-size: 2.75rem;
-  }
-
   .githubSection {
     padding-inline: 2rem;
   }
@@ -792,8 +771,6 @@
 
   .heroTitle {
     margin-top: 1.2rem;
-    font-size: 2.75rem;
-    line-height: 1.08;
   }
 
   .heroLead {
@@ -818,8 +795,7 @@
 
   .sectionHeading h2,
   .githubIntro h2 {
-    margin-top: 0.7rem;
-    font-size: 1.95rem;
+    margin-top: 0.6rem;
   }
 
   .aboutGrid {
@@ -869,11 +845,6 @@
   .contactSection {
     display: block;
     padding-block: 5.75rem 6.5rem;
-  }
-
-  .contactCopy h2 {
-    margin-top: 0.7rem;
-    font-size: 2.4rem;
   }
 
   .contactLink {

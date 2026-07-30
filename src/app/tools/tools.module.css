@@ -1,0 +1,248 @@
+.shell {
+  --tools-header-height: calc(4.35rem + 1px);
+  --sidebar: color-mix(in oklab, var(--background) 97%, var(--primary));
+  --sidebar-accent: color-mix(in oklab, var(--primary) 9%, var(--background));
+  --sidebar-accent-foreground: var(--foreground);
+
+  min-height: 100vh;
+  color: var(--foreground);
+  background: var(--background);
+}
+
+.shell a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.skipLink {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--foreground);
+  border-radius: var(--radius-xl);
+  transform: translateY(-180%);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.skipLink:focus {
+  transform: translateY(0);
+}
+
+.toolsLayout {
+  min-height: calc(100svh - var(--tools-header-height));
+}
+
+.shell .toolsSidebar {
+  top: var(--tools-header-height);
+  bottom: auto;
+  height: calc(100svh - var(--tools-header-height));
+  padding: 1rem;
+}
+
+.sidebarContent {
+  padding-block: 0.35rem;
+}
+
+.sidebarGroup {
+  gap: 0.25rem;
+}
+
+.sidebarMenu {
+  gap: 0.35rem;
+}
+
+.sidebarNavButton {
+  position: relative;
+}
+
+.sidebarNavIcon {
+  color: var(--muted-foreground);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.sidebarNavButton[data-active="true"] .sidebarNavIcon {
+  color: var(--primary);
+}
+
+.page {
+  width: min(calc(100% - 2.5rem), 68rem);
+  min-height: calc(100vh - 12rem);
+  padding-block: 3.5rem 8rem;
+  margin-inline: auto;
+}
+
+.pageArea {
+  width: 100%;
+  min-width: 0;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+}
+
+.mobileSidebarTrigger {
+  display: none;
+}
+
+.sections {
+  min-width: 0;
+}
+
+.toolSection {
+  scroll-margin-top: 6.5rem;
+}
+
+.sectionHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.75fr);
+  gap: 2rem;
+  align-items: end;
+  margin-bottom: 1.5rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 730;
+  line-height: 1.2;
+}
+
+.sectionHeader p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.toolCard {
+  padding-top: 0;
+}
+
+.cardCover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-bottom: 1px solid var(--border);
+}
+
+.cardTitle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sectionSeparator {
+  margin-block: 3.5rem;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  width: min(calc(100% - 2.5rem), 68rem);
+  padding-block: 1.4rem 2.2rem;
+  margin-inline: auto;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.65rem;
+  color: var(--muted-foreground);
+  border-top: 1px solid var(--border);
+}
+
+.footer p,
+.footer div {
+  margin: 0;
+}
+
+.footer div {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.footer a:hover,
+.footer a:focus-visible {
+  color: var(--foreground);
+}
+
+@media (max-width: 767px) {
+  .mobileSidebarTrigger {
+    display: flex;
+    gap: 0.2rem;
+    align-items: center;
+    width: fit-content;
+    padding: 0.2rem 0.65rem 0.2rem 0.2rem;
+    margin-bottom: 2rem;
+    font-size: 0.75rem;
+    font-weight: 650;
+    color: var(--muted-foreground);
+    background: var(--sidebar);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius-2xl);
+  }
+}
+
+@media (max-width: 860px) {
+  .page {
+    padding-block: 3.5rem 6rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .shell {
+    --tools-header-height: calc(4rem + 1px);
+  }
+
+  .page,
+  .footer {
+    width: min(calc(100% - 2rem), 68rem);
+  }
+
+  .page {
+    padding-block: 3rem 5rem;
+  }
+
+  .sectionHeader,
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionHeader {
+    gap: 0.75rem;
+  }
+
+  .footer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .footer div {
+    justify-content: space-between;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skipLink,
+  .sidebarNavIcon {
+    transition: none;
+  }
+}

@@ -192,10 +192,10 @@
 
 .copy h2 {
   max-width: 24rem;
-  margin: 1.1rem 0 0;
-  font-size: clamp(2rem, 3.5vw, 2.5rem);
-  font-weight: 750;
-  line-height: 1.08;
+  margin: 0.7rem 0 0;
+  font-size: clamp(1.7rem, 2.5vw, 2rem);
+  font-weight: 650;
+  line-height: 1.2;
   text-wrap: balance;
 }
 
@@ -458,10 +458,6 @@
   .inner {
     width: min(calc(100% - 2rem), 68rem);
     padding-top: 3.75rem;
-  }
-
-  .copy h2 {
-    font-size: 2.25rem;
   }
 
   .scene {
