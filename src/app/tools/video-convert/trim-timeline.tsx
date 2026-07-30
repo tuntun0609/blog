@@ -9,17 +9,19 @@ import {
   VolumeXIcon,
 } from 'lucide-react'
 import {
-  type ChangeEvent,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
 } from 'react'
 import { Button } from '@/components/ui/button'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Slider } from '@/components/ui/slider'
 import type { TrimBoundary, TrimFrameRange } from './editor-model'
 import {
   clamp,
@@ -190,6 +192,7 @@ export function TrimTimeline({
   trimActive,
   volume,
 }: TrimTimelineProps) {
+  const volumeSliderId = useId()
   const wrapperRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const dragSessionRef = useRef<TrimDragSession | null>(null)
@@ -440,8 +443,10 @@ export function TrimTimeline({
     [handlePointerDown]
   )
   const handleVolumeChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      onVolumeChange(Number(event.currentTarget.value))
+    (nextVolume: number | readonly number[]) => {
+      onVolumeChange(
+        typeof nextVolume === 'number' ? nextVolume : (nextVolume[0] ?? 0)
+      )
     },
     [onVolumeChange]
   )
@@ -502,7 +507,7 @@ export function TrimTimeline({
                 width: geometry.activeWidth,
               }}
             />
-            <button
+            <Button
               aria-label="剪辑开始帧"
               aria-valuemax={normalizedRange.outFrame}
               aria-valuemin={0}
@@ -515,11 +520,12 @@ export function TrimTimeline({
               role="slider"
               style={{ left: geometry.startHandleLeft, width: handleWidth }}
               type="button"
+              variant="ghost"
             >
               <span aria-hidden="true" />
               <span aria-hidden="true" />
-            </button>
-            <button
+            </Button>
+            <Button
               aria-label="剪辑结束帧"
               aria-valuemax={durationInFrames - 1}
               aria-valuemin={normalizedRange.inFrame}
@@ -532,14 +538,15 @@ export function TrimTimeline({
               role="slider"
               style={{ left: geometry.endHandleLeft, width: handleWidth }}
               type="button"
+              variant="ghost"
             >
               <span aria-hidden="true" />
               <span aria-hidden="true" />
-            </button>
+            </Button>
           </>
         ) : null}
         {playheadLeft === null ? null : (
-          <button
+          <Button
             aria-label="当前播放位置"
             aria-valuemax={Math.max(0, durationInFrames - 1)}
             aria-valuemin={0}
@@ -554,9 +561,10 @@ export function TrimTimeline({
             style={{ left: playheadLeft }}
             title="拖动控制播放进度；方向键逐帧移动"
             type="button"
+            variant="ghost"
           >
             <span aria-hidden="true" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -590,16 +598,20 @@ export function TrimTimeline({
               <Volume2Icon aria-hidden="true" />
             )}
           </Button>
-          <input
-            aria-label="音量"
-            className={styles.volumeSlider}
-            max={1}
-            min={0}
-            onChange={handleVolumeChange}
-            step={0.01}
-            type="range"
-            value={volume}
-          />
+          <Field className={styles.volumeField}>
+            <FieldLabel className="sr-only" htmlFor={volumeSliderId}>
+              音量
+            </FieldLabel>
+            <Slider
+              className={styles.volumeSlider}
+              id={volumeSliderId}
+              max={1}
+              min={0}
+              onValueChange={handleVolumeChange}
+              step={0.01}
+              value={[volume]}
+            />
+          </Field>
         </div>
 
         <time className={styles.playbackTime}>

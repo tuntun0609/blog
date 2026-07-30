@@ -33,8 +33,28 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+  FieldTitle,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { CropEditor } from './crop-editor'
 import type {
   CropField,
@@ -121,6 +141,24 @@ const AUDIO_CODEC_LABELS: Record<string, string> = {
   vorbis: 'Vorbis',
 }
 
+const ROTATION_OPTIONS: {
+  label: string
+  value: 0 | 90 | 180 | 270
+}[] = [
+  { label: '不旋转', value: 0 },
+  { label: '顺时针 90°', value: 90 },
+  { label: '旋转 180°', value: 180 },
+  { label: '顺时针 270°', value: 270 },
+]
+
+const RESAMPLE_RATE_OPTIONS = [
+  { label: '8,000 Hz', value: 8000 },
+  { label: '16,000 Hz', value: 16_000 },
+  { label: '22,050 Hz', value: 22_050 },
+  { label: '44,100 Hz', value: 44_100 },
+  { label: '48,000 Hz', value: 48_000 },
+]
+
 const EMPTY_PROGRESS: ConversionProgress = {
   bytesWritten: 0,
   processedTime: 0,
@@ -193,8 +231,8 @@ function NumericField({
   )
 
   return (
-    <label className={styles.numericField} htmlFor={inputId}>
-      <span>{label}</span>
+    <Field className={styles.numericField}>
+      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
       <Input
         id={inputId}
         max={max}
@@ -204,7 +242,7 @@ function NumericField({
         type="number"
         value={value}
       />
-    </label>
+    </Field>
   )
 }
 
@@ -216,31 +254,27 @@ function SwitchSection({
   label,
   onChange,
 }: SwitchSectionProps) {
-  const handleChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      onChange(event.currentTarget.checked)
-    },
-    [onChange]
-  )
-
   return (
-    <div className={styles.switchSection} data-active={active}>
-      <label className={styles.switchLabel}>
-        <span>
-          <strong>{label}</strong>
-          <small>{description}</small>
-        </span>
-        <input
+    <Field
+      className={styles.switchSection}
+      data-active={active}
+      data-disabled={disabled || undefined}
+    >
+      <FieldLabel className={styles.switchLabel}>
+        <FieldContent>
+          <FieldTitle>{label}</FieldTitle>
+          <FieldDescription>{description}</FieldDescription>
+        </FieldContent>
+        <Switch
           checked={active}
           disabled={disabled}
-          onChange={handleChange}
-          type="checkbox"
+          onCheckedChange={onChange}
         />
-      </label>
+      </FieldLabel>
       {active && children ? (
         <div className={styles.switchContent}>{children}</div>
       ) : null}
-    </div>
+    </Field>
   )
 }
 
@@ -301,6 +335,13 @@ function MetadataCard({ metadata }: { metadata: MediaMetadata }) {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: This client boundary coordinates the converter's mutually exclusive workflow states and browser resource cleanup.
 export function VideoConverter() {
+  const audioCodecId = useId()
+  const containerId = useId()
+  const horizontalMirrorId = useId()
+  const resampleRateId = useId()
+  const rotationId = useId()
+  const verticalMirrorId = useId()
+  const videoCodecId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewSectionRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -830,8 +871,11 @@ export function VideoConverter() {
   }, [])
 
   const handleContainerChange = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      setContainer(event.currentTarget.value as OutputContainer)
+    (nextContainer: OutputContainer | null) => {
+      if (!nextContainer) {
+        return
+      }
+      setContainer(nextContainer)
       setVideoCodec('auto')
       setAudioCodec('auto')
     },
@@ -839,26 +883,28 @@ export function VideoConverter() {
   )
 
   const handleVideoCodecChange = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      setVideoCodec(event.currentTarget.value as VideoCodecChoice)
+    (nextVideoCodec: VideoCodecChoice | null) => {
+      if (nextVideoCodec) {
+        setVideoCodec(nextVideoCodec)
+      }
     },
     []
   )
 
   const handleAudioCodecChange = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      setAudioCodec(event.currentTarget.value as AudioCodecChoice)
+    (nextAudioCodec: AudioCodecChoice | null) => {
+      if (nextAudioCodec) {
+        setAudioCodec(nextAudioCodec)
+      }
     },
     []
   )
 
   const handleRotationChange = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      const nextRotation = Number(event.currentTarget.value) as
-        | 0
-        | 90
-        | 180
-        | 270
+    (nextRotation: 0 | 90 | 180 | 270 | null) => {
+      if (nextRotation === null) {
+        return
+      }
       setRotation(nextRotation)
       if (metadata?.width && metadata.height) {
         setCropRectangle(
@@ -874,23 +920,11 @@ export function VideoConverter() {
     [metadata]
   )
 
-  const handleMirrorHorizontalChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      setMirrorHorizontal(event.currentTarget.checked)
-    },
-    []
-  )
-
-  const handleMirrorVerticalChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      setMirrorVertical(event.currentTarget.checked)
-    },
-    []
-  )
-
   const handleResampleRateChange = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      setResampleRate(Number(event.currentTarget.value))
+    (nextResampleRate: number | null) => {
+      if (nextResampleRate !== null) {
+        setResampleRate(nextResampleRate)
+      }
     },
     []
   )
@@ -1046,6 +1080,50 @@ export function VideoConverter() {
     [handleTrimSecondsChange]
   )
 
+  const videoCodecOptions = useMemo<
+    { label: string; value: VideoCodecChoice }[]
+  >(() => {
+    const options: { label: string; value: VideoCodecChoice }[] = [
+      { label: '自动（优先无损复制）', value: 'auto' },
+    ]
+    if (outputOptions?.canCopyVideo) {
+      options.push({
+        label: `复制原始编码（${metadata?.videoCodec?.toUpperCase() ?? '未知'}）`,
+        value: 'copy',
+      })
+    }
+    for (const codec of outputOptions?.videoCodecs ?? []) {
+      options.push({
+        label: `转码为 ${VIDEO_CODEC_LABELS[codec] ?? codec}`,
+        value: codec,
+      })
+    }
+    options.push({ label: '移除视频轨道', value: 'drop' })
+    return options
+  }, [metadata?.videoCodec, outputOptions])
+
+  const audioCodecOptions = useMemo<
+    { label: string; value: AudioCodecChoice }[]
+  >(() => {
+    const options: { label: string; value: AudioCodecChoice }[] = [
+      { label: '自动（优先无损复制）', value: 'auto' },
+    ]
+    if (outputOptions?.canCopyAudio) {
+      options.push({
+        label: `复制原始编码（${metadata?.audioCodec?.toUpperCase() ?? '未知'}）`,
+        value: 'copy',
+      })
+    }
+    for (const codec of outputOptions?.audioCodecs ?? []) {
+      options.push({
+        label: `转码为 ${AUDIO_CODEC_LABELS[codec] ?? codec}`,
+        value: codec,
+      })
+    }
+    options.push({ label: '移除音频轨道', value: 'drop' })
+    return options
+  }, [metadata?.audioCodec, outputOptions])
+
   const outputLabel =
     OUTPUT_CONTAINERS.find((item) => item.value === container)?.label ??
     container.toUpperCase()
@@ -1059,7 +1137,7 @@ export function VideoConverter() {
 
   return (
     <div className={styles.converter} data-dragging={isDragging}>
-      <input
+      <Input
         accept={ACCEPTED_MEDIA_TYPES}
         aria-label="选择要转换的媒体文件"
         className={styles.fileInput}
@@ -1248,232 +1326,297 @@ export function VideoConverter() {
                       与 Remotion Convert 一样，使用 WebCodecs 在本地完成转换。
                     </CardDescription>
                   </CardHeader>
-                  <CardContent
-                    className={styles.controls}
-                    onScroll={handleSettingsContentScroll}
-                  >
-                    <label className={styles.selectField}>
-                      <span>输出容器</span>
-                      <select
-                        onChange={handleContainerChange}
-                        value={container}
-                      >
-                        {OUTPUT_CONTAINERS.map((item) => (
-                          <option key={item.value} value={item.value}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    {optionsLoading ? (
-                      <div className={styles.codecSkeletons}>
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                      </div>
-                    ) : null}
-
-                    {!optionsLoading && metadata.videoTrackCount > 0 ? (
-                      <label className={styles.selectField}>
-                        <span>视频编码</span>
-                        <select
-                          onChange={handleVideoCodecChange}
-                          value={videoCodec}
+                  <CardContent onScroll={handleSettingsContentScroll}>
+                    <FieldGroup className={styles.controls}>
+                      <Field className={styles.selectField}>
+                        <FieldLabel htmlFor={containerId}>输出容器</FieldLabel>
+                        <Select
+                          items={OUTPUT_CONTAINERS}
+                          onValueChange={handleContainerChange}
+                          value={container}
                         >
-                          <option value="auto">自动（优先无损复制）</option>
-                          {outputOptions?.canCopyVideo ? (
-                            <option value="copy">
-                              复制原始编码（{metadata.videoCodec?.toUpperCase()}
-                              ）
-                            </option>
-                          ) : null}
-                          {outputOptions?.videoCodecs.map((codec) => (
-                            <option key={codec} value={codec}>
-                              转码为 {VIDEO_CODEC_LABELS[codec] ?? codec}
-                            </option>
-                          ))}
-                          <option value="drop">移除视频轨道</option>
-                        </select>
-                      </label>
-                    ) : null}
-
-                    {!optionsLoading && metadata.audioTrackCount > 0 ? (
-                      <label className={styles.selectField}>
-                        <span>音频编码</span>
-                        <select
-                          onChange={handleAudioCodecChange}
-                          value={audioCodec}
-                        >
-                          <option value="auto">自动（优先无损复制）</option>
-                          {outputOptions?.canCopyAudio ? (
-                            <option value="copy">
-                              复制原始编码（{metadata.audioCodec?.toUpperCase()}
-                              ）
-                            </option>
-                          ) : null}
-                          {outputOptions?.audioCodecs.map((codec) => (
-                            <option key={codec} value={codec}>
-                              转码为 {AUDIO_CODEC_LABELS[codec] ?? codec}
-                            </option>
-                          ))}
-                          <option value="drop">移除音频轨道</option>
-                        </select>
-                      </label>
-                    ) : null}
-
-                    {metadata.videoTrackCount > 0 ? (
-                      <>
-                        <SwitchSection
-                          active={cropActive}
-                          description="拖动画面手柄，也可输入精确像素"
-                          label="裁剪"
-                          onChange={handleCropActiveChange}
-                        >
-                          {displayDimensions && cropMinimums ? (
-                            <div className={styles.fourColumnFields}>
-                              <NumericField
-                                label="左"
-                                max={
-                                  displayDimensions.width - cropMinimums.width
-                                }
-                                onChange={changeCropLeft}
-                                value={cropRectangle.left}
-                              />
-                              <NumericField
-                                label="上"
-                                max={
-                                  displayDimensions.height - cropMinimums.height
-                                }
-                                onChange={changeCropTop}
-                                value={cropRectangle.top}
-                              />
-                              <NumericField
-                                label="宽"
-                                max={displayDimensions.width}
-                                min={cropMinimums.width}
-                                onChange={changeCropWidth}
-                                value={cropRectangle.width}
-                              />
-                              <NumericField
-                                label="高"
-                                max={displayDimensions.height}
-                                min={cropMinimums.height}
-                                onChange={changeCropHeight}
-                                value={cropRectangle.height}
-                              />
-                            </div>
-                          ) : null}
-                        </SwitchSection>
-
-                        <SwitchSection
-                          active={resizeActive}
-                          description="设置输出画面尺寸"
-                          label="调整尺寸"
-                          onChange={setResizeActive}
-                        >
-                          <div className={styles.twoColumnFields}>
-                            <NumericField
-                              label="宽度"
-                              min={2}
-                              onChange={setResizeWidth}
-                              value={resizeWidth}
-                            />
-                            <NumericField
-                              label="高度"
-                              min={2}
-                              onChange={setResizeHeight}
-                              value={resizeHeight}
-                            />
-                          </div>
-                        </SwitchSection>
-
-                        <div className={styles.inlineOptions}>
-                          <label className={styles.selectField}>
-                            <span>旋转</span>
-                            <select
-                              onChange={handleRotationChange}
-                              value={rotation}
-                            >
-                              <option value={0}>不旋转</option>
-                              <option value={90}>顺时针 90°</option>
-                              <option value={180}>旋转 180°</option>
-                              <option value={270}>顺时针 270°</option>
-                            </select>
-                          </label>
-                          <div className={styles.checkOptions}>
-                            <label>
-                              <input
-                                checked={mirrorHorizontal}
-                                onChange={handleMirrorHorizontalChange}
-                                type="checkbox"
-                              />
-                              水平镜像
-                            </label>
-                            <label>
-                              <input
-                                checked={mirrorVertical}
-                                onChange={handleMirrorVerticalChange}
-                                type="checkbox"
-                              />
-                              垂直镜像
-                            </label>
-                          </div>
-                        </div>
-
-                        <SwitchSection
-                          active={trimActive}
-                          description="拖动播放器下方手柄，支持逐帧微调"
-                          label="截取"
-                          onChange={setTrimActive}
-                        >
-                          <div className={styles.twoColumnFields}>
-                            <NumericField
-                              label="开始（秒）"
-                              max={metadata.duration}
-                              onChange={changeTrimStart}
-                              step={1 / playerFps}
-                              value={trimInputSeconds.start}
-                            />
-                            <NumericField
-                              label="结束（秒）"
-                              max={metadata.duration}
-                              onChange={changeTrimEnd}
-                              step={1 / playerFps}
-                              value={trimInputSeconds.end}
-                            />
-                          </div>
-                        </SwitchSection>
-                      </>
-                    ) : null}
-
-                    {metadata.audioTrackCount > 0 ? (
-                      <SwitchSection
-                        active={resampleActive}
-                        description="更改音频采样率"
-                        label="音频重采样"
-                        onChange={setResampleActive}
-                      >
-                        <label className={styles.selectField}>
-                          <span>采样率</span>
-                          <select
-                            onChange={handleResampleRateChange}
-                            value={resampleRate}
+                          <SelectTrigger
+                            className={styles.selectTrigger}
+                            id={containerId}
                           >
-                            <option value={8000}>8,000 Hz</option>
-                            <option value={16_000}>16,000 Hz</option>
-                            <option value={22_050}>22,050 Hz</option>
-                            <option value={44_100}>44,100 Hz</option>
-                            <option value={48_000}>48,000 Hz</option>
-                          </select>
-                        </label>
-                      </SwitchSection>
-                    ) : null}
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {OUTPUT_CONTAINERS.map((item) => (
+                                <SelectItem key={item.value} value={item.value}>
+                                  {item.label}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </Field>
 
-                    {errorMessage ? (
-                      <div className={styles.inlineError} role="alert">
-                        {errorMessage}
-                      </div>
-                    ) : null}
+                      {optionsLoading ? (
+                        <div className={styles.codecSkeletons}>
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                        </div>
+                      ) : null}
+
+                      {!optionsLoading && metadata.videoTrackCount > 0 ? (
+                        <Field className={styles.selectField}>
+                          <FieldLabel htmlFor={videoCodecId}>
+                            视频编码
+                          </FieldLabel>
+                          <Select
+                            items={videoCodecOptions}
+                            onValueChange={handleVideoCodecChange}
+                            value={videoCodec}
+                          >
+                            <SelectTrigger
+                              className={styles.selectTrigger}
+                              id={videoCodecId}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {videoCodecOptions.map((item) => (
+                                  <SelectItem
+                                    key={item.value}
+                                    value={item.value}
+                                  >
+                                    {item.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      ) : null}
+
+                      {!optionsLoading && metadata.audioTrackCount > 0 ? (
+                        <Field className={styles.selectField}>
+                          <FieldLabel htmlFor={audioCodecId}>
+                            音频编码
+                          </FieldLabel>
+                          <Select
+                            items={audioCodecOptions}
+                            onValueChange={handleAudioCodecChange}
+                            value={audioCodec}
+                          >
+                            <SelectTrigger
+                              className={styles.selectTrigger}
+                              id={audioCodecId}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {audioCodecOptions.map((item) => (
+                                  <SelectItem
+                                    key={item.value}
+                                    value={item.value}
+                                  >
+                                    {item.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      ) : null}
+
+                      {metadata.videoTrackCount > 0 ? (
+                        <>
+                          <SwitchSection
+                            active={cropActive}
+                            description="拖动画面手柄，也可输入精确像素"
+                            label="裁剪"
+                            onChange={handleCropActiveChange}
+                          >
+                            {displayDimensions && cropMinimums ? (
+                              <FieldGroup className={styles.fourColumnFields}>
+                                <NumericField
+                                  label="左"
+                                  max={
+                                    displayDimensions.width - cropMinimums.width
+                                  }
+                                  onChange={changeCropLeft}
+                                  value={cropRectangle.left}
+                                />
+                                <NumericField
+                                  label="上"
+                                  max={
+                                    displayDimensions.height -
+                                    cropMinimums.height
+                                  }
+                                  onChange={changeCropTop}
+                                  value={cropRectangle.top}
+                                />
+                                <NumericField
+                                  label="宽"
+                                  max={displayDimensions.width}
+                                  min={cropMinimums.width}
+                                  onChange={changeCropWidth}
+                                  value={cropRectangle.width}
+                                />
+                                <NumericField
+                                  label="高"
+                                  max={displayDimensions.height}
+                                  min={cropMinimums.height}
+                                  onChange={changeCropHeight}
+                                  value={cropRectangle.height}
+                                />
+                              </FieldGroup>
+                            ) : null}
+                          </SwitchSection>
+
+                          <SwitchSection
+                            active={resizeActive}
+                            description="设置输出画面尺寸"
+                            label="调整尺寸"
+                            onChange={setResizeActive}
+                          >
+                            <FieldGroup className={styles.twoColumnFields}>
+                              <NumericField
+                                label="宽度"
+                                min={2}
+                                onChange={setResizeWidth}
+                                value={resizeWidth}
+                              />
+                              <NumericField
+                                label="高度"
+                                min={2}
+                                onChange={setResizeHeight}
+                                value={resizeHeight}
+                              />
+                            </FieldGroup>
+                          </SwitchSection>
+
+                          <div className={styles.inlineOptions}>
+                            <Field className={styles.selectField}>
+                              <FieldLabel htmlFor={rotationId}>旋转</FieldLabel>
+                              <Select
+                                items={ROTATION_OPTIONS}
+                                onValueChange={handleRotationChange}
+                                value={rotation}
+                              >
+                                <SelectTrigger
+                                  className={styles.selectTrigger}
+                                  id={rotationId}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectGroup>
+                                    {ROTATION_OPTIONS.map((item) => (
+                                      <SelectItem
+                                        key={item.value}
+                                        value={item.value}
+                                      >
+                                        {item.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                            </Field>
+                            <FieldSet className={styles.checkOptions}>
+                              <FieldLegend className="sr-only" variant="label">
+                                镜像
+                              </FieldLegend>
+                              <Field orientation="horizontal">
+                                <Checkbox
+                                  checked={mirrorHorizontal}
+                                  id={horizontalMirrorId}
+                                  onCheckedChange={setMirrorHorizontal}
+                                />
+                                <FieldLabel htmlFor={horizontalMirrorId}>
+                                  水平镜像
+                                </FieldLabel>
+                              </Field>
+                              <Field orientation="horizontal">
+                                <Checkbox
+                                  checked={mirrorVertical}
+                                  id={verticalMirrorId}
+                                  onCheckedChange={setMirrorVertical}
+                                />
+                                <FieldLabel htmlFor={verticalMirrorId}>
+                                  垂直镜像
+                                </FieldLabel>
+                              </Field>
+                            </FieldSet>
+                          </div>
+
+                          <SwitchSection
+                            active={trimActive}
+                            description="拖动播放器下方手柄，支持逐帧微调"
+                            label="截取"
+                            onChange={setTrimActive}
+                          >
+                            <FieldGroup className={styles.twoColumnFields}>
+                              <NumericField
+                                label="开始（秒）"
+                                max={metadata.duration}
+                                onChange={changeTrimStart}
+                                step={1 / playerFps}
+                                value={trimInputSeconds.start}
+                              />
+                              <NumericField
+                                label="结束（秒）"
+                                max={metadata.duration}
+                                onChange={changeTrimEnd}
+                                step={1 / playerFps}
+                                value={trimInputSeconds.end}
+                              />
+                            </FieldGroup>
+                          </SwitchSection>
+                        </>
+                      ) : null}
+
+                      {metadata.audioTrackCount > 0 ? (
+                        <SwitchSection
+                          active={resampleActive}
+                          description="更改音频采样率"
+                          label="音频重采样"
+                          onChange={setResampleActive}
+                        >
+                          <Field className={styles.selectField}>
+                            <FieldLabel htmlFor={resampleRateId}>
+                              采样率
+                            </FieldLabel>
+                            <Select
+                              items={RESAMPLE_RATE_OPTIONS}
+                              onValueChange={handleResampleRateChange}
+                              value={resampleRate}
+                            >
+                              <SelectTrigger
+                                className={styles.selectTrigger}
+                                id={resampleRateId}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  {RESAMPLE_RATE_OPTIONS.map((item) => (
+                                    <SelectItem
+                                      key={item.value}
+                                      value={item.value}
+                                    >
+                                      {item.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </Field>
+                        </SwitchSection>
+                      ) : null}
+
+                      {errorMessage ? (
+                        <div className={styles.inlineError} role="alert">
+                          {errorMessage}
+                        </div>
+                      ) : null}
+                    </FieldGroup>
                   </CardContent>
                   <CardFooter>
                     <Button
@@ -1500,7 +1643,7 @@ export function VideoConverter() {
             </p>
           </div>
 
-          <button
+          <Button
             aria-label="选择或拖入媒体文件"
             className={styles.dropZoneLabel}
             onClick={openFilePicker}
@@ -1509,6 +1652,7 @@ export function VideoConverter() {
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             type="button"
+            variant="ghost"
           >
             <div
               className={styles.dropZone}
@@ -1539,7 +1683,7 @@ export function VideoConverter() {
                 </span>
               )}
             </div>
-          </button>
+          </Button>
 
           {errorMessage ? (
             <div className={styles.heroError} role="alert">

@@ -93,10 +93,12 @@
 .dropZoneLabel {
   display: block;
   width: 100%;
+  height: auto;
   padding: 0;
   margin-top: 1.75rem;
   font: inherit;
   color: inherit;
+  white-space: normal;
   cursor: pointer;
   background: transparent;
   border: 0;
@@ -363,6 +365,7 @@
   outline: none;
   background: transparent;
   border: 0;
+  translate: none;
 }
 
 .cropMoveArea {
@@ -486,10 +489,15 @@
   height: 0.9rem;
 }
 
-.volumeSlider {
+.volumeField {
+  flex: none;
+  gap: 0;
   width: 5rem;
+}
+
+.volumeSlider {
+  width: 100%;
   height: 1.5rem;
-  accent-color: var(--convert-blue);
   cursor: pointer;
 }
 
@@ -563,6 +571,7 @@
   outline: none;
   background: var(--convert-blue);
   border: 0;
+  translate: none;
 }
 
 .trimHandle[data-boundary="in"] {
@@ -599,6 +608,7 @@
   background: transparent;
   border: 0;
   transform: translateX(-50%);
+  translate: none;
 }
 
 .timelinePlayhead::before {
@@ -758,28 +768,8 @@
   color: var(--muted-foreground);
 }
 
-.selectField select {
+.selectTrigger {
   width: 100%;
-  height: 2.35rem;
-  padding: 0 2.2rem 0 0.75rem;
-  font: inherit;
-  font-size: 0.78rem;
-  color: var(--foreground);
-  appearance: none;
-  outline: none;
-  background:
-    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%)
-    calc(100% - 0.9rem) calc(50% - 2px) / 5px 5px no-repeat,
-    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%)
-    calc(100% - 0.58rem) calc(50% - 2px) / 5px 5px no-repeat,
-    var(--background);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-}
-
-.selectField select:focus-visible {
-  border-color: var(--ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent);
 }
 
 .codecSkeletons {
@@ -789,6 +779,7 @@
 }
 
 .switchSection {
+  gap: 0;
   overflow: hidden;
   background: var(--background);
   border: 1px solid var(--border);
@@ -805,28 +796,9 @@
   gap: 1rem;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
   padding: 0.72rem 0.8rem;
   cursor: pointer;
-}
-
-.switchLabel > span {
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-}
-
-.switchLabel strong {
-  font-size: 0.79rem;
-}
-
-.switchLabel small {
-  font-size: 0.67rem;
-  color: var(--muted-foreground);
-}
-
-.switchLabel input,
-.checkOptions input {
-  accent-color: var(--convert-blue);
 }
 
 .switchContent {

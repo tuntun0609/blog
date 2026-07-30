@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { Button } from '@/components/ui/button'
 import type {
   CropRectangle,
   CropResizeTarget,
@@ -191,7 +192,7 @@ function CropResizeHandle({
   )
 
   return (
-    <button
+    <Button
       aria-label={TARGET_LABELS[target]}
       className={styles.cropHandle}
       data-target={target}
@@ -203,6 +204,7 @@ function CropResizeHandle({
       style={getHandleStyle(target, percentages)}
       title={`${TARGET_LABELS[target]}；方向键微调，Shift 加速`}
       type="button"
+      variant="ghost"
     />
   )
 }
@@ -417,7 +419,7 @@ export function CropEditor({
         </span>
       </div>
 
-      <button
+      <Button
         aria-label={TARGET_LABELS.move}
         className={styles.cropMoveArea}
         onKeyDown={handleMoveKeyDown}
@@ -433,6 +435,7 @@ export function CropEditor({
         }}
         title="拖动移动裁切框；方向键微调，Shift 加速"
         type="button"
+        variant="ghost"
       />
 
       {RESIZE_TARGETS.map((target) => (
