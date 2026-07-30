@@ -293,9 +293,9 @@ export function TrimTimeline({
       activeLeft: startOrigin,
       activeWidth: Math.max(0, endOrigin - startOrigin),
       endHandleLeft: endOrigin,
-      leftMaskWidth: Math.max(0, startOrigin - handleWidth),
-      rightMaskLeft: endOrigin + handleWidth,
-      rightMaskWidth: Math.max(0, timelineWidth - endOrigin - handleWidth),
+      leftMaskWidth: startOrigin,
+      rightMaskLeft: endOrigin,
+      rightMaskWidth: Math.max(0, timelineWidth - endOrigin),
       startHandleLeft: startOrigin - handleWidth,
     }
   }, [frameToOriginX, handleWidth, normalizedRange, timelineWidth])

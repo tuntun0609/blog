@@ -16,6 +16,7 @@ import {
   type CSSProperties,
   type DragEvent,
   type ReactNode,
+  type UIEvent,
   useCallback,
   useEffect,
   useId,
@@ -894,6 +895,16 @@ export function VideoConverter() {
     []
   )
 
+  const handleSettingsContentScroll = useCallback(
+    (event: UIEvent<HTMLDivElement>) => {
+      event.currentTarget.previousElementSibling?.toggleAttribute(
+        'data-content-scrolled',
+        event.currentTarget.scrollTop > 0
+      )
+    },
+    []
+  )
+
   const sourceDimensions = useMemo<FrameDimensions | null>(
     () =>
       metadata?.width && metadata.height
@@ -1231,13 +1242,16 @@ export function VideoConverter() {
               ) : null}
               {phase !== 'converting' && phase !== 'done' ? (
                 <Card>
-                  <CardHeader>
+                  <CardHeader className={styles.settingsHeader}>
                     <CardTitle>转换设置</CardTitle>
                     <CardDescription>
                       与 Remotion Convert 一样，使用 WebCodecs 在本地完成转换。
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className={styles.controls}>
+                  <CardContent
+                    className={styles.controls}
+                    onScroll={handleSettingsContentScroll}
+                  >
                     <label className={styles.selectField}>
                       <span>输出容器</span>
                       <select
