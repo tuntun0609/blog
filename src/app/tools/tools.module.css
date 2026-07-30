@@ -135,7 +135,29 @@
 }
 
 .toolCard {
+  height: 100%;
   padding-top: 0;
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.toolCardLink {
+  display: block;
+  min-width: 0;
+  border-radius: var(--radius-4xl);
+}
+
+a.toolCardLink:hover .toolCard,
+a.toolCardLink:focus-visible .toolCard {
+  box-shadow: 0 14px 34px
+    color-mix(in oklab, var(--foreground) 10%, transparent);
+  transform: translateY(-2px);
+}
+
+a.toolCardLink:focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--ring) 45%, transparent);
+  outline-offset: 3px;
 }
 
 .cardCover {
@@ -242,7 +264,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .skipLink,
-  .sidebarNavIcon {
+  .sidebarNavIcon,
+  .toolCard {
     transition: none;
   }
 }

@@ -31,6 +31,7 @@ export const metadata: Metadata = {
 interface ToolItem {
   cover: string
   description: string
+  href?: string
   isExternal?: boolean
   name: string
 }
@@ -55,8 +56,10 @@ const toolSections: ToolSection[] = [
       },
       {
         cover: '/tools/video-convert.svg',
-        description: '在常见视频格式之间转换，适配不同平台与播放环境。',
-        name: '格式转换',
+        description:
+          '无需上传，在浏览器本地转换视频格式、编码、尺寸与时间范围。',
+        href: '/tools/video-convert',
+        name: '视频转码',
       },
       {
         cover: '/tools/video-cover.svg',
@@ -146,27 +149,46 @@ export default function ToolsPage() {
                   </div>
 
                   <div className={styles.cardGrid}>
-                    {section.tools.map((tool) => (
-                      <Card className={styles.toolCard} key={tool.name}>
-                        <Image
-                          alt=""
-                          className={styles.cardCover}
-                          height={360}
-                          sizes="(max-width: 680px) calc(100vw - 2rem), (max-width: 860px) 50vw, 22rem"
-                          src={tool.cover}
-                          width={640}
-                        />
-                        <CardHeader>
-                          <CardTitle className={styles.cardTitle}>
-                            {tool.name}
-                            {tool.isExternal ? (
-                              <Badge variant="outline">外部</Badge>
-                            ) : null}
-                          </CardTitle>
-                          <CardDescription>{tool.description}</CardDescription>
-                        </CardHeader>
-                      </Card>
-                    ))}
+                    {section.tools.map((tool) => {
+                      const card = (
+                        <Card className={styles.toolCard} key={tool.name}>
+                          <Image
+                            alt=""
+                            className={styles.cardCover}
+                            height={360}
+                            sizes="(max-width: 680px) calc(100vw - 2rem), (max-width: 860px) 50vw, 22rem"
+                            src={tool.cover}
+                            width={640}
+                          />
+                          <CardHeader>
+                            <CardTitle className={styles.cardTitle}>
+                              {tool.name}
+                              {tool.isExternal ? (
+                                <Badge variant="outline">外部</Badge>
+                              ) : null}
+                            </CardTitle>
+                            <CardDescription>
+                              {tool.description}
+                            </CardDescription>
+                          </CardHeader>
+                        </Card>
+                      )
+
+                      return tool.href ? (
+                        <Link
+                          aria-label={`打开${tool.name}`}
+                          className={styles.toolCardLink}
+                          href={tool.href}
+                          key={tool.name}
+                        >
+                          {card}
+                        </Link>
+                      ) : (
+                        <div className={styles.toolCardLink} key={tool.name}>
+                          {card}
+                        </div>
+                      )
+                    })}
                   </div>
 
                   {sectionIndex < toolSections.length - 1 ? (
