@@ -1,5 +1,6 @@
 import { ArrowUpRightIcon, MailIcon, RssIcon } from 'lucide-react'
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { GitHubIcon } from '@/components/github-icon'
 import { GithubActivity } from '@/components/home/github-activity'
@@ -99,24 +100,40 @@ export default function HomePage() {
             <h2 id="notes-title">最近写下的内容</h2>
           </div>
 
-          <div className={styles.noteList}>
-            {recentPosts.map((post, index) => (
-              <Link
-                className={styles.noteRow}
-                data-delay={index}
-                data-reveal
-                href={post.url}
-                key={post.url}
-              >
-                <span className={styles.noteIndex}>0{index + 1}</span>
-                <div>
-                  <p>{post.data.category}</p>
-                  <h3>{post.data.title ?? '未命名文章'}</h3>
+          <div className={styles.noteList} data-reveal>
+            {recentPosts.map((post) => (
+              <Link className={styles.noteCard} href={post.url} key={post.url}>
+                <div className={styles.noteCover}>
+                  <Image
+                    alt=""
+                    fill
+                    sizes="(max-width: 680px) calc(100vw - 3rem), (max-width: 1023px) 50vw, 33vw"
+                    src={post.data.cover}
+                  />
                 </div>
-                <time dateTime={post.data.date}>
-                  {formatPostDate(post.data.date)}
-                </time>
-                <ArrowUpRightIcon aria-hidden="true" />
+
+                <div className={styles.noteCardBody}>
+                  <div className={styles.noteCardMeta}>
+                    <span className={styles.noteCategory}>
+                      {post.data.category}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <time dateTime={post.data.date}>
+                      {formatPostDate(post.data.date)}
+                    </time>
+                  </div>
+                  <h3>{post.data.title ?? '未命名文章'}</h3>
+                  <p className={styles.noteDescription}>
+                    {post.data.description}
+                  </p>
+                </div>
+
+                <div className={styles.noteCardFooter}>
+                  <span className={styles.noteReadMore}>
+                    阅读文章
+                    <ArrowUpRightIcon aria-hidden="true" />
+                  </span>
+                </div>
               </Link>
             ))}
           </div>
