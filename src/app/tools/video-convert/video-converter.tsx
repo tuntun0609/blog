@@ -84,6 +84,7 @@ import type {
   OutputOptions,
   PreparedMedia,
   VideoCodecChoice,
+  VideoTransformOptions,
 } from './media-engine'
 import { TrimTimeline } from './trim-timeline'
 import styles from './video-converter.module.css'
@@ -158,6 +159,8 @@ const RESAMPLE_RATE_OPTIONS = [
   { label: '44,100 Hz', value: 44_100 },
   { label: '48,000 Hz', value: 48_000 },
 ]
+
+const RESIZE_SHORT_EDGE_OPTIONS = [2160, 1080, 720, 480, 360, 240, 144, 16]
 
 const EMPTY_PROGRESS: ConversionProgress = {
   bytesWritten: 0,
@@ -377,6 +380,7 @@ export function VideoConverter() {
     width: 1,
   })
   const [resizeActive, setResizeActive] = useState(false)
+  const [resizeAxis, setResizeAxis] = useState<'height' | 'width'>('height')
   const [resizeWidth, setResizeWidth] = useState(0)
   const [resizeHeight, setResizeHeight] = useState(0)
   const [rotation, setRotation] = useState<0 | 90 | 180 | 270>(0)
@@ -423,6 +427,7 @@ export function VideoConverter() {
     setCropActive(false)
     setCropRectangle(createFullCropRectangle(dimensions))
     setResizeActive(false)
+    setResizeAxis('height')
     setResizeWidth(width)
     setResizeHeight(height)
     setRotation(0)
@@ -592,6 +597,15 @@ export function VideoConverter() {
     [openFile]
   )
 
+  const selectedResizeOptions = useMemo<VideoTransformOptions['resize']>(
+    () => ({
+      active: resizeActive,
+      height: resizeActive && resizeAxis === 'height' ? resizeHeight : null,
+      width: resizeActive && resizeAxis === 'width' ? resizeWidth : null,
+    }),
+    [resizeActive, resizeAxis, resizeHeight, resizeWidth]
+  )
+
   const startConversion = useCallback(async () => {
     const prepared = preparedRef.current
     if (!prepared) {
@@ -633,11 +647,7 @@ export function VideoConverter() {
             },
             mirrorHorizontal,
             mirrorVertical,
-            resize: {
-              active: resizeActive,
-              height: resizeActive ? resizeHeight : null,
-              width: resizeActive ? resizeWidth : null,
-            },
+            resize: selectedResizeOptions,
             rotation,
           },
         },
@@ -671,9 +681,7 @@ export function VideoConverter() {
     mirrorVertical,
     resampleActive,
     resampleRate,
-    resizeActive,
-    resizeHeight,
-    resizeWidth,
+    selectedResizeOptions,
     rotation,
     trimActive,
     trimRange,
@@ -952,6 +960,67 @@ export function VideoConverter() {
         ? getRotatedDimensions(sourceDimensions, rotation)
         : null,
     [rotation, sourceDimensions]
+  )
+  const resizeSourceDimensions = cropActive
+    ? {
+        height: cropRectangle.height,
+        width: cropRectangle.width,
+      }
+    : displayDimensions
+  const handleResizeWidthChange = useCallback(
+    (value: number) => {
+      setResizeAxis('width')
+      setResizeWidth(value)
+      if (resizeSourceDimensions) {
+        setResizeHeight(
+          Math.round(
+            (value / resizeSourceDimensions.width) *
+              resizeSourceDimensions.height
+          )
+        )
+      }
+    },
+    [resizeSourceDimensions]
+  )
+  const handleResizeHeightChange = useCallback(
+    (value: number) => {
+      setResizeAxis('height')
+      setResizeHeight(value)
+      if (resizeSourceDimensions) {
+        setResizeWidth(
+          Math.round(
+            (value / resizeSourceDimensions.height) *
+              resizeSourceDimensions.width
+          )
+        )
+      }
+    },
+    [resizeSourceDimensions]
+  )
+  const handleResizeActiveChange = useCallback(
+    (active: boolean) => {
+      setResizeActive(active)
+      if (!(active && resizeSourceDimensions)) {
+        return
+      }
+
+      const shortEdge = Math.min(
+        resizeSourceDimensions.width,
+        resizeSourceDimensions.height
+      )
+      const suggestedShortEdge = RESIZE_SHORT_EDGE_OPTIONS.find(
+        (option) => option < shortEdge
+      )
+      if (!suggestedShortEdge) {
+        return
+      }
+
+      const scale = suggestedShortEdge / shortEdge
+      setResizeAxis('height')
+      setResizeWidth(Math.round(resizeSourceDimensions.width * scale))
+      setResizeHeight(Math.round(resizeSourceDimensions.height * scale))
+    },
+    [resizeSourceDimensions]
   )
   const playerFps = getPlayerFps(metadata?.frameRate)
   const durationInFrames = getDurationInFrames(
@@ -1473,19 +1542,19 @@ export function VideoConverter() {
                             active={resizeActive}
                             description="设置输出画面尺寸"
                             label="调整尺寸"
-                            onChange={setResizeActive}
+                            onChange={handleResizeActiveChange}
                           >
                             <FieldGroup className={styles.twoColumnFields}>
                               <NumericField
                                 label="宽度"
                                 min={2}
-                                onChange={setResizeWidth}
+                                onChange={handleResizeWidthChange}
                                 value={resizeWidth}
                               />
                               <NumericField
                                 label="高度"
                                 min={2}
-                                onChange={setResizeHeight}
+                                onChange={handleResizeHeightChange}
                                 value={resizeHeight}
                               />
                             </FieldGroup>

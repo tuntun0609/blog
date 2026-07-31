@@ -3,7 +3,6 @@ import {
   ALL_FORMATS,
   type AudioCodec,
   BlobSource,
-  BufferTarget,
   CanvasSink,
   Conversion,
   type ConversionAudioOptions,
@@ -12,6 +11,8 @@ import {
   getEncodableAudioCodecs,
   getEncodableVideoCodecs,
   Input,
+  type InputAudioTrack,
+  type InputVideoTrack,
   MkvOutputFormat,
   MovOutputFormat,
   Mp3OutputFormat,
@@ -25,7 +26,6 @@ import {
   WebMOutputFormat,
 } from 'mediabunny'
 import type { CropRectangle } from './editor-model'
-import { getRotatedDimensions, mapVisualCropToConversion } from './editor-model'
 
 export type OutputContainer =
   | 'aac'
@@ -110,35 +110,67 @@ export interface ConversionResult {
 
 interface OutputSink {
   cleanup: () => Promise<void>
+  close: () => Promise<void>
   getBlob: () => Promise<Blob>
   getBytesWritten: () => number
-  target: BufferTarget | StreamTarget
+  target: StreamTarget
 }
 
-const AUDIO_EXTENSION_BY_CODEC: Partial<Record<AudioCodec, string>> = {
-  aac: 'aac',
-  flac: 'flac',
-  mp3: 'mp3',
+const audioEncoderPromises = new Map<AudioCodec, Promise<void>>()
+
+const registerAudioEncoder = async (codec: AudioCodec): Promise<void> => {
+  if (codec === 'aac') {
+    const { registerAacEncoder } = await import('@mediabunny/aac-encoder')
+    registerAacEncoder()
+    return
+  }
+  if (codec === 'flac') {
+    const { registerFlacEncoder } = await import('@mediabunny/flac-encoder')
+    registerFlacEncoder()
+    return
+  }
+  if (codec === 'mp3') {
+    const { registerMp3Encoder } = await import('@mediabunny/mp3-encoder')
+    registerMp3Encoder()
+    return
+  }
+  if (codec === 'ac3' || codec === 'eac3') {
+    const { registerAc3Encoder } = await import('@mediabunny/ac3')
+    registerAc3Encoder()
+  }
 }
 
-let audioEncodersPromise: Promise<void> | null = null
-
-const ensureAudioEncoders = (): Promise<void> => {
-  if (audioEncodersPromise) {
-    return audioEncodersPromise
+const ensureAudioEncoderForCodec = (codec: AudioCodec): Promise<void> => {
+  const existing = audioEncoderPromises.get(codec)
+  if (existing) {
+    return existing
   }
 
-  audioEncodersPromise = Promise.all([
-    import('@mediabunny/aac-encoder'),
-    import('@mediabunny/flac-encoder'),
-    import('@mediabunny/mp3-encoder'),
-  ]).then(([aacEncoder, flacEncoder, mp3Encoder]) => {
-    aacEncoder.registerAacEncoder()
-    flacEncoder.registerFlacEncoder()
-    mp3Encoder.registerMp3Encoder()
+  const registration = registerAudioEncoder(codec)
+  audioEncoderPromises.set(codec, registration)
+  return registration
+}
+
+const ensureDefaultAudioEncoders = async (): Promise<void> => {
+  await Promise.all(
+    (['aac', 'flac', 'mp3'] satisfies AudioCodec[]).map((codec) =>
+      ensureAudioEncoderForCodec(codec)
+    )
+  )
+}
+
+let proresDecoderPromise: Promise<void> | null = null
+
+const ensureProresDecoder = (): Promise<void> => {
+  if (proresDecoderPromise) {
+    return proresDecoderPromise
+  }
+
+  proresDecoderPromise = import('@mediabunny/prores').then((prores) => {
+    prores.registerProresDecoder()
   })
 
-  return audioEncodersPromise
+  return proresDecoderPromise
 }
 
 const getOutputFormat = (container: OutputContainer): OutputFormat => {
@@ -167,6 +199,181 @@ const getOutputFormat = (container: OutputContainer): OutputFormat => {
   throw new Error(`不支持的输出格式：${container satisfies never}`)
 }
 
+const normalizeRotation = (rotation: number): number =>
+  ((rotation % 360) + 360) % 360
+
+const getRotatedDimensions = (
+  width: number,
+  height: number,
+  rotation: number
+): { height: number; width: number } =>
+  normalizeRotation(rotation) % 180 === 90
+    ? { height: width, width: height }
+    : { height, width }
+
+const getVideoEncodeDimensions = ({
+  height,
+  needsToBeMultipleOfTwo,
+  rotation,
+  resize,
+  width,
+}: {
+  height: number
+  needsToBeMultipleOfTwo: boolean
+  resize: VideoTransformOptions['resize']
+  rotation: number
+  width: number
+}): { height: number; width: number } => {
+  const rotated = getRotatedDimensions(width, height, rotation)
+  let nextWidth = rotated.width
+  let nextHeight = rotated.height
+
+  if (resize.active) {
+    if (resize.height !== null) {
+      nextHeight = resize.height
+      nextWidth = Math.round((resize.height / rotated.height) * rotated.width)
+    } else if (resize.width !== null) {
+      nextWidth = resize.width
+      nextHeight = Math.round((resize.width / rotated.width) * rotated.height)
+    }
+  }
+
+  if (needsToBeMultipleOfTwo) {
+    nextWidth = Math.floor(nextWidth / 2) * 2
+    nextHeight = Math.floor(nextHeight / 2) * 2
+  }
+
+  return { height: nextHeight, width: nextWidth }
+}
+
+const canCopyVideoTrack = async ({
+  inputTrack,
+  options,
+  outputFormat,
+}: {
+  inputTrack: InputVideoTrack
+  options: ConvertOptions
+  outputFormat: OutputFormat
+}): Promise<boolean> => {
+  const inputCodec = await inputTrack.getCodec()
+  if (!inputCodec) {
+    return false
+  }
+
+  const inputRotation = await inputTrack.getRotation()
+  if (
+    normalizeRotation(inputRotation) !==
+    normalizeRotation(options.videoTransform.rotation)
+  ) {
+    return false
+  }
+
+  const dimensions = getVideoEncodeDimensions({
+    height: await inputTrack.getDisplayHeight(),
+    needsToBeMultipleOfTwo: inputCodec === 'avc' || inputCodec === 'hevc',
+    resize: options.videoTransform.resize,
+    rotation: options.videoTransform.rotation,
+    width: await inputTrack.getDisplayWidth(),
+  })
+  if (
+    dimensions.height !== inputTrack.displayHeight ||
+    dimensions.width !== inputTrack.displayWidth
+  ) {
+    return false
+  }
+
+  return outputFormat.getSupportedCodecs().includes(inputCodec)
+}
+
+const getVideoTranscodingCodecs = async ({
+  inputTrack,
+  options,
+  outputFormat,
+}: {
+  inputTrack: InputVideoTrack
+  options: ConvertOptions
+  outputFormat: OutputFormat
+}): Promise<VideoCodec[]> => {
+  const inputCodec = await inputTrack.getCodec()
+  if (!(inputCodec && (await inputTrack.canDecode()))) {
+    return []
+  }
+
+  const dimensions = getVideoEncodeDimensions({
+    height: await inputTrack.getDisplayHeight(),
+    needsToBeMultipleOfTwo: inputCodec === 'avc',
+    resize: options.videoTransform.resize,
+    rotation: options.videoTransform.rotation,
+    width: await inputTrack.getDisplayWidth(),
+  })
+  const codecResults = await Promise.all(
+    outputFormat.getSupportedVideoCodecs().map(async (codec) => {
+      const encodable = await getEncodableVideoCodecs([codec], dimensions)
+      return encodable.includes(codec) ? codec : null
+    })
+  )
+  return codecResults.filter((codec) => codec !== null)
+}
+
+const getAudioTranscodingCodecs = async ({
+  inputTrack,
+  outputFormat,
+  sampleRate,
+}: {
+  inputTrack: InputAudioTrack
+  outputFormat: OutputFormat
+  sampleRate: number | null
+}): Promise<AudioCodec[]> => {
+  const inputCodec = await inputTrack.getCodec()
+  if (!(inputCodec && (await inputTrack.canDecode()))) {
+    return []
+  }
+
+  const inputSampleRate = await inputTrack.getSampleRate()
+  const targetSampleRate = sampleRate ?? inputSampleRate
+  const codecResults = await Promise.all(
+    outputFormat.getSupportedAudioCodecs().map(async (codec) => {
+      await ensureAudioEncoderForCodec(codec)
+      const encodable = await getEncodableAudioCodecs([codec], {
+        sampleRate: targetSampleRate,
+      })
+      if (encodable.includes(codec)) {
+        return codec
+      }
+      if (sampleRate !== null) {
+        return null
+      }
+      const encodableWithDefaults = await getEncodableAudioCodecs([codec])
+      return encodableWithDefaults.includes(codec) ? codec : null
+    })
+  )
+  return codecResults.filter((codec) => codec !== null)
+}
+
+const canCopyAudioTrack = async ({
+  inputTrack,
+  outputFormat,
+  sampleRate,
+}: {
+  inputTrack: InputAudioTrack
+  outputFormat: OutputFormat
+  sampleRate: number | null
+}): Promise<boolean> => {
+  const inputCodec = await inputTrack.getCodec()
+  if (!inputCodec) {
+    return false
+  }
+
+  if (
+    sampleRate !== null &&
+    (await inputTrack.getSampleRate()) !== sampleRate
+  ) {
+    return false
+  }
+
+  return outputFormat.getSupportedCodecs().includes(inputCodec)
+}
+
 const getFrameRate = async (
   videoTrack: Awaited<ReturnType<Input['getPrimaryVideoTrack']>>
 ): Promise<number | null> => {
@@ -175,7 +382,7 @@ const getFrameRate = async (
   }
 
   try {
-    const statistics = await videoTrack.computePacketStats(80)
+    const statistics = await videoTrack.computePacketStats(50)
     return Number.isFinite(statistics.averagePacketRate)
       ? statistics.averagePacketRate
       : null
@@ -185,6 +392,8 @@ const getFrameRate = async (
 }
 
 export const prepareMedia = async (file: File): Promise<PreparedMedia> => {
+  await Promise.all([ensureDefaultAudioEncoders(), ensureProresDecoder()])
+
   const input = new Input({
     formats: ALL_FORMATS,
     source: new BlobSource(file),
@@ -204,10 +413,15 @@ export const prepareMedia = async (file: File): Promise<PreparedMedia> => {
         input.getPrimaryAudioTrack(),
       ])
 
-    const durationFromMetadata = await input.getDurationFromMetadata(tracks)
+    const durationFromMetadata = await input.getDurationFromMetadata(
+      undefined,
+      {
+        skipLiveWait: true,
+      }
+    )
     const duration =
       durationFromMetadata === null
-        ? await input.computeDuration(tracks)
+        ? await input.computeDuration(undefined, { skipLiveWait: true })
         : durationFromMetadata
 
     const [
@@ -273,6 +487,9 @@ export const getDefaultOutputContainer = (
   if (format.includes('webm') || format.includes('matroska')) {
     return 'mp4'
   }
+  if (format.includes('hls')) {
+    return 'mp4'
+  }
   if (format.includes('wave')) {
     return 'mp3'
   }
@@ -292,32 +509,63 @@ export const getOutputOptions = async (
   prepared: PreparedMedia,
   container: OutputContainer
 ): Promise<OutputOptions> => {
-  await ensureAudioEncoders()
+  await ensureDefaultAudioEncoders()
 
   const outputFormat = getOutputFormat(container)
-  const supportedVideoCodecs = outputFormat.getSupportedVideoCodecs()
-  const supportedAudioCodecs = outputFormat.getSupportedAudioCodecs()
-  const { metadata } = prepared
-
-  const [videoCodecs, audioCodecs] = await Promise.all([
-    getEncodableVideoCodecs(supportedVideoCodecs, {
-      height: metadata.height ?? undefined,
-      width: metadata.width ?? undefined,
-    }),
-    getEncodableAudioCodecs(supportedAudioCodecs, {
-      numberOfChannels: metadata.channels ?? undefined,
-      sampleRate: metadata.sampleRate ?? undefined,
-    }),
+  const [videoTrack, audioTrack] = await Promise.all([
+    prepared.input.getPrimaryVideoTrack(),
+    prepared.input.getPrimaryAudioTrack(),
   ])
+  const defaultOptions: ConvertOptions = {
+    audioCodec: 'auto',
+    container,
+    resampleRate: null,
+    trim: { active: false, end: null, start: 0 },
+    videoCodec: 'auto',
+    videoTransform: {
+      crop: { active: false, height: 1, left: 0, top: 0, width: 1 },
+      mirrorHorizontal: false,
+      mirrorVertical: false,
+      resize: { active: false, height: null, width: null },
+      rotation: 0,
+    },
+  }
+  const [videoCodecs, audioCodecs, canCopyVideo, canCopyAudio] =
+    await Promise.all([
+      videoTrack
+        ? getVideoTranscodingCodecs({
+            inputTrack: videoTrack,
+            options: defaultOptions,
+            outputFormat,
+          })
+        : Promise.resolve([]),
+      audioTrack
+        ? getAudioTranscodingCodecs({
+            inputTrack: audioTrack,
+            outputFormat,
+            sampleRate: null,
+          })
+        : Promise.resolve([]),
+      videoTrack
+        ? canCopyVideoTrack({
+            inputTrack: videoTrack,
+            options: defaultOptions,
+            outputFormat,
+          })
+        : Promise.resolve(false),
+      audioTrack
+        ? canCopyAudioTrack({
+            inputTrack: audioTrack,
+            outputFormat,
+            sampleRate: null,
+          })
+        : Promise.resolve(false),
+    ])
 
   return {
     audioCodecs,
-    canCopyAudio:
-      metadata.audioCodec !== null &&
-      supportedAudioCodecs.includes(metadata.audioCodec),
-    canCopyVideo:
-      metadata.videoCodec !== null &&
-      supportedVideoCodecs.includes(metadata.videoCodec),
+    canCopyAudio,
+    canCopyVideo,
     videoCodecs,
   }
 }
@@ -393,26 +641,54 @@ export const drawFilmstrip = async ({
 }
 
 const getBaseName = (fileName: string): string => {
-  const lastDot = fileName.lastIndexOf('.')
-  return lastDot <= 0 ? fileName : fileName.slice(0, lastDot)
+  const parts = fileName.split('.')
+  parts.pop()
+  return parts.join('.')
 }
 
-const createMemorySink = (): OutputSink => {
-  const target = new BufferTarget()
-  let bytesWritten = 0
+const INITIAL_MEMORY_SINK_SIZE = 2 ** 20
 
-  target.on('write', ({ end }) => {
-    bytesWritten = Math.max(bytesWritten, end)
+export const createMemorySink = (fileName: string): OutputSink => {
+  let bytes = new Uint8Array(INITIAL_MEMORY_SINK_SIZE)
+  let bytesWritten = 0
+  let fileSize = 0
+
+  const ensureCapacity = (requiredSize: number): void => {
+    if (requiredSize <= bytes.byteLength) {
+      return
+    }
+
+    let nextSize = bytes.byteLength
+    while (nextSize < requiredSize) {
+      nextSize *= 2
+    }
+
+    const nextBytes = new Uint8Array(nextSize)
+    nextBytes.set(bytes)
+    bytes = nextBytes
+  }
+
+  const stream = new WritableStream<StreamTargetChunk>({
+    write(chunk) {
+      const end = chunk.position + chunk.data.byteLength
+      ensureCapacity(end)
+      bytes.set(chunk.data, chunk.position)
+      fileSize = Math.max(fileSize, end)
+      bytesWritten += chunk.data.byteLength
+    },
   })
+
+  const target = new StreamTarget(stream)
 
   return {
     cleanup: () => Promise.resolve(),
-    getBlob: () => {
-      if (!target.buffer) {
-        throw new Error('输出文件尚未完成。')
-      }
-      return Promise.resolve(new Blob([target.buffer]))
-    },
+    close: () => Promise.resolve(),
+    getBlob: () =>
+      Promise.resolve(
+        new File([bytes.slice(0, fileSize)], fileName, {
+          lastModified: Date.now(),
+        })
+      ),
     getBytesWritten: () => bytesWritten,
     target,
   }
@@ -431,31 +707,41 @@ const createOpfsSink = async (fileName: string): Promise<OutputSink | null> => {
     })
     const writable = await fileHandle.createWritable()
     let bytesWritten = 0
+    let isClosed = false
+
+    const close = async (): Promise<void> => {
+      if (isClosed) {
+        return
+      }
+      isClosed = true
+      await writable.close()
+    }
 
     const stream = new WritableStream<StreamTargetChunk>({
-      abort: () => writable.abort(),
-      close: () => writable.close(),
       async write(chunk) {
         await writable.seek(chunk.position)
-        await writable.write(chunk.data)
-        bytesWritten = Math.max(
-          bytesWritten,
-          chunk.position + chunk.data.byteLength
-        )
+        await writable.write(chunk)
+        bytesWritten += chunk.data.byteLength
       },
     })
 
     return {
       cleanup: async () => {
         try {
+          await close()
+        } catch {
+          // Closing a canceled stream may fail after the browser aborted it.
+        }
+        try {
           await directory.removeEntry(storageName)
         } catch {
           // The temporary file may already have been removed by the browser.
         }
       },
+      close,
       getBlob: () => fileHandle.getFile(),
       getBytesWritten: () => bytesWritten,
-      target: new StreamTarget(stream, { chunked: true }),
+      target: new StreamTarget(stream),
     }
   } catch {
     return null
@@ -463,138 +749,166 @@ const createOpfsSink = async (fileName: string): Promise<OutputSink | null> => {
 }
 
 const createOutputSink = async (fileName: string): Promise<OutputSink> =>
-  (await createOpfsSink(fileName)) ?? createMemorySink()
+  (await createOpfsSink(fileName)) ?? createMemorySink(fileName)
 
-const makeMirrorProcessor = ({
-  horizontal,
-  vertical,
-}: {
-  horizontal: boolean
-  vertical: boolean
-}): NonNullable<ConversionVideoOptions['process']> => {
-  let canvas: HTMLCanvasElement | OffscreenCanvas | null = null
-
-  return (sample) => {
+const makeVideoProcessor =
+  ({
+    horizontal,
+    vertical,
+  }: {
+    horizontal: boolean
+    vertical: boolean
+  }): NonNullable<ConversionVideoOptions['process']> =>
+  (sample) => {
     const frame = sample.toVideoFrame()
-    const width = frame.displayWidth
-    const height = frame.displayHeight
-
-    if (!canvas || canvas.width !== width || canvas.height !== height) {
-      canvas =
-        typeof OffscreenCanvas === 'undefined'
-          ? document.createElement('canvas')
-          : new OffscreenCanvas(width, height)
-      canvas.width = width
-      canvas.height = height
+    if (!(horizontal || vertical)) {
+      return frame
     }
 
+    const canvas = new OffscreenCanvas(frame.displayWidth, frame.displayHeight)
     const context = canvas.getContext('2d')
     if (!context) {
-      frame.close()
-      throw new Error('浏览器无法创建视频变换画布。')
+      throw new Error('Could not get 2d context')
     }
 
-    context.save()
-    context.clearRect(0, 0, width, height)
-    context.translate(horizontal ? width : 0, vertical ? height : 0)
+    canvas.width = frame.displayWidth
+    canvas.height = frame.displayHeight
+    context.translate(
+      horizontal ? frame.displayWidth : 0,
+      vertical ? frame.displayHeight : 0
+    )
     context.scale(horizontal ? -1 : 1, vertical ? -1 : 1)
-    context.drawImage(frame, 0, 0, width, height)
-    context.restore()
-    frame.close()
+    context.drawImage(frame, 0, 0)
+    return new VideoFrame(canvas, {
+      displayHeight: frame.displayHeight,
+      displayWidth: frame.displayWidth,
+      duration: frame.duration ?? undefined,
+      timestamp: frame.timestamp,
+    })
+  }
 
-    return canvas
+const makeCrop = (crop: CropRectangle, codec: VideoCodec): CropRectangle => {
+  if (codec !== 'avc' && codec !== 'hevc') {
+    return crop
+  }
+
+  return {
+    height: Math.floor(crop.height / 2) * 2,
+    left: Math.floor(crop.left / 2) * 2,
+    top: Math.floor(crop.top / 2) * 2,
+    width: Math.floor(crop.width / 2) * 2,
   }
 }
 
-const getVideoConversionOptions = (
-  options: ConvertOptions,
-  metadata: MediaMetadata
-): ConversionVideoOptions => {
-  if (options.videoCodec === 'drop') {
-    return { discard: true }
-  }
-
-  const conversionOptions: ConversionVideoOptions = {}
-  if (options.videoCodec !== 'auto' && options.videoCodec !== 'copy') {
-    conversionOptions.codec = options.videoCodec
-    conversionOptions.forceTranscode = true
-  }
-
+const hasVideoTransform = (options: ConvertOptions): boolean => {
   const { crop, resize, rotation, mirrorHorizontal, mirrorVertical } =
     options.videoTransform
-  const transformsPixels =
+  return (
     crop.active ||
     resize.active ||
     rotation !== 0 ||
     mirrorHorizontal ||
     mirrorVertical
+  )
+}
 
-  if (crop.active) {
-    const sourceDimensions =
-      metadata.width && metadata.height
-        ? getRotatedDimensions(
-            { height: metadata.height, width: metadata.width },
-            rotation
-          )
-        : null
-    conversionOptions.crop = sourceDimensions
-      ? mapVisualCropToConversion({
-          dimensions: sourceDimensions,
-          mirrorHorizontal,
-          mirrorVertical,
-          rectangle: crop,
-        })
-      : crop
+export const getVideoConversionOptions = async (
+  options: ConvertOptions,
+  inputTrack: InputVideoTrack,
+  outputFormat: OutputFormat
+): Promise<ConversionVideoOptions> => {
+  if (options.videoCodec === 'drop') {
+    return { discard: true }
   }
-  if (resize.active) {
-    if (resize.height !== null && resize.width !== null) {
-      conversionOptions.fit = 'fill'
-    }
-    conversionOptions.height = resize.height ?? undefined
-    conversionOptions.width = resize.width ?? undefined
+
+  const transformationsActive = hasVideoTransform(options)
+  const copyAllowed =
+    !(transformationsActive || options.trim.active) &&
+    (await canCopyVideoTrack({ inputTrack, options, outputFormat }))
+  if (options.videoCodec === 'copy' && copyAllowed) {
+    return {}
   }
-  if (rotation !== 0) {
-    conversionOptions.allowRotationMetadata = false
-    conversionOptions.rotate = rotation
+  if (options.videoCodec === 'auto' && copyAllowed) {
+    return {}
   }
-  if (mirrorHorizontal || mirrorVertical) {
-    conversionOptions.process = makeMirrorProcessor({
+
+  const codec =
+    options.videoCodec === 'auto' || options.videoCodec === 'copy'
+      ? (
+          await getVideoTranscodingCodecs({
+            inputTrack,
+            options,
+            outputFormat,
+          })
+        )[0]
+      : options.videoCodec
+  if (!codec) {
+    return { discard: true }
+  }
+
+  const { crop, resize, rotation, mirrorHorizontal, mirrorVertical } =
+    options.videoTransform
+  const conversionOptions: ConversionVideoOptions = {
+    codec,
+    crop: crop.active ? makeCrop(crop, codec) : undefined,
+    forceTranscode: true,
+    process: makeVideoProcessor({
       horizontal: mirrorHorizontal,
       vertical: mirrorVertical,
-    })
+    }),
+    rotate: rotation,
   }
-  if (transformsPixels) {
-    conversionOptions.forceTranscode = true
+  if (resize.active) {
+    conversionOptions.height = resize.height ?? undefined
+    if (resize.height === null) {
+      conversionOptions.width = resize.width ?? undefined
+    }
   }
 
   return conversionOptions
 }
 
-const getAudioConversionOptions = (
-  options: ConvertOptions
-): ConversionAudioOptions => {
+export const getAudioConversionOptions = async (
+  options: ConvertOptions,
+  inputTrack: InputAudioTrack,
+  outputFormat: OutputFormat
+): Promise<ConversionAudioOptions> => {
   if (options.audioCodec === 'drop') {
     return { discard: true }
   }
 
-  const conversionOptions: ConversionAudioOptions = {}
-  if (options.audioCodec !== 'auto' && options.audioCodec !== 'copy') {
-    conversionOptions.codec = options.audioCodec
-    conversionOptions.forceTranscode = true
+  const copyAllowed = await canCopyAudioTrack({
+    inputTrack,
+    outputFormat,
+    sampleRate: options.resampleRate,
+  })
+  if (options.audioCodec === 'copy' && copyAllowed) {
+    return {}
   }
-  if (options.resampleRate !== null) {
-    conversionOptions.forceTranscode = true
-    conversionOptions.sampleRate = options.resampleRate
+  if (options.audioCodec === 'auto' && copyAllowed) {
+    return {}
   }
 
-  return conversionOptions
-}
+  const codec =
+    options.audioCodec === 'auto' || options.audioCodec === 'copy'
+      ? (
+          await getAudioTranscodingCodecs({
+            inputTrack,
+            outputFormat,
+            sampleRate: options.resampleRate,
+          })
+        )[0]
+      : options.audioCodec
+  if (!codec) {
+    return { discard: true }
+  }
 
-const registerSelectedEncoder = async (
-  codec: AudioCodecChoice
-): Promise<void> => {
-  if (codec in AUDIO_EXTENSION_BY_CODEC) {
-    await ensureAudioEncoders()
+  await ensureAudioEncoderForCodec(codec)
+  return {
+    codec,
+    forceTranscode: true,
+    process: (sample) => sample,
+    sampleRate: options.resampleRate ?? undefined,
   }
 }
 
@@ -609,10 +923,8 @@ export const convertMedia = async ({
   prepared: PreparedMedia
   signal: AbortSignal
 }): Promise<ConversionResult> => {
-  await registerSelectedEncoder(options.audioCodec)
-
   const outputFormat = getOutputFormat(options.container)
-  const fileName = `${getBaseName(prepared.file.name)}-converted${outputFormat.fileExtension}`
+  const fileName = `${getBaseName(prepared.file.name)}${outputFormat.fileExtension}`
   const sink = await createOutputSink(fileName)
   const output = new Output({
     format: outputFormat,
@@ -625,18 +937,18 @@ export const convertMedia = async ({
   }
 
   const conversion = await Conversion.init({
-    audio: getAudioConversionOptions(options),
+    audio: (inputTrack) =>
+      getAudioConversionOptions(options, inputTrack, outputFormat),
     input: prepared.input,
     output,
-    showWarnings: false,
-    tracks: 'all',
     trim: options.trim.active
       ? {
           end: options.trim.end ?? undefined,
           start: options.trim.start,
         }
       : undefined,
-    video: getVideoConversionOptions(options, prepared.metadata),
+    video: (inputTrack) =>
+      getVideoConversionOptions(options, inputTrack, outputFormat),
   })
 
   if (!conversion.isValid) {
@@ -666,6 +978,7 @@ export const convertMedia = async ({
 
   try {
     await conversion.execute()
+    await sink.close()
     const blob = await sink.getBlob()
     onProgress({
       bytesWritten: blob.size,

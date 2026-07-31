@@ -506,30 +506,36 @@ export function TrimTimeline({
         onPointerUp={finishDrag}
         ref={wrapperRef}
       >
-        <canvas className={styles.filmstripCanvas} ref={canvasRef} />
+        <div className={styles.filmstripViewport}>
+          <canvas className={styles.filmstripCanvas} ref={canvasRef} />
+          {trimActive && geometry ? (
+            <>
+              <span
+                aria-hidden="true"
+                className={styles.trimMask}
+                style={{ left: 0, width: geometry.leftMaskWidth }}
+              />
+              <span
+                aria-hidden="true"
+                className={styles.trimMask}
+                style={{
+                  left: geometry.rightMaskLeft,
+                  width: geometry.rightMaskWidth,
+                }}
+              />
+              <span
+                aria-hidden="true"
+                className={styles.trimSelection}
+                style={{
+                  left: geometry.activeLeft,
+                  width: geometry.activeWidth,
+                }}
+              />
+            </>
+          ) : null}
+        </div>
         {trimActive && geometry ? (
           <>
-            <span
-              aria-hidden="true"
-              className={styles.trimMask}
-              style={{ left: 0, width: geometry.leftMaskWidth }}
-            />
-            <span
-              aria-hidden="true"
-              className={styles.trimMask}
-              style={{
-                left: geometry.rightMaskLeft,
-                width: geometry.rightMaskWidth,
-              }}
-            />
-            <span
-              aria-hidden="true"
-              className={styles.trimSelection}
-              style={{
-                left: geometry.activeLeft,
-                width: geometry.activeWidth,
-              }}
-            />
             <Button
               aria-label="剪辑开始帧"
               aria-valuemax={normalizedRange.outFrame}
