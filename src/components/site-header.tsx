@@ -22,12 +22,6 @@ export function SiteHeader({ isHomePage = false }: SiteHeaderProps) {
         <nav aria-label="主导航" className={styles.nav}>
           <Link
             className={`${styles.navLink} ${styles.sectionLink}`}
-            href={`${sectionPrefix}#about`}
-          >
-            关于
-          </Link>
-          <Link
-            className={`${styles.navLink} ${styles.sectionLink}`}
             href={`${sectionPrefix}#projects`}
           >
             项目

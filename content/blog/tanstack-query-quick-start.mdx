@@ -1,0 +1,356 @@
+---
+title: "TanStack Query 快速上手"
+description: "拿一个项目管理页实操，从列表查询写到筛选、新增、缓存失效和分页。"
+date: "2026-07-31"
+category: "前端工程"
+cover: "/blog/tanstack-query-quick-start.svg"
+published: true
+tags: ["React", "TanStack Query"]
+---
+
+我在项目里装 TanStack Query，通常是接口状态已经有点难管了。
+
+比如从详情返回列表，又看到一次 loading。几个组件各自请求同一个接口。新增成功了，页面上的旧列表还没动。浏览器放了一会儿，回来看到的还是几分钟前的数据。这些问题叠到一起后，组件里很快就会堆出好几套 `useEffect + useState`。加载、错误、缓存和刷新规则散在各处，改起来挺费劲。
+
+这篇用一个项目管理页往下做，场景有列表、筛选、详情、新增和分页。我平时也差不多按这个顺序接入。
+
+TanStack Query 在这里负责记录数据何时请求、能复用多久、写操作完成后需要更新哪些缓存。
+
+## 哪些需求出现时，我会考虑用它
+
+我会先问一句：这份数据是谁在维护？
+
+弹窗开没开、当前 tab、表单里还没提交的文字，都留在组件状态里。项目列表、用户资料、订单详情由服务端维护，浏览器拿到的是一次快照。当前页面的操作会改它，其他页面和其他用户也可能改它。
+
+列表页来回切换时，我想复用上次结果。同一份数据可能被几个组件读取，筛选和页码也会改变请求。页面再加上新增、编辑以后，还得知道该刷新哪些列表。碰到这样的页面，我会直接上 TanStack Query。窗口重新聚焦、网络恢复后的后台更新也能一起处理。
+
+只在 Server Component 里读取一次的数据，我一般直接 `fetch`。它没有客户端缓存的生命周期，代码留在服务端更省事。
+
+写代码时，我把 `queryKey` 当作缓存地址。取数据的函数放在 `queryFn` 里。
+
+## 先把 QueryClient 接到应用上
+
+先安装 React 版本：
+
+~~~bash
+bun add @tanstack/react-query
+~~~
+
+`QueryClient` 管着查询缓存和默认行为，整个客户端应用通常共用一份。它必须稳定存在，不能在组件每次渲染时重新 `new`。
+
+如果是 Next.js App Router，我会单独放一个 Client Component：
+
+~~~tsx title="src/providers/query-provider.tsx"
+'use client'
+
+import {
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query'
+import { type PropsWithChildren, useState } from 'react'
+
+export function QueryProvider({ children }: PropsWithChildren) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+          },
+        },
+      })
+  )
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  )
+}
+~~~
+
+然后在应用根部包住需要使用 Query 的内容：
+
+~~~tsx
+<QueryProvider>{children}</QueryProvider>
+~~~
+
+这里先设一个 `staleTime`，其他配置沿用默认值。SSR、预取和 hydration 等真实需求出现后再接，眼下先把客户端查询跑顺。
+
+## 先把列表查出来
+
+假设接口支持按状态和页码查询项目：
+
+~~~ts title="src/features/projects/api.ts"
+export type ProjectStatus = 'active' | 'archived'
+
+export interface Project {
+  id: string
+  name: string
+  updatedAt: string
+}
+
+export interface ProjectList {
+  hasMore: boolean
+  items: Project[]
+}
+
+interface GetProjectsOptions {
+  page: number
+  signal: AbortSignal
+  status: ProjectStatus
+}
+
+export const getProjects = async ({
+  page,
+  signal,
+  status,
+}: GetProjectsOptions): Promise<ProjectList> => {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    status,
+  })
+  const response = await fetch(`/api/projects?${searchParams}`, { signal })
+
+  if (!response.ok) {
+    throw new Error('项目列表加载失败')
+  }
+
+  return response.json() as Promise<ProjectList>
+}
+~~~
+
+`fetch` 遇到 404 或 500 不会自动抛错，所以我每次都会检查 `response.ok`。漏掉这段判断后，TanStack Query 可能会把错误响应记成成功结果。
+
+Query 传下来的 `signal` 也直接交给 `fetch`。查询失去作用或被取消时，浏览器便能中止这次请求。
+
+组件里用 `useQuery`：
+
+~~~tsx title="src/features/projects/projects-panel.tsx"
+'use client'
+
+import { useQuery } from '@tanstack/react-query'
+import { getProjects, type ProjectStatus } from './api'
+
+interface ProjectsPanelProps {
+  page: number
+  status: ProjectStatus
+}
+
+export function ProjectsPanel({ page, status }: ProjectsPanelProps) {
+  const projectsQuery = useQuery({
+    queryKey: ['projects', 'list', { page, status }],
+    queryFn: ({ signal }) => getProjects({ page, signal, status }),
+  })
+
+  if (projectsQuery.isPending) {
+    return <p>正在加载项目…</p>
+  }
+
+  if (projectsQuery.isError) {
+    return <p>{projectsQuery.error.message}</p>
+  }
+
+  return (
+    <section>
+      {projectsQuery.isFetching ? <small>正在同步最新数据…</small> : null}
+      <ul>
+        {projectsQuery.data.items.map((project) => (
+          <li key={project.id}>{project.name}</li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+~~~
+
+请求结果、错误、重复请求合并、组件重新挂载后的缓存和后台更新，现在都挂在这个 key 下面。组件只需要根据查询状态渲染页面。
+
+## Query Key 决定缓存落在哪里
+
+我刚开始最容易写成这样：
+
+~~~tsx
+useQuery({
+  queryKey: ['projects'],
+  queryFn: ({ signal }) => getProjects({ page, signal, status }),
+})
+~~~
+
+这段代码漏了 `page` 和 `status`。所有结果都会写进 `['projects']` 这一个 key。进行中的项目、已归档的项目、第 1 页和第 2 页很容易因此串数据。
+
+我的写法很固定：`queryFn` 里会影响结果的变量，都出现在 `queryKey` 里。
+
+<img
+  alt="三个独立缓存抽屉分别保存项目列表、筛选结果和详情数据"
+  height={600}
+  src="/blog/tanstack-query-query-keys.svg"
+  width={1400}
+/>
+
+在 v5 里，顶层 key 必须是数组。对象属性会经过稳定哈希，调换书写顺序不会产生新缓存。数组按元素顺序区分 key。ID、页码、搜索词和筛选条件都可以直接放进去。
+
+列表 key 我一般写成 `['projects', 'list', { page, status }]`，详情用 `['projects', 'detail', projectId]`。需要刷新所有列表时，拿 `['projects', 'list']` 做前缀匹配就行。
+
+查询多起来后，我再把 key 收进一个小型 key factory，省得在各处重复写字符串。刚开始直接写数组，层级会看得比较清楚。
+
+## staleTime 是我愿意相信数据多久
+
+页面切回来时又发了一次请求，通常是 `staleTime` 在起作用。TanStack Query v5 的默认值是 `0`，刚拿到的数据马上就会进入 stale 状态。缓存内容会先显示出来，组件重新挂载、窗口重新聚焦、网络重新连接时可能触发后台更新。
+
+我给项目列表设置 `staleTime: 30_000`，意思是 30 秒内继续信任这份结果。超过 30 秒，查询进入 stale 状态，缓存内容还在。这个配置也不会启动定时轮询。
+
+`gcTime` 从查询变成 inactive 后开始计算，v5 默认保留 5 分钟。时间到了，这份缓存会被回收。这个选项在旧版里叫 `cacheTime`。
+
+我一般保留 `refetchOnWindowFocus`，再按业务能接受的延迟设置 `staleTime`。看板数据可以短一点，选项数据可以放到几分钟。手动 `refetch` 和后面会用到的 `invalidateQueries` 仍然可以发起更新。
+
+## 后台刷新时保留页面内容
+
+`isPending` 表示当前还没有成功数据，我用它控制第一次进入页面时的骨架屏。`isFetching` 表示查询函数正在执行，首次请求和后台更新期间都会变成 `true`。
+
+缓存里已经有列表时，页面照常显示，角落加一行“正在同步”。第一次打开列表时再显示整页骨架屏。这样来回切页面会稳定很多。
+
+v5 里的 `isLoading` 等于 `isPending && isFetching`。一个 `enabled: false` 且没有缓存的查询可能处于 pending，此时查询函数还没执行。日常渲染时，我还是先判断 `isPending` 和 `isError`。
+
+## 新增项目后刷新列表
+
+项目列表能正常读取后，新增操作接到 `useMutation`：
+
+~~~ts title="src/features/projects/api.ts"
+interface CreateProjectInput {
+  name: string
+}
+
+export const createProject = async (
+  input: CreateProjectInput
+): Promise<Project> => {
+  const response = await fetch('/api/projects', {
+    body: JSON.stringify(input),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    throw new Error('项目创建失败')
+  }
+
+  return response.json() as Promise<Project>
+}
+~~~
+
+提交成功后要处理相关缓存。我在 `onSuccess` 里调用 `invalidateQueries`：
+
+~~~tsx
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { createProject } from './api'
+
+export function CreateProjectButton() {
+  const queryClient = useQueryClient()
+  const createProjectMutation = useMutation({
+    mutationFn: createProject,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['projects', 'list'],
+      })
+    },
+  })
+
+  return (
+    <button
+      disabled={createProjectMutation.isPending}
+      onClick={() => createProjectMutation.mutate({ name: '新项目' })}
+      type="button"
+    >
+      {createProjectMutation.isPending ? '正在创建…' : '创建项目'}
+    </button>
+  )
+}
+~~~
+
+<img
+  alt="新增项目写入服务端后使列表缓存失效，再由活动查询重新获取数据"
+  height={600}
+  src="/blog/tanstack-query-mutation-flow.svg"
+  width={1400}
+/>
+
+`invalidateQueries` 会把匹配的查询标成 stale。页面当前正在使用的查询随即在后台更新。已经 inactive 的查询会等到下次使用时再取数据。
+
+这里的 `['projects', 'list']` 会前缀匹配不同筛选和页码的列表。详情使用 `['projects', 'detail', id]`，不会落进这次匹配范围。前面安排的 key 层级到这里就派上用场了。
+
+我在 `onSuccess` 里 `await` 了失效操作。列表更新完成前，mutation 会保持 pending，按钮也会维持禁用状态。
+
+列表里还有排序、筛选和分页，我通常先让服务端重新算一遍结果。乐观更新会带来回滚、并发和临时 ID 等额外处理，等交互确实需要即时反馈时再加。
+
+## 有依赖才请求，用 enabled
+
+详情抽屉还没选中项目时，请求地址里没有可用的 ID。Hook 仍然照常调用，`enabled` 用来控制查询函数何时启动：
+
+~~~tsx
+const projectQuery = useQuery({
+  enabled: projectId !== null,
+  queryKey: ['projects', 'detail', projectId],
+  queryFn: ({ signal }) => {
+    if (projectId === null) {
+      throw new Error('缺少项目 ID')
+    }
+
+    return getProject({ projectId, signal })
+  },
+})
+~~~
+
+`projectId` 为 `null` 时，查询会停在等待状态。拿到 ID 后，它会按新的 key 自动执行。
+
+我只在有明确前置条件的查询上使用 `enabled`。把普通查询全部关掉，再靠按钮手动 `refetch`，参数变化、缓存失效和后台同步都需要自己接管。
+
+## 翻页时，别让列表整块闪空
+
+页码放进 key 后，每一页都有独立缓存。第一次切到新页时，新 key 里还没有数据，列表会重新进入 pending。
+
+v5 可以让上一页暂时顶住：
+
+~~~tsx
+import {
+  keepPreviousData,
+  useQuery,
+} from '@tanstack/react-query'
+
+const projectsQuery = useQuery({
+  placeholderData: keepPreviousData,
+  queryKey: ['projects', 'list', { page, status }],
+  queryFn: ({ signal }) => getProjects({ page, signal, status }),
+})
+~~~
+
+`placeholderData: keepPreviousData` 会在新页返回前继续展示上一页，等请求完成后再替换。各页缓存依然按照 key 分开保存，页码需要一直留在 key 里。
+
+翻“下一页”时，我还会看 `isPlaceholderData`。如果此刻仍展示上一页，就先别让用户连续点；拿到新数据后，再根据 `hasMore` 决定是否还能继续。
+
+v5 使用 `placeholderData` 和 `isPlaceholderData`。旧版的 `keepPreviousData: true` 与 `isPreviousData` 已经移除。
+
+## 这些状态继续留在组件里
+
+TanStack Query 管的是 server state。弹窗、下拉菜单、当前 tab、拖拽位置和表单草稿继续用组件状态。只在一个组件里短暂使用的值也没必要进 Query。
+
+纯服务端渲染的一次性读取留在 Server Component。实时更新继续由 WebSocket 推送，收到事件后可以调用 `setQueryData`，也可以让相关 query 失效。
+
+我还会避免把 `query.data` 通过 `useEffect` 复制到本地 state。需要编辑草稿时可以单独复制一次，普通展示直接读取 query data，数据来源会清楚很多。
+
+## 我实际接入时的顺序
+
+我一般先接 `QueryClientProvider`，然后挑一条列表接口写 `useQuery`。调试时重点看 query key 是否包含全部参数，再给这份数据定一个合适的 `staleTime`。
+
+列表稳定以后，再把新增或编辑操作接到 `useMutation`，成功回调里让相关缓存失效。详情有前置 ID 就加 `enabled`，分页出现闪空再补 `placeholderData: keepPreviousData`。
+
+这套代码已经能覆盖大部分普通后台页面。预取、无限列表、乐观更新、SSR hydration 和持久化缓存，我会留到对应需求出现时再处理。
+
+## 参考资料
+
+- [TanStack Query React Quick Start](https://tanstack.com/query/v5/docs/framework/react/quick-start)
+- [Query Keys](https://tanstack.com/query/v5/docs/framework/react/guides/query-keys)
+- [Important Defaults](https://tanstack.com/query/v5/docs/framework/react/guides/important-defaults)
+- [Query Invalidation](https://tanstack.com/query/v5/docs/framework/react/guides/query-invalidation)
+- [Paginated Queries](https://tanstack.com/query/v5/docs/framework/react/guides/paginated-queries)

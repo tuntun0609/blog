@@ -6,7 +6,6 @@ import { formatPostDate } from '@/lib/blog'
 import styles from './blog.module.css'
 
 interface PostCardProps {
-  index: number
   post: {
     url: string
     data: {
@@ -21,15 +20,12 @@ interface PostCardProps {
   preload?: boolean
 }
 
-export function PostCard({ index, post, preload = false }: PostCardProps) {
+export function PostCard({ post, preload = false }: PostCardProps) {
   const title = post.data.title ?? '未命名文章'
 
   return (
     <Link className={styles.postLink} href={post.url}>
       <article className={styles.postRow}>
-        <span className={styles.postNumber}>
-          {String(index).padStart(2, '0')}
-        </span>
         <div className={styles.postCopy}>
           <div className={styles.postMeta}>
             <span className={styles.postCategory}>{post.data.category}</span>

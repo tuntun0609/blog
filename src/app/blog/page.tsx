@@ -59,7 +59,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
     <div className={styles.listPage}>
       <header className={styles.listIntro}>
         <div>
-          <p className={styles.kicker}>01 / WRITING</p>
+          <p className={styles.kicker}>WRITING</p>
           <h1 className={styles.listTitle}>开发札记</h1>
         </div>
         <div>
@@ -88,12 +88,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
 
       <section aria-label="文章列表" className={styles.postList}>
         {visiblePosts.map((post, index) => (
-          <PostCard
-            index={start + index + 1}
-            key={post.url}
-            post={post}
-            preload={index === 0}
-          />
+          <PostCard key={post.url} post={post} preload={index === 0} />
         ))}
       </section>
 

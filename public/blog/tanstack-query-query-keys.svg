@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="600" viewBox="0 0 1400 600" fill="none">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#22304A" flood-opacity="0.07"/>
+    </filter>
+  </defs>
+
+  <rect width="1400" height="600" rx="32" fill="#F7F9FC"/>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">
+    <text x="70" y="78" fill="#233249" font-size="25" font-weight="700" letter-spacing="2">ONE KEY, ONE CACHE ADDRESS</text>
+    <text x="70" y="112" fill="#77859A" font-size="15" letter-spacing="1.4">PARAMETERS CHANGE THE ADDRESS</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="170" width="382" height="334" rx="24" fill="#FFFFFF" stroke="#273750" stroke-width="2.5"/>
+    <path d="M70 236H452" stroke="#273750" stroke-width="2.5"/>
+    <circle cx="104" cy="203" r="8" fill="#4F78E8"/>
+    <text x="127" y="210" fill="#273750" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="17" font-weight="700">LIST / ACTIVE</text>
+
+    <rect x="103" y="272" width="316" height="70" rx="14" fill="#EAF0FF"/>
+    <text x="124" y="302" fill="#345FBF" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="15">['projects', 'list']</text>
+    <text x="124" y="326" fill="#5E78AE" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13">{ status: active, page: 1 }</text>
+
+    <rect x="103" y="372" width="316" height="91" rx="14" fill="#FAFBFD" stroke="#C8D0DC" stroke-width="2"/>
+    <circle cx="132" cy="401" r="9" fill="#FFFFFF" stroke="#4F78E8" stroke-width="2.5"/>
+    <path d="M155 394H347M155 417H300M122 441H365" stroke="#34445B" stroke-width="7" stroke-linecap="round" stroke-opacity="0.44"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="509" y="170" width="382" height="334" rx="24" fill="#FFFFFF" stroke="#273750" stroke-width="2.5"/>
+    <path d="M509 236H891" stroke="#273750" stroke-width="2.5"/>
+    <circle cx="543" cy="203" r="8" fill="#F19A5B"/>
+    <text x="566" y="210" fill="#273750" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="17" font-weight="700">LIST / ARCHIVED</text>
+
+    <rect x="542" y="272" width="316" height="70" rx="14" fill="#FFF1E8"/>
+    <text x="563" y="302" fill="#A85B2B" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="15">['projects', 'list']</text>
+    <text x="563" y="326" fill="#A97859" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13">{ status: archived, page: 2 }</text>
+
+    <rect x="542" y="372" width="316" height="91" rx="14" fill="#FAFBFD" stroke="#C8D0DC" stroke-width="2"/>
+    <circle cx="571" cy="401" r="9" fill="#FFFFFF" stroke="#F19A5B" stroke-width="2.5"/>
+    <path d="M594 394H786M594 417H739M561 441H804" stroke="#34445B" stroke-width="7" stroke-linecap="round" stroke-opacity="0.44"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="948" y="170" width="382" height="334" rx="24" fill="#FFFFFF" stroke="#273750" stroke-width="2.5"/>
+    <path d="M948 236H1330" stroke="#273750" stroke-width="2.5"/>
+    <circle cx="982" cy="203" r="8" fill="#75B9A8"/>
+    <text x="1005" y="210" fill="#273750" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="17" font-weight="700">DETAIL / P_42</text>
+
+    <rect x="981" y="272" width="316" height="70" rx="14" fill="#EAF6F3"/>
+    <text x="1002" y="302" fill="#34786A" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="15">['projects', 'detail']</text>
+    <text x="1002" y="326" fill="#648C83" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13">projectId: p_42</text>
+
+    <rect x="981" y="372" width="316" height="91" rx="14" fill="#FAFBFD" stroke="#C8D0DC" stroke-width="2"/>
+    <circle cx="1010" cy="409" r="18" fill="#FFFFFF" stroke="#75B9A8" stroke-width="2.5"/>
+    <path d="M1042 396H1227M1042 420H1172M1001 447H1243" stroke="#34445B" stroke-width="7" stroke-linecap="round" stroke-opacity="0.44"/>
+  </g>
+
+  <path d="M467 337H494M906 337H933" stroke="#4F78E8" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 8"/>
+</svg>

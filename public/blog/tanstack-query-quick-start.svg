@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="860" viewBox="0 0 1600 860" fill="none">
+  <defs>
+    <pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.5" fill="#21314D" fill-opacity="0.08"/>
+    </pattern>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#22304A" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="860" rx="40" fill="#F7F9FC"/>
+  <rect width="1600" height="860" rx="40" fill="url(#dots)"/>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">
+    <text x="800" y="105" text-anchor="middle" fill="#1F2D43" font-size="31" font-weight="700" letter-spacing="3">TANSTACK QUERY</text>
+    <text x="800" y="145" text-anchor="middle" fill="#728096" font-size="18" letter-spacing="2">READ · CACHE · SYNC</text>
+  </g>
+
+  <g filter="url(#soft-shadow)">
+    <rect x="98" y="216" width="436" height="410" rx="28" fill="#FFFFFF" stroke="#1F2D43" stroke-width="3"/>
+    <path d="M99 286H533" stroke="#1F2D43" stroke-width="3"/>
+    <circle cx="137" cy="251" r="8" fill="#F19A5B"/>
+    <circle cx="165" cy="251" r="8" fill="#F4C76B"/>
+    <circle cx="193" cy="251" r="8" fill="#75B9A8"/>
+
+    <rect x="135" y="326" width="154" height="34" rx="17" fill="#EAF0FF" stroke="#4F78E8" stroke-width="2"/>
+    <path d="M159 343H263" stroke="#4F78E8" stroke-width="7" stroke-linecap="round" stroke-opacity="0.55"/>
+
+    <rect x="135" y="394" width="362" height="64" rx="15" fill="#F8FAFD" stroke="#C7CFDB" stroke-width="2"/>
+    <circle cx="170" cy="426" r="12" fill="#FFFFFF" stroke="#4F78E8" stroke-width="3"/>
+    <path d="M201 414H382M201 438H330" stroke="#26364D" stroke-width="8" stroke-linecap="round" stroke-opacity="0.56"/>
+
+    <rect x="135" y="476" width="362" height="64" rx="15" fill="#F8FAFD" stroke="#C7CFDB" stroke-width="2"/>
+    <circle cx="170" cy="508" r="12" fill="#FFFFFF" stroke="#4F78E8" stroke-width="3"/>
+    <path d="M201 496H418M201 520H350" stroke="#26364D" stroke-width="8" stroke-linecap="round" stroke-opacity="0.56"/>
+
+    <rect x="135" y="558" width="250" height="27" rx="13.5" fill="#EEF2F7"/>
+    <path d="M158 571.5H351" stroke="#8290A3" stroke-width="6" stroke-linecap="round" stroke-opacity="0.5"/>
+  </g>
+
+  <path d="M558 421H639" stroke="#4F78E8" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 11"/>
+  <path d="M621 405L641 421L621 437" stroke="#4F78E8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g filter="url(#soft-shadow)">
+    <rect x="668" y="246" width="378" height="350" rx="32" fill="#FFFFFF" stroke="#4F78E8" stroke-width="4"/>
+    <rect x="700" y="278" width="314" height="52" rx="16" fill="#EAF0FF"/>
+    <text x="728" y="311" fill="#345FBF" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="18" font-weight="700" letter-spacing="1.5">QUERY CACHE</text>
+
+    <rect x="700" y="360" width="314" height="76" rx="16" fill="#FFFFFF" stroke="#B8C4D6" stroke-width="2.5"/>
+    <circle cx="732" cy="398" r="10" fill="#4F78E8"/>
+    <path d="M758 386H958M758 410H900" stroke="#25354D" stroke-width="8" stroke-linecap="round" stroke-opacity="0.54"/>
+
+    <rect x="700" y="456" width="314" height="76" rx="16" fill="#FFFFFF" stroke="#B8C4D6" stroke-width="2.5"/>
+    <circle cx="732" cy="494" r="10" fill="#FFFFFF" stroke="#4F78E8" stroke-width="3"/>
+    <path d="M758 482H930M758 506H874" stroke="#25354D" stroke-width="8" stroke-linecap="round" stroke-opacity="0.54"/>
+
+    <path d="M736 566H949" stroke="#4F78E8" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="965" cy="566" r="8" fill="#F19A5B"/>
+  </g>
+
+  <path d="M1072 421H1152" stroke="#4F78E8" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 11"/>
+  <path d="M1134 405L1154 421L1134 437" stroke="#4F78E8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g filter="url(#soft-shadow)">
+    <path d="M1193 308C1193 273.758 1259.63 246 1341.8 246C1423.97 246 1490.6 273.758 1490.6 308V534C1490.6 568.242 1423.97 596 1341.8 596C1259.63 596 1193 568.242 1193 534V308Z" fill="#FFFFFF" stroke="#1F2D43" stroke-width="3"/>
+    <ellipse cx="1341.8" cy="308" rx="148.8" ry="62" fill="#F7F9FC" stroke="#1F2D43" stroke-width="3"/>
+    <ellipse cx="1341.8" cy="308" rx="105" ry="35" fill="#EAF0FF" stroke="#4F78E8" stroke-width="3"/>
+    <path d="M1193 412C1193 446.242 1259.63 474 1341.8 474C1423.97 474 1490.6 446.242 1490.6 412" stroke="#AAB6C7" stroke-width="3"/>
+    <path d="M1193 498C1193 532.242 1259.63 560 1341.8 560C1423.97 560 1490.6 532.242 1490.6 498" stroke="#AAB6C7" stroke-width="3"/>
+    <text x="1342" y="401" text-anchor="middle" fill="#26364D" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="22" font-weight="700" letter-spacing="2">API</text>
+  </g>
+
+  <text x="860" y="762" text-anchor="middle" fill="#4F78E8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="15" letter-spacing="1.5">FRESH → STALE → REFRESH</text>
+
+  <path d="M704 710C704 674 733 645 769 645H951C987 645 1016 674 1016 710" stroke="#4F78E8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M1000 694L1016 710L1032 694" stroke="#4F78E8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

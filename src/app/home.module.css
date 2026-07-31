@@ -221,7 +221,6 @@
 
 .primaryAction,
 .secondaryAction,
-.inlineLink,
 .allProjectsLink,
 .allNotesLink,
 .githubCta,
@@ -261,16 +260,13 @@
 }
 
 .secondaryAction:hover,
-.secondaryAction:focus-visible,
-.inlineLink:hover,
-.inlineLink:focus-visible {
+.secondaryAction:focus-visible {
   color: var(--home-blue);
   border-color: var(--home-blue);
 }
 
 .primaryAction svg,
 .secondaryAction svg,
-.inlineLink svg,
 .allProjectsLink svg,
 .allNotesLink svg,
 .githubCta svg,
@@ -281,7 +277,6 @@
 }
 
 .secondaryAction:focus-visible svg,
-.inlineLink:focus-visible svg,
 .allProjectsLink:focus-visible svg,
 .allNotesLink:focus-visible svg,
 .githubCta:focus-visible svg,
@@ -327,7 +322,6 @@
   font-weight: 650;
 }
 
-.aboutSection,
 .projectsSection,
 .notesSection,
 .githubSection,
@@ -336,15 +330,7 @@
   margin-inline: auto;
 }
 
-.aboutSection {
-  padding-block: 8.5rem 7.5rem;
-}
-
 .sectionHeading {
-  display: flex;
-  gap: 2rem;
-  align-items: flex-start;
-  justify-content: space-between;
   padding-bottom: 2.3rem;
 }
 
@@ -358,44 +344,8 @@
   line-height: 1.2;
 }
 
-.aboutGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: clamp(2.5rem, 7vw, 6rem);
-  padding-top: 3rem;
-}
-
-.aboutStatement {
-  max-width: 34rem;
-  margin: 0;
-  font-size: 1.65rem;
-  font-weight: 650;
-  line-height: 1.35;
-}
-
-.aboutDetails {
-  max-width: 28rem;
-  font-size: 0.92rem;
-  line-height: 1.85;
-  color: var(--home-muted);
-}
-
-.aboutDetails p {
-  margin: 0;
-}
-
-.aboutDetails p + p {
-  margin-top: 1.15rem;
-}
-
-.inlineLink {
-  margin-top: 1.7rem;
-  color: var(--home-ink);
-  border-bottom: 1px solid var(--home-ink);
-}
-
 .projectsSection {
-  padding-block: 0 7.5rem;
+  padding-block: clamp(3rem, 7vw, 20rem) 7.5rem;
   scroll-margin-top: 6rem;
 }
 
@@ -696,7 +646,6 @@
 
 @media (hover: hover) and (pointer: fine) {
   .secondaryAction:hover svg,
-  .inlineLink:hover svg,
   .allProjectsLink:hover svg,
   .allNotesLink:hover svg,
   .githubCta:hover svg,
@@ -738,7 +687,6 @@
 
 @media (max-width: 680px) {
   .hero,
-  .aboutSection,
   .projectsSection,
   .notesSection,
   .githubSection,
@@ -784,32 +732,13 @@
     margin-top: 2.75rem;
   }
 
-  .aboutSection {
-    padding-block: 5.75rem 5.5rem;
-  }
-
   .sectionHeading {
-    display: block;
     padding-bottom: 1.65rem;
   }
 
   .sectionHeading h2,
   .githubIntro h2 {
     margin-top: 0.6rem;
-  }
-
-  .aboutGrid {
-    display: block;
-    padding-top: 2rem;
-  }
-
-  .aboutStatement {
-    font-size: 1.35rem;
-  }
-
-  .aboutDetails {
-    margin-top: 2rem;
-    font-size: 0.87rem;
   }
 
   .projectsSection,

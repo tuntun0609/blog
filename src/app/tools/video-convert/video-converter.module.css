@@ -1,14 +1,110 @@
 .converter {
-  --convert-blue: #0b84f3;
-  --convert-blue-strong: #0675da;
-  --convert-panel: #f8fafc;
-  --convert-ink: #0f172a;
-  --convert-muted: #64748b;
+  --convert-accent: var(--primary);
+  --convert-accent-strong: color-mix(
+    in oklab,
+    var(--convert-accent) 86%,
+    black
+  );
+  --convert-accent-bright: color-mix(
+    in oklab,
+    var(--convert-accent) 78%,
+    white
+  );
+  --convert-accent-soft: color-mix(
+    in oklab,
+    var(--convert-accent) 9%,
+    transparent
+  );
+  --convert-canvas: #f2f3f5;
+  --convert-canvas-highlight: #fafafb;
+  --convert-surface: rgb(255 255 255 / 92%);
+  --convert-surface-solid: #fff;
+  --convert-surface-subtle: #f7f7f8;
+  --convert-surface-strong: #eceef1;
+  --convert-ink: #181a1f;
+  --convert-muted: #747983;
+  --convert-line: rgb(24 26 31 / 10%);
+  --convert-line-strong: rgb(24 26 31 / 17%);
+  --convert-player: #0b0d11;
+  --convert-player-raised: #171a21;
+  --convert-player-line: rgb(255 255 255 / 9%);
+  --convert-shadow-sm:
+    0 1px 2px rgb(24 26 31 / 5%), 0 7px 20px rgb(24 26 31 / 5%);
+  --convert-shadow-lg:
+    0 2px 4px rgb(24 26 31 / 6%), 0 28px 64px rgb(24 26 31 / 10%);
+  --background: var(--convert-surface-solid);
+  --foreground: var(--convert-ink);
+  --card: var(--convert-surface);
+  --card-foreground: var(--convert-ink);
+  --secondary: var(--convert-surface-subtle);
+  --secondary-foreground: var(--convert-ink);
+  --muted: var(--convert-surface-strong);
+  --muted-foreground: var(--convert-muted);
+  --accent: var(--convert-surface-strong);
+  --accent-foreground: var(--convert-ink);
+  --border: var(--convert-line);
+  --input: var(--convert-surface-strong);
+  --ring: color-mix(in oklab, var(--convert-accent) 68%, white);
 
   position: relative;
   min-height: calc(100svh - 4.35rem);
   color: var(--convert-ink);
-  background: var(--convert-panel);
+  background:
+    radial-gradient(
+      circle at 50% -12rem,
+      var(--convert-canvas-highlight) 0,
+      transparent 34rem
+    ),
+    linear-gradient(
+      180deg,
+      var(--convert-canvas-highlight),
+      var(--convert-canvas)
+    );
+}
+
+[class~="dark"] .converter {
+  --convert-accent-strong: color-mix(
+    in oklab,
+    var(--convert-accent) 72%,
+    white
+  );
+  --convert-accent-bright: color-mix(
+    in oklab,
+    var(--convert-accent) 58%,
+    white
+  );
+  --convert-accent-soft: color-mix(
+    in oklab,
+    var(--convert-accent) 18%,
+    transparent
+  );
+  --convert-canvas: #111318;
+  --convert-canvas-highlight: #191c22;
+  --convert-surface: rgb(32 35 42 / 90%);
+  --convert-surface-solid: #20232a;
+  --convert-surface-subtle: #252830;
+  --convert-surface-strong: #2b2f38;
+  --convert-ink: #f2f3f5;
+  --convert-muted: #a5a9b2;
+  --convert-line: rgb(255 255 255 / 9%);
+  --convert-line-strong: rgb(255 255 255 / 16%);
+  --convert-player: #050609;
+  --convert-player-raised: #101218;
+  --convert-player-line: rgb(255 255 255 / 11%);
+  --convert-shadow-sm: 0 1px 2px rgb(0 0 0 / 20%), 0 10px 24px rgb(0 0 0 / 16%);
+  --convert-shadow-lg: 0 2px 4px rgb(0 0 0 / 24%), 0 32px 72px rgb(0 0 0 / 30%);
+  --ring: var(--convert-accent-bright);
+
+  color-scheme: dark;
+}
+
+.converter [data-slot="button"] {
+  transition:
+    color var(--duration-fast) ease,
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease,
+    translate var(--duration-press) var(--ease-out);
 }
 
 .fileInput {
@@ -32,9 +128,16 @@
   gap: 1rem;
   align-items: center;
   justify-content: center;
-  color: white;
-  background: color-mix(in srgb, var(--convert-blue) 88%, transparent);
-  backdrop-filter: blur(12px);
+  color: var(--primary-foreground);
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      rgb(255 255 255 / 17%),
+      transparent 22rem
+    ),
+    color-mix(in oklab, var(--convert-accent) 89%, transparent);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 16%);
+  backdrop-filter: blur(18px) saturate(120%);
 }
 
 .dragOverlay svg {
@@ -57,6 +160,7 @@
 }
 
 .heroIntro {
+  position: relative;
   text-align: center;
 }
 
@@ -66,6 +170,7 @@
   font-weight: 750;
   line-height: 1.15;
   letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
 .heroDescription {
@@ -85,9 +190,29 @@
   width: 100%;
   min-height: 12rem;
   padding: 1.5rem;
-  background: var(--background);
-  border: 1px dashed var(--border);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 48%), transparent 42%),
+    var(--convert-surface);
+  border: 1px dashed var(--convert-line-strong);
   border-radius: var(--radius-2xl);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 76%),
+    var(--convert-shadow-sm);
+  backdrop-filter: blur(18px) saturate(115%);
+  transition:
+    background-color var(--duration-ui) ease,
+    border-color var(--duration-ui) ease,
+    box-shadow var(--duration-ui) ease,
+    transform var(--duration-press) var(--ease-out);
+}
+
+[class~="dark"] .dropZone {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 4%), transparent 42%),
+    var(--convert-surface);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 7%),
+    var(--convert-shadow-sm);
 }
 
 .dropZoneLabel {
@@ -108,11 +233,19 @@
   width: 2rem;
   height: 2rem;
   color: var(--muted-foreground);
+  filter: drop-shadow(0 1px 0 rgb(255 255 255 / 58%));
+}
+
+[class~="dark"] .dropZone > svg {
+  filter: none;
 }
 
 .dropZoneLabel:focus-visible .dropZone {
-  border-color: var(--convert-blue);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--convert-blue) 18%, transparent);
+  border-color: var(--convert-accent);
+  box-shadow:
+    0 0 0 3px var(--convert-accent-soft),
+    inset 0 1px rgb(255 255 255 / 76%),
+    var(--convert-shadow-sm);
 }
 
 .dropZoneCopy {
@@ -132,7 +265,17 @@
 }
 
 .dropZone[data-analyzing="true"] {
-  border-color: color-mix(in srgb, var(--convert-blue) 52%, #cbd5e1);
+  background:
+    linear-gradient(180deg, var(--convert-accent-soft), transparent 54%),
+    var(--convert-surface);
+  border-color: color-mix(
+    in oklab,
+    var(--convert-accent) 48%,
+    var(--convert-line-strong)
+  );
+  box-shadow:
+    0 0 0 3px var(--convert-accent-soft),
+    var(--convert-shadow-sm);
 }
 
 .analyzingBars {
@@ -153,8 +296,12 @@
   font-size: 0.875rem;
   font-weight: 650;
   color: var(--primary-foreground);
-  background: var(--primary);
+  background: var(--convert-accent);
   border-radius: var(--radius-2xl);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 20%),
+    0 1px 2px color-mix(in oklab, var(--convert-accent) 30%, transparent),
+    0 8px 18px color-mix(in oklab, var(--convert-accent) 17%, transparent);
 }
 
 .pickFileButton svg {
@@ -172,9 +319,14 @@
   margin-top: 1rem;
   font-size: 0.82rem;
   text-align: left;
-  background: color-mix(in srgb, var(--destructive) 8%, white);
-  border: 1px solid color-mix(in srgb, var(--destructive) 22%, transparent);
+  background: color-mix(
+    in oklab,
+    var(--destructive) 8%,
+    var(--convert-surface-solid)
+  );
+  border: 1px solid color-mix(in oklab, var(--destructive) 20%, transparent);
   border-radius: var(--radius-2xl);
+  box-shadow: var(--convert-shadow-sm);
 }
 
 .heroError strong {
@@ -196,6 +348,14 @@
   display: flex;
   justify-content: space-between;
   margin-bottom: 1rem;
+}
+
+.workspaceTopbar [data-slot="button"] {
+  color: var(--convert-muted);
+}
+
+.workspaceTopbar [data-slot="button"]:hover {
+  color: color-mix(in oklab, var(--convert-ink) 72%, var(--convert-muted));
 }
 
 .workspaceGrid {
@@ -225,6 +385,33 @@
   min-height: 0;
 }
 
+.previewColumn > [data-slot="card"],
+.settingsColumn > [data-slot="card"] {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 32%), transparent 8rem),
+    var(--convert-surface);
+  box-shadow:
+    0 0 0 1px var(--convert-line),
+    var(--convert-shadow-sm);
+  backdrop-filter: blur(18px) saturate(112%);
+}
+
+[class~="dark"] .previewColumn > [data-slot="card"],
+[class~="dark"] .settingsColumn > [data-slot="card"] {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 3%), transparent 8rem),
+    var(--convert-surface);
+}
+
+.converter [data-slot="card-title"] {
+  color: var(--convert-ink);
+  letter-spacing: -0.015em;
+}
+
+.converter [data-slot="card-description"] {
+  color: var(--convert-muted);
+}
+
 .settingsColumn
   > [data-slot="card"]
   > :is([data-slot="card-header"], [data-slot="card-footer"]) {
@@ -238,6 +425,7 @@
   overflow-y: auto;
   scrollbar-gutter: stable;
   overscroll-behavior: contain;
+  scrollbar-color: var(--convert-line-strong) transparent;
 }
 
 .settingsHeader {
@@ -253,7 +441,13 @@
   left: 0;
   height: 1px;
   content: "";
-  background: var(--border);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--convert-line-strong) 12%,
+    var(--convert-line-strong) 88%,
+    transparent
+  );
   opacity: 0;
   transition: opacity var(--duration-ui) var(--ease-out);
 }
@@ -272,7 +466,14 @@
 .settingsColumn > [data-slot="card"] > [data-slot="card-footer"] {
   padding-top: 1rem;
   margin-top: calc(-1 * var(--card-spacing));
-  border-top: 1px solid var(--border);
+  background: color-mix(
+    in oklab,
+    var(--convert-surface-solid) 72%,
+    transparent
+  );
+  border-top: 1px solid var(--convert-line);
+  box-shadow: 0 -10px 24px rgb(24 26 31 / 2%);
+  backdrop-filter: blur(14px);
 }
 
 .playerShell {
@@ -281,13 +482,12 @@
   min-height: 22rem;
   overflow: hidden;
   background:
-    linear-gradient(45deg, #151a22 25%, transparent 25%) 0 0 / 24px 24px,
-    linear-gradient(-45deg, #151a22 25%, transparent 25%) 0 0 / 24px 24px,
-    linear-gradient(45deg, transparent 75%, #151a22 75%) 0 0 / 24px 24px,
-    linear-gradient(-45deg, transparent 75%, #151a22 75%) 0 0 / 24px 24px,
-    #10141b;
-  border: 1px solid rgb(255 255 255 / 7%);
-  box-shadow: 0 26px 60px rgb(15 23 42 / 15%);
+    radial-gradient(circle at 50% -20%, rgb(255 255 255 / 10%), transparent 54%),
+    linear-gradient(145deg, var(--convert-player-raised), var(--convert-player));
+  border: 1px solid var(--convert-player-line);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 7%),
+    var(--convert-shadow-lg);
 }
 
 .videoStage {
@@ -327,7 +527,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  fill: rgb(0 0 0 / 54%);
+  fill: rgb(0 0 0 / 58%);
 }
 
 .cropSelection {
@@ -337,11 +537,12 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  border: 2px solid var(--convert-blue);
+  border: 2px solid var(--convert-accent-bright);
   border-radius: 0.3rem;
   box-shadow:
-    0 0 0 1px rgb(255 255 255 / 22%),
-    inset 0 0 0 1px rgb(0 0 0 / 18%);
+    0 0 0 1px rgb(255 255 255 / 38%),
+    0 0 18px color-mix(in oklab, var(--convert-accent) 16%, transparent),
+    inset 0 0 0 1px rgb(0 0 0 / 24%);
 }
 
 .cropSizeLabel {
@@ -351,9 +552,11 @@
   font-variant-numeric: tabular-nums;
   color: white;
   white-space: nowrap;
-  background: var(--convert-blue);
+  background: var(--convert-accent);
   border-radius: 999px;
-  box-shadow: 0 4px 14px rgb(0 0 0 / 22%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 20%),
+    0 4px 14px rgb(0 0 0 / 28%);
 }
 
 .cropMoveArea,
@@ -410,10 +613,12 @@ button.cropHandle:active:not([aria-haspopup]) {
   width: 14px;
   height: 14px;
   content: "";
-  background: white;
-  border: 2px solid #111827;
+  background: var(--convert-surface-solid);
+  border: 2px solid var(--convert-accent-strong);
   border-radius: 999px;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 28%);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 34%),
+    0 2px 6px rgb(0 0 0 / 34%);
   transform: translate(-50%, -50%);
 }
 
@@ -431,7 +636,7 @@ button.cropHandle:active:not([aria-haspopup]) {
 .cropHandle:focus-visible {
   box-shadow:
     0 0 0 2px white,
-    0 0 0 5px var(--convert-blue);
+    0 0 0 5px var(--convert-accent-bright);
 }
 
 .cropIndicators {
@@ -456,8 +661,10 @@ button.cropHandle:active:not([aria-haspopup]) {
   font-variant-numeric: tabular-nums;
   color: white;
   text-align: center;
-  background: rgb(15 23 42 / 84%);
+  background: rgb(11 13 17 / 88%);
+  border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 0.35rem;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 24%);
 }
 
 .cropHorizontalIndicator {
@@ -479,6 +686,31 @@ button.cropHandle:active:not([aria-haspopup]) {
   gap: 0.6rem;
   align-items: center;
   margin-top: 0.45rem;
+}
+
+.timelineTransport [data-slot="button"] {
+  color: var(--convert-muted);
+  background: color-mix(
+    in oklab,
+    var(--convert-surface-solid) 74%,
+    transparent
+  );
+  border-color: var(--convert-line);
+  box-shadow: 0 1px 2px rgb(24 26 31 / 4%);
+}
+
+.timelineTransport [data-slot="button"]:hover {
+  color: color-mix(in oklab, var(--convert-ink) 72%, var(--convert-muted));
+  background: color-mix(
+    in oklab,
+    var(--convert-surface-solid) 78%,
+    transparent
+  );
+  border-color: color-mix(
+    in oklab,
+    var(--convert-line-strong) 42%,
+    var(--convert-line)
+  );
 }
 
 .timelineControlGroup {
@@ -528,12 +760,14 @@ button.cropHandle:active:not([aria-haspopup]) {
   overflow: visible;
   touch-action: none;
   background:
-    linear-gradient(90deg, rgb(255 255 255 / 6%) 50%, transparent 50%) 0 0 /
+    linear-gradient(90deg, rgb(255 255 255 / 5%) 50%, transparent 50%) 0 0 /
     12px 100%,
-    #111827;
-  border: 1px solid #111827;
+    var(--convert-player-raised);
+  border: 1px solid var(--convert-player-line);
   border-radius: 0.3rem;
-  box-shadow: 0 4px 14px rgb(15 23 42 / 12%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 5%),
+    0 5px 16px rgb(24 26 31 / 12%);
 }
 
 .filmstripViewport {
@@ -565,14 +799,17 @@ button.cropHandle:active:not([aria-haspopup]) {
 
 .trimMask {
   z-index: 1;
-  background: rgb(0 0 0 / 52%);
+  background: rgb(0 0 0 / 60%);
+  backdrop-filter: saturate(35%);
 }
 
 .trimSelection {
   z-index: 2;
-  border: 2px solid var(--convert-blue);
+  border: 2px solid var(--convert-accent-bright);
   border-radius: 0;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 16%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 24%),
+    0 0 14px color-mix(in oklab, var(--convert-accent) 14%, transparent);
 }
 
 .trimHandle {
@@ -588,7 +825,7 @@ button.cropHandle:active:not([aria-haspopup]) {
   touch-action: none;
   cursor: ew-resize;
   outline: none;
-  background: var(--convert-blue);
+  background: var(--convert-accent);
   border: 0;
   scale: none;
   translate: none;
@@ -619,7 +856,7 @@ button.trimHandle:active:not([aria-haspopup]) {
 .trimHandle:focus-visible {
   box-shadow:
     inset 0 0 0 2px white,
-    0 0 0 3px color-mix(in srgb, var(--convert-blue) 45%, transparent);
+    0 0 0 3px color-mix(in oklab, var(--convert-accent) 45%, transparent);
 }
 
 .timelinePlayhead {
@@ -629,7 +866,7 @@ button.trimHandle:active:not([aria-haspopup]) {
   width: 28px;
   height: 100%;
   padding: 0;
-  color: var(--convert-blue);
+  color: var(--convert-accent-bright);
   touch-action: none;
   cursor: ew-resize;
   outline: none;
@@ -655,7 +892,9 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   width: 2px;
   content: "";
   background: currentcolor;
-  box-shadow: 1px 0 0 rgb(15 23 42 / 52%);
+  box-shadow:
+    1px 0 0 rgb(11 13 17 / 70%),
+    0 0 7px color-mix(in oklab, var(--convert-accent) 35%, transparent);
   transform: translateX(-50%);
 }
 
@@ -672,25 +911,25 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   transform: translateX(-50%);
 }
 
-.timelinePlayhead:is(:hover, :active) {
-  color: color-mix(in srgb, var(--convert-blue) 86%, white);
+.timelinePlayhead:active {
+  color: color-mix(in oklab, var(--convert-accent) 72%, white);
 }
 
 .timelinePlayhead:focus-visible {
-  color: var(--convert-blue-strong);
+  color: var(--convert-accent-bright);
   box-shadow: none;
 }
 
 .timelinePlayhead:focus-visible::before {
   box-shadow:
     0 0 0 1px white,
-    0 0 0 3px color-mix(in srgb, var(--convert-blue) 32%, transparent);
+    0 0 0 3px color-mix(in oklab, var(--convert-accent) 32%, transparent);
 }
 
 .timelinePlayhead:focus-visible > span {
   filter: drop-shadow(0 0 1px white)
     drop-shadow(
-      0 0 3px color-mix(in srgb, var(--convert-blue) 72%, transparent)
+      0 0 3px color-mix(in oklab, var(--convert-accent) 72%, transparent)
     );
 }
 
@@ -737,6 +976,15 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   border-radius: 999px;
 }
 
+.frameStepButton:hover {
+  color: color-mix(in oklab, var(--convert-ink) 72%, var(--convert-muted));
+  border-color: color-mix(
+    in oklab,
+    var(--convert-line-strong) 42%,
+    var(--convert-line)
+  );
+}
+
 .frameStepButton svg {
   width: 0.75rem;
   height: 0.75rem;
@@ -757,7 +1005,10 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
 .audioPreview > svg {
   width: 4rem;
   height: 4rem;
-  color: color-mix(in srgb, var(--convert-blue) 80%, white);
+  color: var(--convert-accent-bright);
+  filter: drop-shadow(
+    0 10px 24px color-mix(in oklab, var(--convert-accent) 28%, transparent)
+  );
 }
 
 .audioPreview strong {
@@ -786,7 +1037,7 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   margin-bottom: 0.2rem;
   font-size: 0.67rem;
   font-weight: 700;
-  color: var(--muted-foreground);
+  color: var(--convert-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -798,6 +1049,7 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   font-size: 0.82rem;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
+  color: var(--convert-ink);
   white-space: nowrap;
 }
 
@@ -819,11 +1071,28 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   min-width: 0;
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--muted-foreground);
+  color: var(--convert-muted);
 }
 
 .selectTrigger {
   width: 100%;
+}
+
+.selectTrigger,
+.numericField [data-slot="input"] {
+  color: var(--convert-ink);
+  background: color-mix(
+    in oklab,
+    var(--convert-surface-strong) 72%,
+    var(--convert-surface-solid)
+  );
+  border-color: var(--convert-line);
+  box-shadow: inset 0 1px rgb(255 255 255 / 34%);
+}
+
+[class~="dark"] .selectTrigger,
+[class~="dark"] .numericField [data-slot="input"] {
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
 }
 
 .codecSkeletons {
@@ -835,14 +1104,39 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
 .switchSection {
   gap: 0;
   overflow: hidden;
-  background: var(--background);
-  border: 1px solid var(--border);
+  background: color-mix(
+    in oklab,
+    var(--convert-surface-subtle) 76%,
+    var(--convert-surface-solid)
+  );
+  border: 1px solid var(--convert-line);
   border-radius: var(--radius-2xl);
+  box-shadow: inset 0 1px rgb(255 255 255 / 38%);
+  transition:
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
 }
 
 .switchSection[data-active="true"] {
-  border-color: color-mix(in srgb, var(--convert-blue) 30%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--convert-blue) 10%, transparent);
+  background: color-mix(
+    in oklab,
+    var(--convert-accent) 3%,
+    var(--convert-surface-solid)
+  );
+  border-color: color-mix(
+    in oklab,
+    var(--convert-accent) 30%,
+    var(--convert-line)
+  );
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 38%),
+    0 0 0 1px var(--convert-accent-soft);
+}
+
+[class~="dark"] .switchSection,
+[class~="dark"] .switchSection[data-active="true"] {
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
 }
 
 .switchLabel {
@@ -853,12 +1147,18 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   width: 100%;
   padding: 0.72rem 0.8rem;
   cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
 }
 
 .switchContent {
   padding: 0.8rem;
   container-type: inline-size;
-  border-top: 1px solid var(--border);
+  background: color-mix(
+    in oklab,
+    var(--convert-surface-solid) 72%,
+    transparent
+  );
+  border-top: 1px solid var(--convert-line);
 }
 
 .twoColumnFields,
@@ -905,7 +1205,7 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   gap: 0.4rem;
   align-items: center;
   font-size: 0.69rem;
-  color: var(--muted-foreground);
+  color: var(--convert-muted);
 }
 
 .fullWidthButton {
@@ -917,22 +1217,34 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   font-size: 0.72rem;
   line-height: 1.55;
   color: var(--destructive);
-  background: color-mix(in srgb, var(--destructive) 8%, transparent);
+  background: color-mix(
+    in oklab,
+    var(--destructive) 9%,
+    var(--convert-surface-solid)
+  );
   border-radius: var(--radius-xl);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--destructive) 16%, transparent);
 }
 
 .progressTrack {
   height: 0.75rem;
   overflow: hidden;
-  background: var(--muted);
+  background: var(--convert-surface-strong);
   border-radius: 999px;
+  box-shadow: inset 0 1px 3px rgb(24 26 31 / 12%);
 }
 
 .progressTrack span {
   display: block;
   height: 100%;
-  background: var(--convert-blue);
+  background: linear-gradient(
+    90deg,
+    var(--convert-accent),
+    var(--convert-accent-bright)
+  );
   border-radius: inherit;
+  box-shadow: 0 0 12px var(--convert-accent-soft);
   transition: width var(--duration-fast) linear;
 }
 
@@ -946,11 +1258,12 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
 
 .progressMeta strong {
   font-size: 1.4rem;
+  color: var(--convert-ink);
 }
 
 .progressMeta span {
   font-size: 0.7rem;
-  color: var(--muted-foreground);
+  color: var(--convert-muted);
 }
 
 .doneIcon {
@@ -959,9 +1272,12 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   width: 3rem;
   height: 3rem;
   margin-bottom: 0.8rem;
-  color: var(--convert-blue-strong);
-  background: color-mix(in srgb, var(--convert-blue) 10%, transparent);
+  color: var(--convert-accent-strong);
+  background: var(--convert-accent-soft);
   border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--convert-accent) 12%, transparent),
+    0 8px 20px var(--convert-accent-soft);
 }
 
 .doneIcon svg {
@@ -974,9 +1290,10 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   justify-content: space-between;
   padding: 0.7rem 0.8rem;
   font-size: 0.73rem;
-  color: var(--muted-foreground);
-  background: var(--muted);
+  color: var(--convert-muted);
+  background: var(--convert-surface-subtle);
   border-radius: var(--radius-xl);
+  box-shadow: inset 0 0 0 1px var(--convert-line);
 }
 
 .resultActions {
@@ -989,6 +1306,31 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
   width: 100%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dropZoneLabel:hover {
+    background: transparent;
+  }
+
+  .dropZoneLabel:hover .dropZone {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--convert-accent) 2%, transparent),
+        transparent 50%
+      ),
+      var(--convert-surface);
+    border-color: color-mix(
+      in oklab,
+      var(--convert-accent) 14%,
+      var(--convert-line-strong)
+    );
+  }
+
+  .switchLabel:hover {
+    background: color-mix(in oklab, var(--convert-ink) 2%, transparent);
+  }
 }
 
 @media (max-width: 950px) {
@@ -1090,7 +1432,7 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
   width: 100%;
   padding: 1rem;
   overflow: hidden;
-  background: #05070a;
+  background: var(--convert-player);
 }
 
 .previewColumn:fullscreen > [data-slot="card"] {
@@ -1110,8 +1452,12 @@ button.timelinePlayhead:active:not([aria-haspopup]) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .converter [data-slot="button"],
+  .dropZone,
   .progressTrack span,
   .settingsHeader::after,
+  .switchLabel,
+  .switchSection,
   .videoPreview {
     transition: none;
   }
