@@ -26,6 +26,8 @@ import type { TrimBoundary, TrimFrameRange } from './editor-model'
 import {
   clamp,
   formatPreciseTimestamp,
+  getTimelineFrameAtX,
+  getTimelineFrameX,
   moveTrimBoundary,
   normalizeTrimRange,
   trimRangeToSeconds,
@@ -58,6 +60,7 @@ type TimelineDragTarget = TrimBoundary | 'playhead'
 interface TrimDragSession {
   captureTarget: HTMLButtonElement
   grabOffsetX: number
+  inset: number
   pointerId: number
   target: TimelineDragTarget
 }
@@ -229,7 +232,7 @@ export function TrimTimeline({
     }
 
     const updateWidth = () => {
-      const nextWidth = Math.round(wrapper.getBoundingClientRect().width)
+      const nextWidth = wrapper.clientWidth
       setTimelineWidth((current) =>
         current === nextWidth ? current : nextWidth
       )
@@ -277,21 +280,23 @@ export function TrimTimeline({
     }
   }, [prepared, timelineWidth])
 
-  const frameToOriginX = useCallback(
-    (frame: number): number => {
-      const railWidth = Math.max(1, timelineWidth - handleWidth * 2)
-      const progress = frame / Math.max(1, durationInFrames - 1)
-      return handleWidth + progress * railWidth
-    },
-    [durationInFrames, handleWidth, timelineWidth]
+  const frameToX = useCallback(
+    (frame: number, inset: number): number =>
+      getTimelineFrameX({
+        durationInFrames,
+        frame,
+        inset,
+        width: timelineWidth,
+      }),
+    [durationInFrames, timelineWidth]
   )
 
   const geometry = useMemo(() => {
     if (timelineWidth <= 0) {
       return null
     }
-    const startOrigin = frameToOriginX(normalizedRange.inFrame)
-    const endOrigin = frameToOriginX(normalizedRange.outFrame)
+    const startOrigin = frameToX(normalizedRange.inFrame, handleWidth)
+    const endOrigin = frameToX(normalizedRange.outFrame, handleWidth)
     return {
       activeLeft: startOrigin,
       activeWidth: Math.max(0, endOrigin - startOrigin),
@@ -301,16 +306,20 @@ export function TrimTimeline({
       rightMaskWidth: Math.max(0, timelineWidth - endOrigin),
       startHandleLeft: startOrigin - handleWidth,
     }
-  }, [frameToOriginX, handleWidth, normalizedRange, timelineWidth])
-  const playheadLeft = timelineWidth > 0 ? frameToOriginX(currentFrame) : null
+  }, [frameToX, handleWidth, normalizedRange, timelineWidth])
+  const playheadInset = trimActive ? handleWidth : 0
+  const playheadLeft =
+    timelineWidth > 0 ? frameToX(currentFrame, playheadInset) : null
 
   const getFrameFromLocalX = useCallback(
-    (localX: number, width: number): number => {
-      const railWidth = Math.max(1, width - handleWidth * 2)
-      const progress = clamp((localX - handleWidth) / railWidth, 0, 1)
-      return Math.round(progress * Math.max(0, durationInFrames - 1))
-    },
-    [durationInFrames, handleWidth]
+    (localX: number, width: number, inset: number): number =>
+      getTimelineFrameAtX({
+        durationInFrames,
+        inset,
+        width,
+        x: localX,
+      }),
+    [durationInFrames]
   )
 
   const updateBoundary = useCallback(
@@ -335,10 +344,12 @@ export function TrimTimeline({
       if (event.button !== 0) {
         return
       }
-      const bounds = wrapperRef.current?.getBoundingClientRect()
-      if (!bounds) {
+      const wrapper = wrapperRef.current
+      if (!wrapper) {
         return
       }
+      const bounds = wrapper.getBoundingClientRect()
+      const timelineLeft = bounds.left + wrapper.clientLeft
 
       event.preventDefault()
       event.currentTarget.setPointerCapture(event.pointerId)
@@ -348,28 +359,40 @@ export function TrimTimeline({
       } else if (target === 'out') {
         frame = normalizedRange.outFrame
       }
+      const inset = target === 'playhead' ? playheadInset : handleWidth
       dragSessionRef.current = {
         captureTarget: event.currentTarget,
-        grabOffsetX: event.clientX - bounds.left - frameToOriginX(frame),
+        grabOffsetX: event.clientX - timelineLeft - frameToX(frame, inset),
+        inset,
         pointerId: event.pointerId,
         target,
       }
       onSeek(frame)
     },
-    [currentFrame, frameToOriginX, normalizedRange, onSeek]
+    [
+      currentFrame,
+      frameToX,
+      handleWidth,
+      normalizedRange,
+      onSeek,
+      playheadInset,
+    ]
   )
 
   const handlePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLElement>) => {
       const session = dragSessionRef.current
-      const bounds = wrapperRef.current?.getBoundingClientRect()
-      if (!(session && bounds) || session.pointerId !== event.pointerId) {
+      const wrapper = wrapperRef.current
+      if (!(session && wrapper) || session.pointerId !== event.pointerId) {
         return
       }
+      const bounds = wrapper.getBoundingClientRect()
+      const timelineLeft = bounds.left + wrapper.clientLeft
       event.preventDefault()
       const frame = getFrameFromLocalX(
-        event.clientX - bounds.left - session.grabOffsetX,
-        bounds.width
+        event.clientX - timelineLeft - session.grabOffsetX,
+        wrapper.clientWidth,
+        session.inset
       )
 
       if (session.target === 'playhead') {

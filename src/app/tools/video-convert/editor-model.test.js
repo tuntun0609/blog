@@ -4,6 +4,8 @@ import {
   createFullTrimRange,
   getDurationInFrames,
   getPlayerFps,
+  getTimelineFrameAtX,
+  getTimelineFrameX,
   mapVisualCropToConversion,
   moveCropRectangle,
   moveTrimBoundary,
@@ -103,5 +105,59 @@ describe('trim model', () => {
         seconds: 1.5,
       })
     ).toBe(44)
+  })
+
+  test('maps an untrimmed playhead to the exact timeline edges', () => {
+    expect(
+      getTimelineFrameX({
+        durationInFrames: 60,
+        frame: 0,
+        inset: 0,
+        width: 320,
+      })
+    ).toBe(0)
+    expect(
+      getTimelineFrameX({
+        durationInFrames: 60,
+        frame: 59,
+        inset: 0,
+        width: 320,
+      })
+    ).toBe(320)
+    expect(
+      getTimelineFrameAtX({
+        durationInFrames: 60,
+        inset: 0,
+        width: 320,
+        x: 0,
+      })
+    ).toBe(0)
+    expect(
+      getTimelineFrameAtX({
+        durationInFrames: 60,
+        inset: 0,
+        width: 320,
+        x: 320,
+      })
+    ).toBe(59)
+  })
+
+  test('keeps trim handles inset from the timeline edges', () => {
+    expect(
+      getTimelineFrameX({
+        durationInFrames: 60,
+        frame: 0,
+        inset: 14,
+        width: 320,
+      })
+    ).toBe(14)
+    expect(
+      getTimelineFrameX({
+        durationInFrames: 60,
+        frame: 59,
+        inset: 14,
+        width: 320,
+      })
+    ).toBe(306)
   })
 })

@@ -321,6 +321,47 @@ export const moveTrimBoundary = ({
       }
 }
 
+export const getTimelineFrameX = ({
+  durationInFrames,
+  frame,
+  inset,
+  width,
+}: {
+  durationInFrames: number
+  frame: number
+  inset: number
+  width: number
+}): number => {
+  const lastFrame = Math.max(0, durationInFrames - 1)
+  const safeWidth = Math.max(0, width)
+  const safeInset = clamp(inset, 0, safeWidth / 2)
+  const railWidth = safeWidth - safeInset * 2
+  const progress = lastFrame === 0 ? 0 : clamp(frame, 0, lastFrame) / lastFrame
+
+  return safeInset + progress * railWidth
+}
+
+export const getTimelineFrameAtX = ({
+  durationInFrames,
+  inset,
+  width,
+  x,
+}: {
+  durationInFrames: number
+  inset: number
+  width: number
+  x: number
+}): number => {
+  const lastFrame = Math.max(0, durationInFrames - 1)
+  const safeWidth = Math.max(0, width)
+  const safeInset = clamp(inset, 0, safeWidth / 2)
+  const railWidth = safeWidth - safeInset * 2
+  const progress =
+    railWidth === 0 ? 0 : clamp((x - safeInset) / railWidth, 0, 1)
+
+  return Math.round(progress * lastFrame)
+}
+
 export const trimRangeToSeconds = ({
   duration,
   fps,
