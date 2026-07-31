@@ -133,7 +133,6 @@
 .detailsLink svg {
   width: 0.85rem;
   height: 0.85rem;
-  transition: transform 180ms var(--ease-out);
 }
 
 .githubLink:hover,
@@ -147,11 +146,6 @@
 .detailsLink:focus-visible {
   outline: 2px solid var(--home-blue);
   outline-offset: 4px;
-}
-
-.detailsLink:hover svg,
-.detailsLink:focus-visible svg {
-  transform: translate(2px, -2px);
 }
 
 .codePreview {

@@ -1,6 +1,6 @@
-import { ArrowUpRightIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { Badge } from '@/components/ui/badge'
 import { formatPostDate } from '@/lib/blog'
 import styles from './blog.module.css'

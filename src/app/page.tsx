@@ -1,4 +1,4 @@
-import { ArrowUpRightIcon, MailIcon, RssIcon } from 'lucide-react'
+import { MailIcon, RssIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -9,6 +9,7 @@ import { HomeMotion } from '@/components/home/home-motion'
 import { ProjectsShowcase } from '@/components/home/projects-showcase'
 import { TechnologiesKeyboard } from '@/components/home/technologies-keyboard'
 import { SiteHeader } from '@/components/site-header'
+import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { formatPostDate, getPublishedPosts } from '@/lib/blog'
 import styles from './home.module.css'
 

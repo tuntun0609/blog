@@ -1,11 +1,5 @@
 import { DocsBody } from 'fumadocs-ui/layouts/docs/page'
-import {
-  ArrowLeftIcon,
-  ArrowUpRightIcon,
-  CalendarDaysIcon,
-  Clock3Icon,
-  Layers3Icon,
-} from 'lucide-react'
+import { CalendarDaysIcon, Clock3Icon, Layers3Icon } from 'lucide-react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -13,6 +7,7 @@ import { notFound } from 'next/navigation'
 import readingTime from 'reading-time'
 import { ReadingProgress } from '@/components/blog/reading-progress'
 import { getMdxComponents } from '@/components/mdx'
+import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { blogSource, formatPostDate, getPublishedPosts } from '@/lib/blog'
 import styles from '@/components/blog/blog.module.css'
 
@@ -65,7 +60,7 @@ export default async function PostPage({ params }: PostPageProps) {
       <ReadingProgress />
 
       <Link className={styles.backLink} href="/blog">
-        <ArrowLeftIcon aria-hidden="true" />
+        <ArrowUpRightIcon aria-hidden="true" className={styles.backArrow} />
         返回博客
       </Link>
 
