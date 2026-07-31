@@ -56,7 +56,6 @@
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.65rem;
   color: var(--home-muted);
-  border-top: 1px solid var(--home-line);
 }
 
 .footer p,
@@ -91,7 +90,6 @@
   gap: clamp(3rem, 9vw, 8rem);
   align-items: end;
   padding-bottom: 3.25rem;
-  border-bottom: 1px solid var(--home-line);
 }
 
 .kicker,
@@ -132,7 +130,6 @@
   gap: 1rem;
   padding-top: 1.25rem;
   margin: 1.5rem 0 0;
-  border-top: 1px solid var(--home-line);
 }
 
 .listSummary div {
@@ -153,7 +150,6 @@
 
 .tagFilter {
   padding-block: 1.75rem;
-  border-bottom: 1px solid var(--home-line);
 }
 
 .tagFilterHeader {
@@ -197,31 +193,27 @@
   margin-top: 1rem;
 }
 
-.postList {
-  border-bottom: 1px solid var(--home-line);
-}
-
 .postLink {
   display: block;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--home-line);
   border-radius: var(--radius-2xl);
-  transition:
-    background-color 180ms ease,
-    padding-inline 180ms ease;
+  transition: border-color 180ms ease;
 }
 
 .postLink:hover,
 .postLink:focus-visible {
-  padding-inline: 0.8rem;
-  background: var(--home-panel);
+  border-color: var(--home-blue);
 }
 
 .postRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 10.5rem 1rem;
+  grid-template-columns: 13rem minmax(0, 1fr);
   gap: 1.5rem;
   align-items: center;
-  min-height: 10.5rem;
-  padding-block: 1.4rem;
+  min-height: 11rem;
+  padding: 1rem;
 }
 
 .postCopy {
@@ -287,7 +279,7 @@
 
 .postImage {
   position: relative;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--home-panel);
   border: 1px solid var(--home-line);
@@ -302,22 +294,6 @@
 .postLink:hover .postImage img,
 .postLink:focus-visible .postImage img {
   transform: scale(1.035);
-}
-
-.postArrow {
-  width: 1rem;
-  height: 1rem;
-  color: var(--home-muted);
-}
-
-.postArrow svg {
-  width: 100%;
-  height: 100%;
-}
-
-.postLink:hover .postArrow,
-.postLink:focus-visible .postArrow {
-  color: var(--home-ink);
 }
 
 .pagination {
@@ -610,7 +586,7 @@
   }
 
   .postRow {
-    grid-template-columns: minmax(0, 1fr) 8.5rem 1rem;
+    grid-template-columns: 10rem minmax(0, 1fr);
     gap: 1rem;
   }
 
@@ -662,13 +638,13 @@
   }
 
   .postRow {
-    grid-template-columns: minmax(0, 1fr) 1rem;
+    grid-template-columns: 7rem minmax(0, 1fr);
     gap: 0.75rem;
-    min-height: 9.5rem;
+    min-height: 8rem;
   }
 
   .postImage {
-    display: none;
+    aspect-ratio: 1 / 1;
   }
 
   .postTitle {

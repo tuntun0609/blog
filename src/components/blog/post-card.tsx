@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { Badge } from '@/components/ui/badge'
 import { formatPostDate } from '@/lib/blog'
 import styles from './blog.module.css'
@@ -26,6 +25,15 @@ export function PostCard({ post, preload = false }: PostCardProps) {
   return (
     <Link className={styles.postLink} href={post.url}>
       <article className={styles.postRow}>
+        <div className={styles.postImage}>
+          <Image
+            alt={title}
+            fill
+            preload={preload}
+            sizes="(max-width: 680px) 1px, (max-width: 880px) 136px, 168px"
+            src={post.data.cover}
+          />
+        </div>
         <div className={styles.postCopy}>
           <div className={styles.postMeta}>
             <span className={styles.postCategory}>{post.data.category}</span>
@@ -43,16 +51,6 @@ export function PostCard({ post, preload = false }: PostCardProps) {
             ))}
           </ul>
         </div>
-        <div className={styles.postImage}>
-          <Image
-            alt={title}
-            fill
-            preload={preload}
-            sizes="(max-width: 680px) 1px, (max-width: 880px) 136px, 168px"
-            src={post.data.cover}
-          />
-        </div>
-        <ArrowUpRightIcon aria-hidden="true" className={styles.postArrow} />
       </article>
     </Link>
   )
