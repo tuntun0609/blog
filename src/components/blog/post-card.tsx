@@ -35,12 +35,9 @@ export function PostCard({ post, preload = false }: PostCardProps) {
           />
         </div>
         <div className={styles.postCopy}>
-          <div className={styles.postMeta}>
-            <span className={styles.postCategory}>{post.data.category}</span>
-            <time className={styles.postDate} dateTime={post.data.date}>
-              {formatPostDate(post.data.date)}
-            </time>
-          </div>
+          <time className={styles.postDate} dateTime={post.data.date}>
+            {formatPostDate(post.data.date)}
+          </time>
           <h2 className={styles.postTitle}>{title}</h2>
           <p className={styles.postDescription}>{post.data.description}</p>
           <ul aria-label="文章标签" className={styles.postTags}>

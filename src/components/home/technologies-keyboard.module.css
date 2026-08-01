@@ -40,7 +40,7 @@
   z-index: 5;
   visibility: hidden;
   width: min(36rem, calc(100% - 3rem));
-  color: #8ba8ff;
+  color: var(--primary);
   pointer-events: none;
   opacity: 0;
   transform: translate3d(-50%, calc(-50% - 0.55rem), 0) scale(0.98);

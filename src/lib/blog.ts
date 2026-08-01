@@ -7,7 +7,7 @@ export const blogSource = loader({
   source: posts.toFumadocsSource(),
 })
 
-export const POSTS_PER_PAGE = 6
+export const POSTS_PER_PAGE = 20
 
 const tagNameCollator = new Intl.Collator('zh-CN')
 
@@ -36,6 +36,10 @@ const tagFacets = Object.freeze(
 
 export function getPublishedPosts() {
   return publishedPosts
+}
+
+export function getRecentPosts(limit: number) {
+  return publishedPosts.slice(0, limit)
 }
 
 export function getPublishedTagFacets(): readonly BlogTagFacet[] {

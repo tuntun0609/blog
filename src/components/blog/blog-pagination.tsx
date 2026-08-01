@@ -1,18 +1,49 @@
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+import { buttonVariants } from '@/components/ui/button'
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
 } from '@/components/ui/pagination'
 import { getBlogListHref } from '@/lib/blog-url'
+import { cn } from '@/lib/utils'
 import styles from './blog.module.css'
 
 interface BlogPaginationProps {
   activeTag?: string
   currentPage: number
   totalPages: number
+}
+
+interface BlogPageLinkProps {
+  active?: boolean
+  children: React.ReactNode
+  href: string
+  label: string
+  size?: 'default' | 'icon'
+}
+
+function BlogPageLink({
+  active = false,
+  children,
+  href,
+  label,
+  size = 'icon',
+}: BlogPageLinkProps) {
+  return (
+    <a
+      aria-current={active ? 'page' : undefined}
+      aria-label={label}
+      className={cn(
+        buttonVariants({ size, variant: active ? 'outline' : 'ghost' }),
+        size === 'default' && 'px-3'
+      )}
+      data-active={active || undefined}
+      href={href}
+    >
+      {children}
+    </a>
+  )
 }
 
 export function BlogPagination({
@@ -25,30 +56,35 @@ export function BlogPagination({
       <PaginationContent>
         {currentPage > 1 ? (
           <PaginationItem>
-            <PaginationPrevious
+            <BlogPageLink
               href={getBlogListHref(currentPage - 1, activeTag)}
-              text="上一页"
-            />
+              label="前往上一页"
+            >
+              <ChevronLeftIcon aria-hidden="true" />
+            </BlogPageLink>
           </PaginationItem>
         ) : null}
         {Array.from({ length: totalPages }, (_, index) => index + 1).map(
           (pageNumber) => (
             <PaginationItem key={pageNumber}>
-              <PaginationLink
+              <BlogPageLink
+                active={pageNumber === currentPage}
                 href={getBlogListHref(pageNumber, activeTag)}
-                isActive={pageNumber === currentPage}
+                label={`前往第 ${pageNumber} 页`}
               >
                 {pageNumber}
-              </PaginationLink>
+              </BlogPageLink>
             </PaginationItem>
           )
         )}
         {currentPage < totalPages ? (
           <PaginationItem>
-            <PaginationNext
+            <BlogPageLink
               href={getBlogListHref(currentPage + 1, activeTag)}
-              text="下一页"
-            />
+              label="前往下一页"
+            >
+              <ChevronRightIcon aria-hidden="true" />
+            </BlogPageLink>
           </PaginationItem>
         ) : null}
       </PaginationContent>

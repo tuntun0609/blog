@@ -3,7 +3,13 @@
 import type { Variants } from "motion/react";
 import { motion, useAnimation } from "motion/react";
 import type { HTMLAttributes } from "react";
-import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -40,7 +46,26 @@ const ArrowUpRightIcon = forwardRef<
   ArrowUpRightIconProps
 >(({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
   const controls = useAnimation();
+  const iconRef = useRef<HTMLDivElement>(null);
   const isControlledRef = useRef(false);
+
+  useEffect(() => {
+    const icon = iconRef.current;
+    const hoverTarget = icon?.closest('a, button');
+
+    if (!(hoverTarget instanceof HTMLElement)) return;
+
+    const handleTargetMouseEnter = () => controls.start("animate");
+    const handleTargetMouseLeave = () => controls.start("normal");
+
+    hoverTarget.addEventListener("mouseenter", handleTargetMouseEnter);
+    hoverTarget.addEventListener("mouseleave", handleTargetMouseLeave);
+
+    return () => {
+      hoverTarget.removeEventListener("mouseenter", handleTargetMouseEnter);
+      hoverTarget.removeEventListener("mouseleave", handleTargetMouseLeave);
+    };
+  }, [controls]);
 
   useImperativeHandle(ref, () => {
     isControlledRef.current = true;
@@ -71,6 +96,7 @@ const ArrowUpRightIcon = forwardRef<
       className={cn(className)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      ref={iconRef}
       {...props}
     >
       <svg

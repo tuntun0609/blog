@@ -527,47 +527,63 @@
 
 .continueReading {
   display: grid;
-  grid-template-columns: 8rem minmax(0, 1fr) 1rem;
-  gap: 1.5rem;
-  align-items: center;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
   max-width: 64rem;
-  min-height: 7rem;
-  padding-block: 1.25rem;
   margin: 5rem auto 0;
-  border-block: 1px solid var(--home-line);
-  transition: padding-inline 180ms ease;
 }
 
-.continueReading:hover,
-.continueReading:focus-visible {
-  padding-inline: 0.8rem;
+.continueReading a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--home-line);
+  border-radius: 0.75rem;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
 }
 
-.continueLabel {
+.continueReading a:hover,
+.continueReading a:focus-visible {
+  color: var(--home-ink);
+  background: color-mix(in srgb, var(--home-blue) 8%, transparent);
+}
+
+.continueReading a:last-child {
+  text-align: end;
+}
+
+.continueReading a:only-child {
+  grid-column: 1 / -1;
+}
+
+.continueReading span {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  font-weight: 600;
   color: var(--home-blue);
 }
 
-.continueReading h2 {
-  margin: 0;
-  font-size: 1.05rem;
+.continueReading span svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.continueReading strong {
   font-weight: 700;
 }
 
 .continueReading p {
-  margin: 0.35rem 0 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 0.78rem;
   color: var(--home-muted);
-}
-
-.continueReading svg {
-  width: 1rem;
-  height: 1rem;
-  color: var(--home-muted);
-}
-
-.continueReading:hover svg,
-.continueReading:focus-visible svg {
-  color: var(--home-ink);
+  white-space: nowrap;
 }
 
 @media (max-width: 880px) {
@@ -705,13 +721,12 @@
   }
 
   .continueReading {
-    grid-template-columns: 1fr 1rem;
-    gap: 1rem;
+    grid-template-columns: 1fr;
     margin-top: 4rem;
   }
 
-  .continueLabel {
-    grid-column: 1 / -1;
+  .continueReading a:last-child {
+    text-align: start;
   }
 
   .footer {

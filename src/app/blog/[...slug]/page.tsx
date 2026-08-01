@@ -1,5 +1,11 @@
 import { DocsBody } from 'fumadocs-ui/layouts/docs/page'
-import { CalendarDaysIcon, Clock3Icon, Layers3Icon } from 'lucide-react'
+import {
+  CalendarDaysIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Clock3Icon,
+  Layers3Icon,
+} from 'lucide-react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -51,6 +57,7 @@ export default async function PostPage({ params }: PostPageProps) {
   const MdxContent = post.data.body
   const posts = getPublishedPosts()
   const currentPostIndex = posts.findIndex((item) => item.url === post.url)
+  const previousPost = posts[currentPostIndex - 1]
   const nextPost = posts[currentPostIndex + 1]
   const readTime = readingTime(await post.data.getText('processed'))
   const readTimeInMinutes = Math.ceil(readTime.minutes)
@@ -135,16 +142,28 @@ export default async function PostPage({ params }: PostPageProps) {
           ) : null}
         </div>
 
-        {nextPost ? (
-          <Link className={styles.continueReading} href={nextPost.url}>
-            <span className={styles.continueLabel}>继续阅读</span>
-            <div>
-              <h2>{nextPost.data.title}</h2>
+        <div className={styles.continueReading}>
+          {previousPost ? (
+            <Link href={previousPost.url}>
+              <span>
+                <ChevronLeftIcon aria-hidden="true" />
+                上一篇
+              </span>
+              <strong>{previousPost.data.title}</strong>
+              <p>{previousPost.data.description}</p>
+            </Link>
+          ) : null}
+          {nextPost ? (
+            <Link href={nextPost.url}>
+              <span>
+                下一篇
+                <ChevronRightIcon aria-hidden="true" />
+              </span>
+              <strong>{nextPost.data.title}</strong>
               <p>{nextPost.data.description}</p>
-            </div>
-            <ArrowUpRightIcon aria-hidden="true" />
-          </Link>
-        ) : null}
+            </Link>
+          ) : null}
+        </div>
       </article>
     </div>
   )

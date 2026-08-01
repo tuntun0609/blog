@@ -10,7 +10,7 @@ import { ProjectsShowcase } from '@/components/home/projects-showcase'
 import { TechnologiesKeyboard } from '@/components/home/technologies-keyboard'
 import { SiteHeader } from '@/components/site-header'
 import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
-import { formatPostDate, getPublishedPosts } from '@/lib/blog'
+import { formatPostDate, getRecentPosts } from '@/lib/blog'
 import styles from './home.module.css'
 
 export const metadata: Metadata = {
@@ -18,8 +18,10 @@ export const metadata: Metadata = {
   title: 'Tuntun — Web 前端开发者',
 }
 
+const RECENT_POSTS_LIMIT = 6
+
 export default function HomePage() {
-  const recentPosts = getPublishedPosts().slice(0, 4)
+  const recentPosts = getRecentPosts(RECENT_POSTS_LIMIT)
 
   return (
     <div className={styles.page} id="tuntun-home">
