@@ -1,0 +1,322 @@
+---
+title: "快速入门数据校验工具 —— Zod"
+description: "从基础类型、对象与数组，到 parse、safeParse、refine 和类型推断，快速掌握 Zod。"
+date: "2026-08-01"
+category: "前端工程"
+cover: "/blog/zod-quick-start-cover.png"
+published: true
+path: "zod-quick-start"
+tags: ["TypeScript", "Zod", "前端工程"]
+---
+
+在 TypeScript 项目中，类型检查主要发生在编译阶段。可是接口响应、表单输入和 URL 参数都是运行时数据，编译器无法保证它们真的符合声明的类型。真正可靠的边界应该是：数据进入业务逻辑之前，先完成一次运行时校验。
+
+[Zod](https://zod.dev/) 是一个 TypeScript 优先的数据声明与运行时校验库。声明一次 Schema 后，既可以用它验证数据，也可以通过 `z.infer` 推断出对应的 TypeScript 类型。本文示例以 Zod 4 为准。
+
+## 安装
+
+```bash
+npm install zod
+# 或 bun add zod
+```
+
+## 完整示例
+
+假设注册接口收到的请求体来自客户端，它的类型并不可信。可以把 Schema 放在接口边界，校验成功后再把结果交给业务代码：
+
+```ts
+import { z } from 'zod'
+
+const registerSchema = z.object({
+  email: z.email(),
+  password: z.string().min(8, '密码至少需要 8 位'),
+  age: z.coerce.number().int().min(18),
+})
+
+const result = registerSchema.safeParse(requestBody)
+
+if (!result.success) {
+  return Response.json({ issues: result.error.issues }, { status: 400 })
+}
+
+const userInput = result.data
+// userInput.email 是 string，userInput.age 是 number
+```
+
+这里有三个值得注意的点：`z.email()` 校验邮箱格式，`min` 增加密码规则，`z.coerce.number()` 将表单常见的数字字符串转换为数字。只有 `result.success` 为 `true` 后，`result.data` 才会被 TypeScript 正确收窄。
+
+## 声明基础类型
+
+Zod 提供了和 TypeScript 基础类型对应的 Schema：
+
+```ts
+import { z } from 'zod'
+
+const stringSchema = z.string()
+const numberSchema = z.number()
+const booleanSchema = z.boolean()
+const dateSchema = z.date()
+const bigintSchema = z.bigint()
+const symbolSchema = z.symbol()
+const nullSchema = z.null()
+const undefinedSchema = z.undefined()
+const unknownSchema = z.unknown()
+const neverSchema = z.never()
+```
+
+Schema 不只是类型描述，还包含运行时校验方法。比如 `z.string()` 只接受字符串，数字、对象等值都会校验失败。
+
+## 对象和数组
+
+可以使用 `z.object` 描述对象结构：
+
+```ts
+const userSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  password: z.string(),
+  createTime: z.number(),
+})
+
+type User = z.infer<typeof userSchema>
+// {
+//   id: string
+//   name: string
+//   password: string
+//   createTime: number
+// }
+```
+
+数组使用 `z.array`，也可以链式调用元素 Schema：
+
+```ts
+const usersSchema = z.array(userSchema)
+const namesSchema = z.array(z.string())
+```
+
+`Map` 和 `Set` 也有对应的定义方式：
+
+```ts
+const stringNumberMap = z.map(z.string(), z.number())
+const numberSet = z.set(z.number())
+
+type StringNumberMap = z.infer<typeof stringNumberMap>
+// Map<string, number>
+```
+
+## 枚举、可选值与联合类型
+
+枚举可以直接传入字符串字面量：
+
+```ts
+const fruitSchema = z.enum(['Apple', 'Orange'])
+
+fruitSchema.enum.Apple
+fruitSchema.options // ['Apple', 'Orange']
+```
+
+如果枚举值来自外部数组，需要使用 `as const` 保留字面量类型：
+
+```ts
+const fruits = ['Apple', 'Orange'] as const
+const fruitSchema = z.enum(fruits)
+```
+
+`optional` 表示值可以是 `undefined`，`nullable` 表示值可以是 `null`，`nullish` 则是两者的组合：
+
+```ts
+const nicknameSchema = z.string().optional()
+const avatarSchema = z.string().nullable()
+const remarkSchema = z.string().nullish()
+```
+
+对象字段默认是必填的。如果字段可以缺省，应当在字段 Schema 上明确调用 `.optional()`：
+
+```ts
+const profileSchema = z.object({
+  name: z.string(),
+  bio: z.string().optional(),
+})
+```
+
+联合类型可以使用 `z.union` 或 `.or()`：
+
+```ts
+const stringOrNumber = z.union([z.string(), z.number()])
+const anotherStringOrNumber = z.string().or(z.number())
+```
+
+## Record、实例和函数
+
+类似 TypeScript `Record<string, T>` 的结构可以用 `z.record` 定义。Zod 4 需要同时传入 key 和 value 的 Schema：
+
+```ts
+const userStoreSchema = z.record(z.string(), userSchema)
+```
+
+使用 `z.instanceof` 可以检查值是否为指定类的实例：
+
+```ts
+class Test {
+  name = ''
+}
+
+const testSchema = z.instanceof(Test)
+```
+
+Zod 4 使用 `input` 和 `output` 配置函数的参数与返回值：
+
+```ts
+const myFunction = z.function({
+  input: [z.string(), z.number()],
+  output: z.boolean(),
+})
+```
+
+## 常用校验方法
+
+### `parse`
+
+`parse` 校验成功时返回经过校验的数据，失败时抛出错误：
+
+```ts
+const stringSchema = z.string()
+
+stringSchema.parse('fish') // 'fish'
+stringSchema.parse(12) // 抛出 ZodError
+```
+
+适合确定数据必须合法、并且希望统一交给错误边界处理的场景。
+
+### `safeParse`
+
+如果不希望用异常控制校验流程，可以使用 `safeParse`。它始终返回一个带有 `success` 字段的结果：
+
+```ts
+const input: unknown = getInput()
+const result = stringSchema.safeParse(input)
+
+if (result.success) {
+  result.data // string
+} else {
+  result.error // ZodError
+}
+```
+
+表单校验、接口响应校验和用户输入校验通常更适合使用这种方式。
+
+如果只需要判断是否合法，也可以使用 `stringSchema.safeParse(input).success`。不要把 `error.message` 当作稳定的业务结构；需要展示字段错误时，应读取 `error.issues` 并按 `path` 分组。
+
+### `refine`
+
+基础 Schema 只能检查数据格式，业务规则可以通过 `refine` 补充：
+
+```ts
+const shortStringSchema = z.string().refine((value) => value.length <= 255, {
+  message: '字符串长度不能超过 255 个字符',
+})
+```
+
+异步规则需要配合 `parseAsync`：
+
+```ts
+const availableNameSchema = z.string().refine(
+  async (value) => checkNameAvailable(value),
+  { message: '名称不可用' }
+)
+
+const value = await availableNameSchema.parseAsync('demo')
+```
+
+除此之外，`z.string()`、`z.number()` 和 `z.array()` 等 Schema 还提供了长度、范围等常用约束。例如：
+
+```ts
+const passwordSchema = z.string().min(8).max(64)
+const ageSchema = z.number().int().min(0).max(120)
+const tagsSchema = z.array(z.string()).min(1).max(10)
+```
+
+## 转换和默认值
+
+校验和转换可以组合使用。`z.coerce` 适合处理来自 HTML 表单或 URL 查询参数的字符串：
+
+```ts
+const querySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  keyword: z.string().trim().optional(),
+})
+
+querySchema.parse({ keyword: ' zod ' })
+// { page: 1, keyword: ' zod ' }
+```
+
+如果希望同时清理字符串，可以显式调用 `.transform()`：
+
+```ts
+const keywordSchema = z.string().trim().transform((value) => value || undefined)
+```
+
+要注意：Schema 的输入类型和输出类型可能不同。使用 `z.input<typeof schema>` 与 `z.output<typeof schema>` 可以分别获取转换前后的类型。
+
+## 合并 Schema
+
+两个 Schema 可以使用 `z.intersection` 或 `.and()` 合并：
+
+```ts
+const personSchema = z.object({ name: z.string() })
+const employeeSchema = z.object({ role: z.string() })
+
+const employedPersonSchema = z.intersection(personSchema, employeeSchema)
+```
+
+对于对象，Zod 4 更推荐使用 `.extend()` 或对象展开。对象展开可以更清楚地表达覆盖规则，也能避免依赖已不推荐的 `.merge()`：
+
+```ts
+const employedPersonSchema = personSchema.extend(employeeSchema.shape)
+
+// 或者：
+const anotherEmployedPersonSchema = z.object({
+  ...personSchema.shape,
+  ...employeeSchema.shape,
+})
+```
+
+## 获取 TypeScript 类型
+
+Schema 是类型的单一来源，可以通过 `z.infer` 获取 TypeScript 类型：
+
+```ts
+const productSchema = z.object({
+  id: z.string(),
+  price: z.number(),
+})
+
+type Product = z.infer<typeof productSchema>
+```
+
+`z.infer` 等价于获取输出类型。遇到 `coerce` 或 `transform` 时，也可以写得更明确：
+
+```ts
+type QueryInput = z.input<typeof querySchema>
+type QueryOutput = z.output<typeof querySchema>
+```
+
+这样可以避免分别维护一份接口类型和一份校验规则。前后端交互时，建议在接收到数据的边界处先校验，再将校验后的结果传递给业务代码。
+
+## 实际使用时的建议
+
+- 在 HTTP 请求、表单提交、环境变量和第三方 SDK 返回值等边界处校验，不要在每个业务函数里重复校验。
+- 用 `safeParse` 处理预期内的用户输入，用 `parse` 处理必须满足契约的内部数据。
+- Schema 应该和数据的所有者放在一起，并导出推断类型，避免单独维护重复的 interface。
+- `transform` 和 `coerce` 会改变输出值，命名 Schema 时可以体现这一点，避免调用方误以为拿到的是原始输入。
+
+## 小结
+
+Zod 的核心用法可以概括为：用 Schema 描述数据，用 `parse` 或 `safeParse` 校验数据，用 `refine` 增加业务规则，再用 `z.infer` 复用类型。
+
+它特别适合接口响应、表单输入、环境变量和配置文件等运行时边界。把不可信数据尽早转换成经过验证的类型，可以让后续业务逻辑更简单，也更容易定位错误。
+
+## 原文
+
+- [快速入门数据校验工具 —— Zod（掘金）](https://juejin.cn/post/7451274841909346330)
+- [Zod 官方文档](https://zod.dev/)
