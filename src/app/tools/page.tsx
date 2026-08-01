@@ -4,13 +4,7 @@ import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { SiteHeader } from '@/components/site-header'
 import { Badge } from '@/components/ui/badge'
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Sidebar,
   SidebarContent,
@@ -30,14 +24,12 @@ export const metadata: Metadata = {
 
 interface ToolItem {
   cover: string
-  description: string
   href?: string
   isExternal?: boolean
   name: string
 }
 
 interface ToolSection {
-  description: string
   id: string
   label: string
   tools: ToolItem[]
@@ -45,47 +37,38 @@ interface ToolSection {
 
 const toolSections: ToolSection[] = [
   {
-    description: '围绕常见的视频文件处理场景，逐步补充轻量、直接的实用工具。',
     id: 'video-tools',
     label: '视频工具',
     tools: [
       {
         cover: '/tools/video-compress.svg',
-        description: '在尽量保留画面质量的前提下，快速减小视频文件体积。',
         name: '视频压缩',
       },
       {
         cover: '/tools/video-convert.svg',
-        description:
-          '无需上传，在浏览器本地转换视频格式、编码、尺寸与时间范围。',
         href: '/tools/video-convert',
         name: '视频转码',
       },
       {
         cover: '/tools/video-cover.svg',
-        description: '从视频中选取指定画面，并导出为可继续使用的图片。',
         name: '封面提取',
       },
     ],
   },
   {
-    description: '提供日常高频的图片优化与调整能力，减少重复的手动操作。',
     id: 'image-tools',
     label: '图片工具',
     tools: [
       {
         cover: '/tools/image-compress.svg',
-        description: '针对网页与内容发布场景，压缩图片并平衡清晰度与体积。',
         name: '图片压缩',
       },
       {
         cover: '/tools/image-convert.svg',
-        description: '转换 PNG、JPG、WebP 等常见格式，满足不同使用需求。',
         name: '格式转换',
       },
       {
         cover: '/tools/image-resize.svg',
-        description: '按具体尺寸或常见比例调整图片，快速适配不同平台。',
         name: '尺寸调整',
       },
     ],
@@ -136,7 +119,7 @@ export default function ToolsPage() {
             </div>
 
             <div className={styles.sections}>
-              {toolSections.map((section, sectionIndex) => (
+              {toolSections.map((section) => (
                 <section
                   aria-labelledby={`${section.id}-title`}
                   className={styles.toolSection}
@@ -145,7 +128,6 @@ export default function ToolsPage() {
                 >
                   <div className={styles.sectionHeader}>
                     <h2 id={`${section.id}-title`}>{section.label}</h2>
-                    <p>{section.description}</p>
                   </div>
 
                   <div className={styles.cardGrid}>
@@ -167,9 +149,6 @@ export default function ToolsPage() {
                                 <Badge variant="outline">外部</Badge>
                               ) : null}
                             </CardTitle>
-                            <CardDescription>
-                              {tool.description}
-                            </CardDescription>
                           </CardHeader>
                         </Card>
                       )
@@ -190,10 +169,6 @@ export default function ToolsPage() {
                       )
                     })}
                   </div>
-
-                  {sectionIndex < toolSections.length - 1 ? (
-                    <Separator className={styles.sectionSeparator} />
-                  ) : null}
                 </section>
               ))}
             </div>
