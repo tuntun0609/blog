@@ -8,17 +8,17 @@ published: true
 tags: ["AI 工程"]
 ---
 
-做聊天演示时，`message` 表有 `id`、`role`、`content`、`created_at` 就够了。但 Agent 真正跑到线上后，流式输出、工具调用、重试、人工审批、删除隐私数据、压缩上下文，都会找上门来。
+在聊天演示中，`message` 表通常只需要 `id`、`role`、`content`、`created_at` 等字段。但当 Agent 真正运行在生产环境后，还需要处理流式输出、工具调用、重试、人工审批、隐私数据删除和上下文压缩等问题。
 
-难点不在于“怎么存一条消息”，而在于别把三样东西混在一起：**用户看到的聊天记录、系统保存的原始历史、某次调用实际发给模型的上下文**。
+因此，消息表设计的重点不只是保存一条消息，而是区分下面三种数据：**用户看到的聊天记录、系统保存的原始历史、某次调用实际发给模型的上下文**。
 
-本文用 PostgreSQL、Drizzle ORM 0.45 和 Vercel AI SDK 7 举例，聊一套从小项目也能开始用的设计。先说结论：
+本文以 PostgreSQL、Drizzle ORM 0.45 和 Vercel AI SDK 7 为例，介绍一套可以从小项目开始使用的设计方案。先给出结论：
 
 > 原始消息是底稿；摘要是可以重新生成的副本；模型上下文则是每次临时拼出来的输入。别让它们互相覆盖。
 
-## 先分清两种消息
+## 区分 UIMessage 和 ModelMessage
 
-在 AI SDK 里，`UIMessage` 和 `ModelMessage` 很容易混。
+在 AI SDK 中，`UIMessage` 和 `ModelMessage` 的用途不同，需要先区分清楚。
 
 - `UIMessage` 用来展示和保存，里面有稳定的 `id`、`role`、`metadata` 和结构化的 `parts`。
 - `ModelMessage` 才是发给模型的内容，可能有 `user`、`assistant`、`tool` 等协议角色。它是从历史里转换、过滤、裁剪出来的。
@@ -28,7 +28,7 @@ tags: ["AI 工程"]
 
 AI SDK 7 默认不接受 `messages` 里的 system 消息。可信的系统提示词应该由服务端通过 `instructions` 加进去，并单独记录 `agent_version` 或 `prompt_version`。别让客户端借着历史消息写入系统提示词。旧数据确实要兼容时可以开 `allowSystemInMessages`，但前提是内容已经过信任校验。
 
-## 别走两个省事但后患多的极端
+## 两种需要避免的设计方案
 
 把整段 `UIMessage[]` 都塞进 `conversation.messages jsonb`，一开始很快，但每次回复都得重写一整行。并发时容易互相覆盖，想单独删一条、做幂等重试、分页、审计和归档，也会越来越麻烦。
 
