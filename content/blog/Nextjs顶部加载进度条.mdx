@@ -1,0 +1,200 @@
+---
+title: "Next.js 添加顶部加载进度条及其原理"
+description: "使用 nextjs-toploader 为路由跳转增加顶部加载反馈，并拆解 NProgress 的启动、结束与路由监听机制。"
+date: "2026-08-01"
+category: "前端工程"
+cover: "/blog/nextjs-toploader-cover.png"
+published: true
+path: "nextjs-toploader"
+tags: ["Next.js", "React", "前端工程"]
+---
+
+在 Next.js 中点击链接后，页面需要加载下一页的数据。如果网络状态不理想，用户可能只看到点击发生，却不知道页面是否正在切换。
+
+在顶部放一条细进度条，可以用很低的视觉成本告诉用户：这次导航已经开始了。本文使用 `nextjs-toploader` 快速接入，并进一步看看它背后的 `nprogress` 是怎样工作的。
+
+## 使用 `nextjs-toploader`
+
+### 安装
+
+```bash
+npm install nextjs-toploader
+# 或
+yarn add nextjs-toploader
+# 或
+pnpm add nextjs-toploader
+```
+
+### 在根布局中接入
+
+`nextjs-toploader` 同时兼容 App Router 和 Pages Router。使用 App Router 时，把组件放到根布局中，让它能够观察整个应用的导航。
+
+```tsx title="app/layout.tsx"
+import NextTopLoader from 'nextjs-toploader'
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="zh-CN">
+      <body>
+        <NextTopLoader />
+        {children}
+      </body>
+    </html>
+  )
+}
+```
+
+组件放在 `Layout` 中后，用户点击站内链接时就会显示进度条。对于使用 `useRouter` 主动跳转的页面，还可以使用库提供的 Router 封装：
+
+```tsx
+'use client'
+
+import { useRouter } from 'nextjs-toploader/app'
+
+export function NavigateButton() {
+  const router = useRouter()
+
+  return (
+    <button type="button" onClick={() => router.push('/some-page')}>
+      打开页面
+    </button>
+  )
+}
+```
+
+### 常用配置
+
+```tsx
+<NextTopLoader
+  color="#06b6d4"
+  initialPosition={0.08}
+  crawlSpeed={200}
+  speed={200}
+  showSpinner={false}
+  height={3}
+/>
+```
+
+常用属性包括：
+
+- `color`：进度条颜色。
+- `initialPosition`：初始位置，例如 `0.08` 表示从 8% 开始。
+- `crawlSpeed`：自动增长的间隔速度。
+- `speed`：完成或移动时的动画速度。
+- `easing`：CSS 缓动函数。
+- `height`：进度条高度。
+- `crawl`：是否自动向前增长。
+- `showSpinner`：是否显示右侧加载动画。
+- `shadow`：是否显示进度条阴影。
+- `zIndex`：进度条的层级。
+- `showForHashAnchor`：是否为 hash 锚点显示进度条。
+
+对于简洁的博客或后台界面，通常可以隐藏 spinner，只保留顶部的亮色线条，避免在页面右上角增加额外的视觉噪音。
+
+## 它背后的实现原理
+
+`nextjs-toploader` 的核心是 `nprogress`。整个过程可以拆成“导航开始”和“导航结束”两部分。
+
+### 监听链接点击并启动进度条
+
+库会监听全局点击事件，再从点击目标向上查找最近的 `a` 元素。找不到链接时，不启动进度条；找到后还要排除一些不属于站内导航的情况：
+
+- `href` 为空。
+- `target="_blank"`，会打开新窗口或新标签页。
+- `tel:`、`mailto:`、`sms:`、`blob:`、`download:` 等特殊链接。
+- 链接指向其他 hostname。
+- 用户按住 `Shift`，通常表示希望在新标签页打开。
+- 配置不允许为当前页面的 hash 锚点显示进度条。
+
+通过判断后，才调用 `nprogress.start()`：
+
+```ts
+import * as NProgress from 'nprogress'
+
+NProgress.start()
+```
+
+这套判断很重要。只有真正可能触发站内页面切换时才显示加载反馈，普通按钮、外链和下载链接不会误触发。
+
+### 在路由完成后结束
+
+导航完成后，需要调用 `NProgress.done()` 收起进度条。传统 History API 场景可以包装 `pushState` 和 `replaceState`：
+
+```ts
+const originalPushState = history.pushState
+history.pushState = (...args) => {
+  NProgress.done()
+  return originalPushState.apply(history, args)
+}
+
+const originalReplaceState = history.replaceState
+history.replaceState = (...args) => {
+  NProgress.done()
+  return originalReplaceState.apply(history, args)
+}
+```
+
+另外还需要处理浏览器前进后退和页面卸载：
+
+```ts
+window.addEventListener('popstate', () => {
+  NProgress.done()
+})
+
+window.addEventListener('pagehide', () => {
+  NProgress.done()
+})
+```
+
+在 App Router 中，也可以监听 `usePathname()` 的变化：路径变化意味着导航已经完成，此时调用 `done()` 即可。
+
+### 包装 `useRouter`
+
+如果页面通过 `router.push()` 或 `router.replace()` 跳转，就需要在调用原始方法前启动进度条，并在 pathname 变化后结束：
+
+```tsx
+'use client'
+
+import { useCallback, useEffect } from 'react'
+import { usePathname, useRouter as useNextRouter } from 'next/navigation'
+import * as NProgress from 'nprogress'
+
+export function useProgressRouter() {
+  const router = useNextRouter()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    NProgress.done()
+  }, [pathname])
+
+  const push = useCallback(
+    (href: string, options?: Parameters<typeof router.push>[1]) => {
+      if (href !== pathname) {
+        NProgress.start()
+      }
+      router.push(href, options)
+    },
+    [pathname, router]
+  )
+
+  const replace = useCallback(
+    (href: string, options?: Parameters<typeof router.replace>[1]) => {
+      if (href !== pathname) {
+        NProgress.start()
+      }
+      router.replace(href, options)
+    },
+    [pathname, router]
+  )
+
+  return { ...router, push, replace }
+}
+```
+
+这里有两个细节：相同路径不需要启动进度条；`push` 和 `replace` 都要放进依赖正确的 `useCallback` 中，避免闭包拿到旧的 pathname。
+
+## 小结
+
+顶部进度条并不是为了展示真实的加载百分比，而是为不确定的导航过程提供即时反馈。`nextjs-toploader` 负责接入和边界判断，`nprogress` 负责绘制动画；理解这两层职责后，也可以根据项目需要自定义 Router 封装和视觉样式。
