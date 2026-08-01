@@ -301,6 +301,7 @@
 }
 
 .postPage {
+  --article-body-width: 44rem;
   padding-block: 3.25rem 8rem;
 }
 
@@ -400,7 +401,10 @@
 
 .articleLayout {
   display: grid;
-  grid-template-columns: minmax(0, 44rem) minmax(10rem, 13rem);
+  grid-template-columns: minmax(0, var(--article-body-width)) minmax(
+      10rem,
+      13rem
+    );
   gap: clamp(3rem, 8vw, 7rem);
   justify-content: center;
   padding-top: 4.5rem;
@@ -529,8 +533,12 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
-  max-width: 64rem;
-  margin: 5rem auto 0;
+  width: var(--article-body-width);
+  margin: 5rem 0 0
+    calc(
+      (100% - var(--article-body-width) - clamp(3rem, 8vw, 7rem) - 13rem) /
+      2
+    );
 }
 
 .continueReading a {
@@ -568,6 +576,10 @@
   color: var(--home-blue);
 }
 
+.continueReading a:last-child span {
+  justify-content: flex-end;
+}
+
 .continueReading span svg {
   width: 1rem;
   height: 1rem;
@@ -587,6 +599,10 @@
 }
 
 @media (max-width: 880px) {
+  .postPage {
+    --article-body-width: 42rem;
+  }
+
   .listIntro,
   .articleHeader {
     grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.55fr);
@@ -607,7 +623,12 @@
   }
 
   .articleLayout {
-    grid-template-columns: minmax(0, 42rem);
+    grid-template-columns: minmax(0, var(--article-body-width));
+  }
+
+  .continueReading {
+    width: min(100%, var(--article-body-width));
+    margin-inline: auto;
   }
 
   .toc {
@@ -727,6 +748,10 @@
 
   .continueReading a:last-child {
     text-align: start;
+  }
+
+  .continueReading a:last-child span {
+    justify-content: flex-start;
   }
 
   .footer {
