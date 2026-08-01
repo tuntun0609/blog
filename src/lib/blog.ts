@@ -1,9 +1,11 @@
 import { posts } from 'collections/server'
 import { loader } from 'fumadocs-core/source'
+import { slugsFromData } from 'fumadocs-core/source/plugins/slugs'
 import type { BlogTagFacet } from '@/lib/blog-types'
 
 export const blogSource = loader({
   baseUrl: '/blog',
+  slugs: slugsFromData('path'),
   source: posts.toFumadocsSource(),
 })
 

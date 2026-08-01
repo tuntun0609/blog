@@ -11,7 +11,8 @@ export const posts = defineDocs({
     schema: pageSchema.extend({
       category: z.string().min(1),
       cover: z.string().startsWith('/'),
-      date: z.string().date(),
+      date: z.iso.date(),
+      path: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
       published: z.boolean().default(true),
       tags: z
         .array(z.string().trim().min(1))
