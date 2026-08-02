@@ -11,6 +11,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import styles from './theme-toggle.module.css'
 
 const themeOptions = [
   { icon: SunIcon, label: '浅色', value: 'light' },
@@ -43,6 +44,7 @@ export function ThemeToggle() {
     return (
       <Button
         aria-label="选择主题"
+        className={styles.themeToggle}
         disabled
         size="icon"
         type="button"
@@ -63,6 +65,7 @@ export function ThemeToggle() {
         render={
           <Button
             aria-label={`选择主题，当前为${selectedTheme.label}`}
+            className={styles.themeToggle}
             disabled={Boolean(forcedTheme)}
             size="icon"
             type="button"

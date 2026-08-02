@@ -20,28 +20,33 @@ export function SiteHeader({ isHomePage = false }: SiteHeaderProps) {
         </Link>
 
         <nav aria-label="主导航" className={styles.nav}>
-          <Link
-            className={`${styles.navLink} ${styles.sectionLink}`}
-            href={`${sectionPrefix}#projects`}
-          >
-            项目
-          </Link>
-          <Link className={styles.navLink} href="/blog">
-            文章
-          </Link>
-          <Link className={styles.navLink} href="/tools">
-            工具
-          </Link>
-          <a
-            aria-label="在 GitHub 查看 tuntun0609"
-            className={styles.iconLink}
-            href="https://github.com/tuntun0609"
-            rel="noopener"
-            target="_blank"
-          >
-            <GitHubIcon aria-hidden="true" />
-          </a>
-          <ThemeToggle />
+          <div className={styles.navLinks}>
+            <Link
+              className={`${styles.navLink} ${styles.sectionLink}`}
+              href={`${sectionPrefix}#projects`}
+            >
+              项目
+            </Link>
+            <Link className={styles.navLink} href="/blog">
+              文章
+            </Link>
+            <Link className={styles.navLink} href="/tools">
+              工具
+            </Link>
+          </div>
+
+          <div className={styles.navActions}>
+            <a
+              aria-label="在 GitHub 查看 tuntun0609"
+              className={styles.iconLink}
+              href="https://github.com/tuntun0609"
+              rel="noopener"
+              target="_blank"
+            >
+              <GitHubIcon aria-hidden="true" />
+            </a>
+            <ThemeToggle />
+          </div>
         </nav>
       </div>
     </header>

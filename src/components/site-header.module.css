@@ -12,15 +12,16 @@
 }
 
 .headerInner {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   width: min(calc(100% - 2.5rem), 68rem);
   height: var(--site-header-height);
   margin-inline: auto;
 }
 
 .brand {
+  justify-self: start;
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.78rem;
   font-weight: 650;
@@ -29,12 +30,30 @@
 }
 
 .nav {
+  --nav-gap: 1.25rem;
+  --action-gap: 0.5rem;
   display: flex;
-  gap: 1.25rem;
+  gap: var(--nav-gap);
   align-items: center;
+  justify-self: end;
+  min-width: 0;
   font-size: 0.78rem;
   font-weight: 650;
   color: var(--home-muted);
+}
+
+.navLinks,
+.navActions {
+  display: flex;
+  align-items: center;
+}
+
+.navLinks {
+  gap: var(--nav-gap);
+}
+
+.navActions {
+  gap: var(--action-gap);
 }
 
 .navLink {
@@ -74,13 +93,12 @@
   place-items: center;
   width: 2rem;
   height: 2rem;
-  color: var(--home-ink);
+  color: var(--home-muted);
   text-decoration: none;
-  border: 1px solid var(--home-line);
-  border-radius: var(--radius-2xl);
+  border: 0;
+  border-radius: 50%;
   transition:
     color 160ms ease,
-    border-color 160ms ease,
     background-color 160ms ease;
 }
 
@@ -88,7 +106,6 @@
 .iconLink:focus-visible {
   color: var(--home-ink);
   background: color-mix(in srgb, var(--home-ink) 7%, var(--home-paper));
-  border-color: color-mix(in srgb, var(--home-ink) 28%, var(--home-line));
 }
 
 .iconLink svg {
@@ -102,7 +119,8 @@
   }
 
   .nav {
-    gap: 0.8rem;
+    --nav-gap: 0.8rem;
+    --action-gap: 0.05rem;
     font-size: 0.7rem;
   }
 }

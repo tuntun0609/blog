@@ -1,0 +1,20 @@
+.themeToggle {
+  width: 2rem;
+  height: 2rem;
+  color: var(--home-muted);
+  border: 0;
+  border-radius: 50%;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.themeToggle:hover,
+.themeToggle:focus-visible {
+  color: var(--home-ink);
+  background: color-mix(in srgb, var(--home-ink) 7%, var(--home-paper));
+}
+
+.themeToggle:active {
+  transform: none;
+}

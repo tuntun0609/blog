@@ -1,24 +1,14 @@
 .shell {
-  --tools-header-height: calc(var(--site-header-height) + 1px);
-  --tools-sidebar: var(--background);
-  --tools-line: color-mix(in oklab, var(--foreground) 9%, transparent);
-  --tools-accent-soft: color-mix(
-    in oklab,
-    var(--primary) 10%,
-    var(--background)
-  );
-  --sidebar: var(--tools-sidebar);
-  --sidebar-accent: var(--tools-accent-soft);
-  --sidebar-accent-foreground: var(--foreground);
-  --sidebar-border: var(--tools-line);
-  --sidebar-ring: var(--ring);
+  --tools-canvas: color-mix(in oklab, var(--primary) 3%, var(--background));
+  --tools-line: color-mix(in oklab, var(--foreground) 12%, transparent);
+  --tools-line-strong: color-mix(in oklab, var(--foreground) 24%, transparent);
 
   min-height: 100vh;
   color: var(--foreground);
-  background: var(--background);
+  background: var(--tools-canvas);
 }
 
-.shell a {
+.shell a:not([data-slot]) {
   color: inherit;
   text-decoration: none;
 }
@@ -43,164 +33,287 @@
   transform: translateY(0);
 }
 
-.toolsLayout {
-  min-height: calc(100svh - var(--tools-header-height));
-}
-
-.shell .toolsSidebar {
-  top: var(--tools-header-height);
-  bottom: auto;
-  height: calc(100svh - var(--tools-header-height));
-  border-inline-end: 1px solid var(--tools-line);
-}
-
-.shell .toolsSidebar [data-sidebar="sidebar-inner"] {
-  background: var(--tools-sidebar);
-}
-
-.sidebarContent {
-  padding: 1.5rem 0.75rem;
-}
-
-.sidebarGroup {
-  gap: 0.5rem;
-}
-
-.sidebarMenu {
-  gap: 0.25rem;
-}
-
-.sidebarNavButton {
-  border-radius: var(--radius-md);
-  transition:
-    transform 100ms var(--ease-out),
-    color var(--duration-press) var(--ease-out),
-    background-color var(--duration-press) var(--ease-out);
-}
-
-.sidebarNavButton:active {
-  transform: scale(0.97);
-}
-
-.sidebarNavIcon {
-  color: var(--muted-foreground);
-  transition: color var(--duration-press) var(--ease-out);
-}
-
-.sidebarNavButton[data-active="true"] .sidebarNavIcon {
-  color: var(--primary);
-}
-
-.sidebarNavButton[data-active="true"] {
-  font-weight: 650;
-}
-
 .page {
-  width: min(calc(100% - 4rem), 66rem);
-  min-height: calc(100vh - 12rem);
-  padding-block: 5rem 7.5rem;
-  margin-inline: auto;
-}
-
-.pageArea {
   width: 100%;
-  min-width: 0;
-  container: tools-content / inline-size;
 }
 
 .pageIntro {
-  max-width: 40rem;
-  margin-bottom: 4.5rem;
+  --hero-ink: var(--foreground);
+  --hero-muted: color-mix(in oklab, var(--hero-ink) 72%, transparent);
+  --hero-static-a: color-mix(in oklab, var(--primary) 36%, var(--background));
+  --hero-static-b: color-mix(in oklab, var(--chart-2) 34%, var(--background));
+  --hero-veil: color-mix(in oklab, var(--background) 64%, transparent);
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: clamp(34rem, 76svh, 48rem);
+  overflow: clip;
+  color: var(--hero-ink);
+  background:
+    radial-gradient(circle at 18% 20%, var(--hero-static-a), transparent 42%),
+    radial-gradient(circle at 82% 78%, var(--hero-static-b), transparent 42%),
+    var(--background);
+  isolation: isolate;
 }
 
+.heroFieldLayer,
+.heroVeil {
+  position: absolute;
+  inset: 0;
+}
+
+.heroFieldLayer {
+  overflow: hidden;
+}
+
+.heroFieldMotion {
+  position: absolute;
+  inset: -3%;
+  will-change: transform;
+}
+
+.heroField {
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  transition: opacity 420ms var(--ease-out);
+}
+
+.heroVeil {
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 45% 38% at center,
+      var(--hero-veil) 0%,
+      color-mix(in oklab, var(--hero-veil) 72%, transparent) 45%,
+      transparent 78%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 58%,
+      color-mix(in oklab, var(--tools-canvas) 12%, transparent) 68%,
+      color-mix(in oklab, var(--tools-canvas) 42%, transparent) 80%,
+      color-mix(in oklab, var(--tools-canvas) 82%, transparent) 92%,
+      var(--tools-canvas) 100%
+    );
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(calc(100% - 3rem), 72rem);
+  text-align: center;
+  pointer-events: none;
+}
+
+.pageTitle,
 .pageIntroDescription {
-  max-width: 38rem;
-  margin: 0.75rem 0 0;
-  font-size: 0.9rem;
-  line-height: 1.7;
-  color: var(--muted-foreground);
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
 }
 
 .pageTitle {
+  max-width: 58rem;
   margin: 0;
-  font-size: clamp(2rem, 3vw, 2.25rem);
-  font-weight: 720;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
+  font-size: clamp(3.25rem, 7vw, 5.5rem);
+  font-weight: 690;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  transition:
+    opacity 560ms var(--ease-out),
+    filter 560ms var(--ease-out),
+    transform 560ms var(--ease-out);
 }
 
-.mobileSidebarTrigger {
-  display: none;
+.pageIntroDescription {
+  max-width: 46rem;
+  margin: 1.5rem 0 0;
+  font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+  font-weight: 500;
+  line-height: 1.7;
+  color: var(--hero-muted);
+  text-wrap: balance;
+  transition:
+    opacity 520ms 100ms var(--ease-out),
+    filter 520ms 100ms var(--ease-out),
+    transform 520ms 100ms var(--ease-out);
+}
+
+@starting-style {
+  .pageTitle {
+    opacity: 0;
+    filter: blur(0.5rem);
+    transform: translateY(1.125rem);
+  }
+
+  .pageIntroDescription {
+    opacity: 0;
+    filter: blur(0.25rem);
+    transform: translateY(0.625rem);
+  }
+}
+
+.toolsContent {
+  width: min(calc(100% - 5rem), 88rem);
+  padding-block: clamp(3.5rem, 6vw, 5.5rem) 7.5rem;
+  margin-inline: auto;
+}
+
+.categoryNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  justify-content: center;
+  margin: 0 auto 4.75rem;
+}
+
+.categoryLink,
+.categoryLinkActive {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.625rem;
+  padding-inline: 1rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 650;
+  cursor: pointer;
+  border: 1px solid var(--tools-line);
+  border-radius: 999px;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    transform 100ms var(--ease-out);
+}
+
+.categoryLink {
+  color: var(--muted-foreground);
+  background: var(--background);
+}
+
+.categoryLinkActive {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.categoryLink:hover,
+.categoryLink:focus-visible {
+  color: var(--foreground);
+  border-color: var(--tools-line-strong);
+}
+
+.categoryLink:focus-visible,
+.categoryLinkActive:focus-visible,
+.toolCardLink:focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--ring) 45%, transparent);
+  outline-offset: 3px;
+}
+
+.categoryLink:active,
+.categoryLinkActive:active {
+  transform: scale(0.97);
 }
 
 .sections {
-  min-width: 0;
+  scroll-margin-top: calc(var(--site-header-height) + 2rem);
 }
 
 .toolSection {
-  scroll-margin-top: 6.5rem;
+  scroll-margin-top: calc(var(--site-header-height) + 2rem);
 }
 
 .toolSection + .toolSection {
-  margin-top: 5.5rem;
+  margin-top: 5.75rem;
 }
 
 .sectionHeader {
+  display: flex;
+  gap: 2rem;
   align-items: end;
+  justify-content: space-between;
   margin-bottom: 1.5rem;
 }
 
 .sectionHeader h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: clamp(1.45rem, 2vw, 1.8rem);
   font-weight: 680;
-  line-height: 1.3;
-  letter-spacing: -0.02em;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.sectionHeader p {
+  max-width: 42rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+.sectionHeader > span {
+  flex: 0 0 auto;
+  padding-bottom: 0.1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
 }
 
 .cardGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
 }
 
-.toolCard {
-  position: relative;
-  height: 100%;
-  padding-top: 0;
-  overflow: hidden;
-  border: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
-  transition:
-    border-color var(--duration-press) var(--ease-out),
-    background-color var(--duration-press) var(--ease-out);
-}
-
-.toolCardUnavailable {
-  background: color-mix(in oklab, var(--card) 96%, var(--muted));
-}
-
+.toolCardItem,
 .toolCardLink {
   display: block;
   min-width: 0;
-  border-radius: var(--radius-xl);
+  border-radius: 1rem;
 }
 
-a.toolCardLink:focus-visible .toolCard {
-  background-color: color-mix(in oklab, var(--primary) 2%, var(--card));
-  border-color: color-mix(in oklab, var(--primary) 50%, var(--border));
+.toolCard {
+  --card-spacing: 1.25rem;
+
+  height: 100%;
+  min-height: 15.5rem;
+  padding-block: var(--card-spacing);
+  border: 1px solid var(--tools-line);
+  border-radius: 1rem;
+  box-shadow: none;
+  transition:
+    transform var(--duration-ui) var(--ease-out),
+    border-color var(--duration-ui) var(--ease-out),
+    background-color var(--duration-ui) var(--ease-out);
 }
 
-a.toolCardLink:focus-visible {
-  outline: 3px solid color-mix(in oklab, var(--ring) 45%, transparent);
-  outline-offset: 3px;
+.toolCard[data-available="false"] {
+  background: color-mix(in oklab, var(--card) 95%, var(--muted));
+}
+
+.cardHeader {
+  gap: 0.75rem;
+}
+
+.cardTopline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
 }
 
 .cardMedia {
-  position: relative;
+  width: 6rem;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  background: color-mix(in oklab, var(--primary) 4%, var(--card));
-  border-bottom: 1px solid var(--border);
+  border-radius: 0.75rem;
 }
 
 .cardCover {
@@ -208,79 +321,59 @@ a.toolCardLink:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform var(--duration-ui) var(--ease-out);
 }
 
-.toolCardUnavailable .cardCover {
-  opacity: 0.72;
-  filter: saturate(0.7);
-}
-
-.cardTitle {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  font-size: 0.9rem;
+.cardFooter {
+  gap: 0.35rem;
+  justify-content: space-between;
+  margin-top: auto;
+  font-size: 0.78rem;
   font-weight: 650;
-  line-height: 1.35;
+  color: var(--muted-foreground);
 }
 
-.availableStatus,
-.unavailableStatus {
-  margin-inline-start: auto;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 0.62rem;
-  font-weight: 500;
-}
-
-.availableStatus {
+.toolCard[data-available="true"] .cardFooter {
   color: var(--primary);
 }
 
-.unavailableStatus {
-  color: var(--muted-foreground);
-}
-
-.cardDescription {
-  min-height: 2.8em;
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-
-.toolCardUnavailable .cardTitle {
-  color: var(--muted-foreground);
-}
-
-.cardArrow {
-  flex: 0 0 auto;
+.cardFooter svg {
   width: 1rem;
   height: 1rem;
-  margin-inline-start: 0.15rem;
-  color: var(--primary);
-  opacity: 0.72;
+  transition: transform var(--duration-fast) var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  a.toolCardLink:hover .toolCard {
-    background-color: color-mix(in oklab, var(--primary) 2%, var(--card));
-    border-color: color-mix(in oklab, var(--primary) 35%, var(--border));
+  .toolCardLink:hover .toolCard {
+    background: color-mix(in oklab, var(--primary) 2%, var(--card));
+    border-color: color-mix(in oklab, var(--primary) 45%, var(--tools-line));
+    transform: translateY(-0.2rem);
+  }
+
+  .toolCardLink:hover .cardCover {
+    transform: scale(1.04);
+  }
+
+  .toolCardLink:hover .cardFooter svg {
+    transform: translateX(0.2rem);
   }
 }
 
-a.toolCardLink:active .toolCard {
-  background-color: color-mix(in oklab, var(--primary) 4%, var(--card));
+.toolCardLink:active .toolCard {
+  transform: scale(0.985);
+  transition-duration: 100ms;
 }
 
 .footer {
   display: flex;
   justify-content: space-between;
-  width: min(calc(100% - 4rem), 66rem);
-  padding-block: 1.4rem 2.2rem;
+  width: min(calc(100% - 5rem), 88rem);
+  padding-block: 1.5rem 2.25rem;
   margin-inline: auto;
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.65rem;
   color: var(--muted-foreground);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--tools-line);
 }
 
 .footer p,
@@ -299,65 +392,79 @@ a.toolCardLink:active .toolCard {
   color: var(--foreground);
 }
 
-@media (max-width: 767px) {
-  .mobileSidebarTrigger {
-    display: flex;
-    gap: 0.25rem;
-    align-items: center;
-    width: fit-content;
-    padding: 0.25rem 0.75rem 0.25rem 0.25rem;
-    margin-bottom: 2rem;
-    font-size: 0.75rem;
-    font-weight: 650;
-    color: var(--muted-foreground);
-    background: var(--sidebar);
-    border: 1px solid var(--sidebar-border);
-    border-radius: var(--radius-md);
+@media (max-width: 960px) {
+  .toolsContent {
+    width: min(calc(100% - 3rem), 88rem);
   }
-}
 
-@media (max-width: 860px) {
-  .page {
-    padding-block: 4rem 6rem;
+  .cardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
 
-@container tools-content (max-width: 43rem) {
   .footer {
-    flex-direction: column;
-    gap: 0.75rem;
+    width: min(calc(100% - 3rem), 88rem);
   }
 }
 
 @media (max-width: 680px) {
-  .page,
-  .footer {
-    width: min(calc(100% - 2rem), 64rem);
-  }
-
-  .page {
-    padding-block: 3rem 5rem;
-  }
-
   .pageIntro {
-    margin-bottom: 2.75rem;
+    min-height: 34rem;
   }
 
-  .toolSection + .toolSection {
-    margin-top: 4rem;
+  .heroCopy {
+    width: min(calc(100% - 2rem), 32rem);
   }
 
   .pageTitle {
-    font-size: 1.9rem;
+    font-size: clamp(2.65rem, 13vw, 4rem);
+    letter-spacing: -0.03em;
+  }
+
+  .pageIntroDescription {
+    max-width: 31rem;
+    margin-top: 1.25rem;
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .toolsContent {
+    width: min(calc(100% - 2rem), 88rem);
+    padding-block: 3rem 5rem;
+  }
+
+  .categoryNav {
+    margin-bottom: 3.75rem;
+  }
+
+  .categoryLink,
+  .categoryLinkActive {
+    min-height: 2.75rem;
+  }
+
+  .sectionHeader {
+    align-items: start;
+  }
+
+  .sectionHeader > span {
+    padding-top: 0.3rem;
   }
 
   .cardGrid {
-    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+
+  .toolCard {
+    min-height: 15rem;
+  }
+
+  .toolSection + .toolSection {
+    margin-top: 4.5rem;
   }
 
   .footer {
     flex-direction: column;
     gap: 0.75rem;
+    width: min(calc(100% - 2rem), 88rem);
   }
 
   .footer div {
@@ -367,17 +474,44 @@ a.toolCardLink:active .toolCard {
 
 @media (prefers-reduced-motion: reduce) {
   .skipLink,
-  .sidebarNavIcon,
-  .sidebarNavButton,
-  .toolCard {
+  .categoryLink,
+  .categoryLinkActive,
+  .toolCard,
+  .cardCover,
+  .cardFooter svg {
     transition: none;
+  }
+
+  .heroFieldMotion {
+    transform: none !important;
+  }
+
+  .pageTitle,
+  .pageIntroDescription {
+    filter: none;
+    transform: none;
+    transition: opacity 180ms var(--ease-out);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .shell {
+    --tools-canvas: var(--background);
+  }
+
+  .heroVeil {
+    background: color-mix(in oklab, var(--background) 88%, transparent);
   }
 }
 
 @media (prefers-contrast: more) {
-  .shell .toolsSidebar [data-sidebar="sidebar-inner"],
-  .toolCard {
-    background: var(--card);
-    border-color: color-mix(in oklab, var(--foreground) 40%, transparent);
+  .toolCard,
+  .categoryLink,
+  .categoryLinkActive {
+    border-color: var(--foreground);
+  }
+
+  .heroVeil {
+    background: color-mix(in oklab, var(--background) 92%, transparent);
   }
 }

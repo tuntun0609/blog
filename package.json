@@ -6,6 +6,7 @@
     "@mediabunny/flac-encoder": "1.50.8",
     "@mediabunny/mp3-encoder": "1.50.8",
     "@mediabunny/prores": "1.50.8",
+    "@paper-design/shaders-react": "0.0.78",
     "@types/mdx": "^2.0.14",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

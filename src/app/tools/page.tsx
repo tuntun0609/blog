@@ -1,25 +1,8 @@
-import { ArrowUpRight } from 'lucide-react'
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
-import type { CSSProperties } from 'react'
 import { SiteHeader } from '@/components/site-header'
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarProvider,
-  SidebarRail,
-  SidebarTrigger,
-} from '@/components/ui/sidebar'
-import { ToolsSidebarNav } from './tools-sidebar-nav'
+import { ToolsFilter } from './tools-filter'
+import { ToolsHeroField } from './tools-hero-field'
 import styles from './tools.module.css'
 
 export const metadata: Metadata = {
@@ -31,11 +14,11 @@ interface ToolItem {
   cover: string
   description: string
   href?: string
-  isExternal?: boolean
   name: string
 }
 
 interface ToolSection {
+  description: string
   id: string
   label: string
   tools: ToolItem[]
@@ -43,6 +26,7 @@ interface ToolSection {
 
 const toolSections: ToolSection[] = [
   {
+    description: '压缩、转码和提取封面，让常见的视频处理更直接。',
     id: 'video-tools',
     label: '视频工具',
     tools: [
@@ -65,6 +49,7 @@ const toolSections: ToolSection[] = [
     ],
   },
   {
+    description: '缩小体积、转换格式，或调整图片尺寸。',
     id: 'image-tools',
     label: '图片工具',
     tools: [
@@ -87,10 +72,6 @@ const toolSections: ToolSection[] = [
   },
 ]
 
-const toolsSidebarStyle = {
-  '--sidebar-width': '15rem',
-} as CSSProperties
-
 export default function ToolsPage() {
   return (
     <div className={styles.shell}>
@@ -100,126 +81,30 @@ export default function ToolsPage() {
 
       <SiteHeader />
 
-      <SidebarProvider className={styles.toolsLayout} style={toolsSidebarStyle}>
-        <Sidebar
-          className={styles.toolsSidebar}
-          collapsible="offcanvas"
-          variant="sidebar"
-        >
-          <SidebarContent className={styles.sidebarContent}>
-            <SidebarGroup className={styles.sidebarGroup}>
-              <SidebarGroupLabel>分类</SidebarGroupLabel>
-              <ToolsSidebarNav
-                sections={toolSections.map(({ id, label }) => ({
-                  id,
-                  label,
-                }))}
-              />
-            </SidebarGroup>
-          </SidebarContent>
-          <SidebarRail aria-label="切换工具目录" title="切换工具目录" />
-        </Sidebar>
+      <main className={styles.page} id="main-content">
+        <header className={styles.pageIntro}>
+          <ToolsHeroField />
+          <div aria-hidden="true" className={styles.heroVeil} />
+          <div className={styles.heroCopy}>
+            <h1 className={styles.pageTitle}>造的一些轮子</h1>
+            <p className={styles.pageIntroDescription}>
+              收集全网工具，也收集自制工具。希望能帮助到你
+            </p>
+          </div>
+        </header>
 
-        <div className={styles.pageArea}>
-          <main className={styles.page} id="main-content">
-            <header className={styles.pageIntro}>
-              <h1 className={styles.pageTitle}>工具箱</h1>
-              <p className={styles.pageIntroDescription}>
-                收录自制与第三方的视频、图片处理工具。
-              </p>
-            </header>
-
-            <div className={styles.mobileSidebarTrigger}>
-              <SidebarTrigger aria-label="打开工具目录" />
-              <span>目录</span>
-            </div>
-
-            <div className={styles.sections}>
-              {toolSections.map((section) => (
-                <section
-                  aria-labelledby={`${section.id}-title`}
-                  className={styles.toolSection}
-                  id={section.id}
-                  key={section.id}
-                >
-                  <div className={styles.sectionHeader}>
-                    <h2 id={`${section.id}-title`}>{section.label}</h2>
-                  </div>
-
-                  <div className={styles.cardGrid}>
-                    {section.tools.map((tool) => {
-                      const isAvailable = Boolean(tool.href || tool.isExternal)
-                      const card = (
-                        <Card
-                          className={`${styles.toolCard} ${isAvailable ? '' : styles.toolCardUnavailable}`}
-                          key={tool.name}
-                        >
-                          <div className={styles.cardMedia}>
-                            <Image
-                              alt=""
-                              className={styles.cardCover}
-                              height={360}
-                              sizes="(max-width: 680px) calc(100vw - 2rem), (max-width: 860px) 50vw, 22rem"
-                              src={tool.cover}
-                              width={640}
-                            />
-                          </div>
-                          <CardHeader>
-                            <CardTitle className={styles.cardTitle}>
-                              <span>{tool.name}</span>
-                              <span
-                                className={
-                                  isAvailable
-                                    ? styles.availableStatus
-                                    : styles.unavailableStatus
-                                }
-                              >
-                                {isAvailable ? '可用' : '开发中'}
-                              </span>
-                              {isAvailable ? (
-                                <ArrowUpRight
-                                  aria-hidden="true"
-                                  className={styles.cardArrow}
-                                />
-                              ) : null}
-                            </CardTitle>
-                            <CardDescription className={styles.cardDescription}>
-                              {tool.description}
-                            </CardDescription>
-                          </CardHeader>
-                        </Card>
-                      )
-
-                      return tool.href ? (
-                        <Link
-                          aria-label={`打开${tool.name}`}
-                          className={styles.toolCardLink}
-                          href={tool.href}
-                          key={tool.name}
-                        >
-                          {card}
-                        </Link>
-                      ) : (
-                        <div className={styles.toolCardLink} key={tool.name}>
-                          {card}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </main>
-
-          <footer className={styles.footer}>
-            <p>Tuntun · Web Front-End Developer</p>
-            <div>
-              <span>持续收集，也持续构建</span>
-              <Link href="/">返回首页</Link>
-            </div>
-          </footer>
+        <div className={styles.toolsContent}>
+          <ToolsFilter sections={toolSections} />
         </div>
-      </SidebarProvider>
+      </main>
+
+      <footer className={styles.footer}>
+        <p>Tuntun · Web Front-End Developer</p>
+        <div>
+          <span>持续收集，也持续构建</span>
+          <Link href="/">返回首页</Link>
+        </div>
+      </footer>
     </div>
   )
 }
