@@ -9,7 +9,7 @@ export default function BlogLayout({ children }: { children: ReactNode }) {
       <a className={styles.skipLink} href="#main-content">
         跳至主要内容
       </a>
-      <SiteHeader />
+      <SiteHeader activeSection="blog" />
       <main className={styles.main} id="main-content">
         {children}
       </main>

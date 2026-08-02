@@ -19,6 +19,7 @@ interface ToolItem {
   cover: string
   description: string
   href?: string
+  loading?: 'eager' | 'lazy'
   name: string
 }
 
@@ -46,9 +47,8 @@ const ToolCard = ({ tool }: { tool: ToolItem }) => {
               alt=""
               className={styles.cardCover}
               height={108}
-              loading={
-                tool.cover.startsWith('/tools/video-') ? 'eager' : 'lazy'
-              }
+              loading={tool.loading ?? 'lazy'}
+              sizes="(max-width: 680px) calc(100vw - 2rem), (max-width: 960px) calc(50vw - 2.125rem), 29rem"
               src={tool.cover}
               width={192}
             />

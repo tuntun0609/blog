@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function VideoConvertPage() {
   return (
     <div>
-      <SiteHeader />
+      <SiteHeader activeSection="tools" />
       <main>
         <VideoConverter />
       </main>

@@ -14,6 +14,7 @@ interface ToolItem {
   cover: string
   description: string
   href?: string
+  loading?: 'eager' | 'lazy'
   name: string
 }
 
@@ -33,6 +34,7 @@ const toolSections: ToolSection[] = [
       {
         cover: '/tools/video-compress.svg',
         description: '在清晰度与文件体积之间取得平衡。',
+        loading: 'eager',
         name: '视频压缩',
       },
       {
@@ -79,7 +81,7 @@ export default function ToolsPage() {
         跳至主要内容
       </a>
 
-      <SiteHeader />
+      <SiteHeader activeSection="tools" />
 
       <main className={styles.page} id="main-content">
         <div aria-hidden="true" className={styles.pageIntro}>

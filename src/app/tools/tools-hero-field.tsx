@@ -1,16 +1,22 @@
 'use client'
 
-import { MeshGradient } from '@paper-design/shaders-react'
 import {
   motion,
   useMotionValue,
   useReducedMotion,
   useSpring,
 } from 'motion/react'
+import dynamic from 'next/dynamic'
 import { useTheme } from 'next-themes'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import styles from './tools.module.css'
+
+const MeshGradient = dynamic(
+  () =>
+    import('@paper-design/shaders-react').then((module) => module.MeshGradient),
+  { ssr: false }
+)
 
 const DARK_COLORS = ['#09090B', '#25124F', '#6D28D9', '#1D4ED8']
 const LIGHT_COLORS = ['#F8F7FF', '#D9D0FF', '#8B5CF6', '#60A5FA']
@@ -22,10 +28,20 @@ const PARALLAX_SPRING = {
   stiffness: 90,
 } as const
 
+interface NavigatorConnection {
+  saveData?: boolean
+}
+
+interface NavigatorWithConnection extends Navigator {
+  connection?: NavigatorConnection
+}
+
 export function ToolsHeroField() {
   const { resolvedTheme } = useTheme()
   const shouldReduceMotion = useReducedMotion()
-  const [canTrackPointer, setCanTrackPointer] = useState(false)
+  const [canAnimateField, setCanAnimateField] = useState(false)
+  const [isPageVisible, setIsPageVisible] = useState(false)
+  const [isParallaxActive, setIsParallaxActive] = useState(false)
   const [supportsWebGl, setSupportsWebGl] = useState(false)
   const pointerX = useMotionValue(0)
   const pointerY = useMotionValue(0)
@@ -34,29 +50,44 @@ export function ToolsHeroField() {
 
   useEffect(() => {
     const pointerQuery = window.matchMedia('(hover: hover) and (pointer: fine)')
-    const updatePointerCapability = (): void => {
-      setCanTrackPointer(pointerQuery.matches)
+    const { connection } = navigator as NavigatorWithConnection
+    const updateFieldCapability = (): void => {
+      const shouldSaveData = connection?.saveData ?? false
+      setCanAnimateField(pointerQuery.matches && !shouldSaveData)
+    }
+    const updatePageVisibility = (): void => {
+      setIsPageVisible(document.visibilityState === 'visible')
     }
 
-    updatePointerCapability()
-    pointerQuery.addEventListener('change', updatePointerCapability)
+    updateFieldCapability()
+    updatePageVisibility()
+    pointerQuery.addEventListener('change', updateFieldCapability)
+    document.addEventListener('visibilitychange', updatePageVisibility)
 
     const canvas = document.createElement('canvas')
     setSupportsWebGl(Boolean(canvas.getContext('webgl2')))
 
     return () => {
-      pointerQuery.removeEventListener('change', updatePointerCapability)
+      pointerQuery.removeEventListener('change', updateFieldCapability)
+      document.removeEventListener('visibilitychange', updatePageVisibility)
     }
   }, [])
 
+  const activateParallax = useCallback((): void => {
+    if (canAnimateField && !shouldReduceMotion) {
+      setIsParallaxActive(true)
+    }
+  }, [canAnimateField, shouldReduceMotion])
+
   const resetParallax = useCallback((): void => {
+    setIsParallaxActive(false)
     pointerX.set(0)
     pointerY.set(0)
   }, [pointerX, pointerY])
 
   const handlePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>): void => {
-      if (!canTrackPointer || shouldReduceMotion) {
+      if (!canAnimateField || shouldReduceMotion) {
         return
       }
 
@@ -67,22 +98,29 @@ export function ToolsHeroField() {
       pointerX.set(normalizedX * 2 * bounds.width * MAX_PARALLAX_RATIO)
       pointerY.set(normalizedY * 2 * bounds.height * MAX_PARALLAX_RATIO)
     },
-    [canTrackPointer, pointerX, pointerY, shouldReduceMotion]
+    [canAnimateField, pointerX, pointerY, shouldReduceMotion]
   )
 
   const colors = resolvedTheme === 'dark' ? DARK_COLORS : LIGHT_COLORS
-  const canRenderShader = supportsWebGl && Boolean(resolvedTheme)
+  const canRenderShader =
+    canAnimateField &&
+    isPageVisible &&
+    supportsWebGl &&
+    Boolean(resolvedTheme) &&
+    !shouldReduceMotion
 
   return (
     <div
       aria-hidden="true"
       className={styles.heroFieldLayer}
+      onPointerEnter={activateParallax}
       onPointerLeave={resetParallax}
       onPointerMove={handlePointerMove}
     >
       {canRenderShader ? (
         <motion.div
           className={styles.heroFieldMotion}
+          data-parallax-active={isParallaxActive ? 'true' : 'false'}
           style={{ x: smoothX, y: smoothY }}
         >
           <MeshGradient
@@ -94,7 +132,7 @@ export function ToolsHeroField() {
             grainOverlay={0.04}
             maxPixelCount={MAX_PIXEL_COUNT}
             minPixelRatio={1}
-            speed={shouldReduceMotion ? 0 : 0.18}
+            speed={0.18}
             swirl={0.55}
           />
         </motion.div>

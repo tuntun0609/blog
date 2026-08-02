@@ -1,19 +1,24 @@
 import Link from 'next/link'
 import { GitHubIcon } from '@/components/github-icon'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { cn } from '@/lib/utils'
 import styles from './site-header.module.css'
 
+type ActiveSection = 'blog' | 'tools'
+
 interface SiteHeaderProps {
+  activeSection?: ActiveSection
   isHomePage?: boolean
 }
 
-export function SiteHeader({ isHomePage = false }: SiteHeaderProps) {
+export function SiteHeader({
+  activeSection,
+  isHomePage = false,
+}: SiteHeaderProps) {
   const sectionPrefix = isHomePage ? '' : '/'
 
   return (
-    <header
-      className={`${styles.header} ${isHomePage ? styles.homeHeader : ''}`}
-    >
+    <header className={cn(styles.header, isHomePage && styles.homeHeader)}>
       <div className={styles.headerInner}>
         <Link aria-label="Tuntun 的个人主页" className={styles.brand} href="/">
           @tuntun0609
@@ -22,15 +27,29 @@ export function SiteHeader({ isHomePage = false }: SiteHeaderProps) {
         <nav aria-label="主导航" className={styles.nav}>
           <div className={styles.navLinks}>
             <Link
-              className={`${styles.navLink} ${styles.sectionLink}`}
+              className={cn(styles.navLink, styles.sectionLink)}
               href={`${sectionPrefix}#projects`}
             >
               项目
             </Link>
-            <Link className={styles.navLink} href="/blog">
+            <Link
+              aria-current={activeSection === 'blog' ? 'page' : undefined}
+              className={cn(
+                styles.navLink,
+                activeSection === 'blog' && styles.navLinkActive
+              )}
+              href="/blog"
+            >
               文章
             </Link>
-            <Link className={styles.navLink} href="/tools">
+            <Link
+              aria-current={activeSection === 'tools' ? 'page' : undefined}
+              className={cn(
+                styles.navLink,
+                activeSection === 'tools' && styles.navLinkActive
+              )}
+              href="/tools"
+            >
               工具
             </Link>
           </div>
