@@ -2,6 +2,9 @@
   --tools-canvas: color-mix(in oklab, var(--primary) 3%, var(--background));
   --tools-line: color-mix(in oklab, var(--foreground) 12%, transparent);
   --tools-line-strong: color-mix(in oklab, var(--foreground) 24%, transparent);
+  --tools-hero-height: clamp(34rem, 76svh, 48rem);
+  --tools-hero-copy-lift: clamp(4.5rem, 4vw, 3rem);
+  --tools-content-overlap: clamp(12.25rem, 18vw, 13rem);
 
   min-height: 100vh;
   color: var(--foreground);
@@ -34,7 +37,9 @@
 }
 
 .page {
+  position: relative;
   width: 100%;
+  isolation: isolate;
 }
 
 .pageIntro {
@@ -44,10 +49,10 @@
   --hero-static-b: color-mix(in oklab, var(--chart-2) 34%, var(--background));
   --hero-veil: color-mix(in oklab, var(--background) 64%, transparent);
 
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-height: clamp(34rem, 76svh, 48rem);
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 0;
+  min-height: var(--tools-hero-height);
   overflow: clip;
   color: var(--hero-ink);
   background:
@@ -55,6 +60,14 @@
     radial-gradient(circle at 82% 78%, var(--hero-static-b), transparent 42%),
     var(--background);
   isolation: isolate;
+}
+
+.toolsLayout {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: min(calc(100% - 5rem), 88rem);
+  margin-inline: auto;
 }
 
 .heroFieldLayer,
@@ -85,7 +98,7 @@
   pointer-events: none;
   background:
     radial-gradient(
-      ellipse 45% 38% at center,
+      ellipse 45% 38% at center 38%,
       var(--hero-veil) 0%,
       color-mix(in oklab, var(--hero-veil) 72%, transparent) 45%,
       transparent 78%
@@ -101,14 +114,15 @@
 }
 
 .heroCopy {
-  position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: min(calc(100% - 3rem), 72rem);
+  justify-content: center;
+  min-height: var(--tools-hero-height);
+  padding-inline: 1.5rem;
   text-align: center;
   pointer-events: none;
+  transform: translateY(calc(-1 * var(--tools-hero-copy-lift)));
 }
 
 .pageTitle,
@@ -161,9 +175,9 @@
 }
 
 .toolsContent {
-  width: min(calc(100% - 5rem), 88rem);
-  padding-block: clamp(3.5rem, 6vw, 5.5rem) 7.5rem;
-  margin-inline: auto;
+  min-width: 0;
+  padding-bottom: 7.5rem;
+  margin-top: calc(-1 * var(--tools-content-overlap));
 }
 
 .categoryNav {
@@ -171,7 +185,7 @@
   flex-wrap: wrap;
   gap: 0.625rem;
   justify-content: center;
-  margin: 0 auto 4.75rem;
+  margin: 0 auto 3.75rem;
 }
 
 .categoryLink,
@@ -393,7 +407,7 @@
 }
 
 @media (max-width: 960px) {
-  .toolsContent {
+  .toolsLayout {
     width: min(calc(100% - 3rem), 88rem);
   }
 
@@ -407,12 +421,13 @@
 }
 
 @media (max-width: 680px) {
-  .pageIntro {
-    min-height: 34rem;
+  .shell {
+    --tools-content-overlap: 11.25rem;
+    --tools-hero-height: 34rem;
   }
 
-  .heroCopy {
-    width: min(calc(100% - 2rem), 32rem);
+  .toolsLayout {
+    width: min(calc(100% - 2rem), 88rem);
   }
 
   .pageTitle {
@@ -428,12 +443,11 @@
   }
 
   .toolsContent {
-    width: min(calc(100% - 2rem), 88rem);
-    padding-block: 3rem 5rem;
+    padding-bottom: 5rem;
   }
 
   .categoryNav {
-    margin-bottom: 3.75rem;
+    margin-bottom: 3rem;
   }
 
   .categoryLink,

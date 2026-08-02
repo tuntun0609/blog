@@ -82,19 +82,22 @@ export default function ToolsPage() {
       <SiteHeader />
 
       <main className={styles.page} id="main-content">
-        <header className={styles.pageIntro}>
+        <div aria-hidden="true" className={styles.pageIntro}>
           <ToolsHeroField />
-          <div aria-hidden="true" className={styles.heroVeil} />
-          <div className={styles.heroCopy}>
+          <div className={styles.heroVeil} />
+        </div>
+
+        <div className={styles.toolsLayout}>
+          <header className={styles.heroCopy}>
             <h1 className={styles.pageTitle}>造的一些轮子</h1>
             <p className={styles.pageIntroDescription}>
               收集全网工具，也收集自制工具。希望能帮助到你
             </p>
-          </div>
-        </header>
+          </header>
 
-        <div className={styles.toolsContent}>
-          <ToolsFilter sections={toolSections} />
+          <div className={styles.toolsContent}>
+            <ToolsFilter sections={toolSections} />
+          </div>
         </div>
       </main>
 
