@@ -283,22 +283,24 @@
 .cardGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .toolCardItem,
 .toolCardLink {
   display: block;
   min-width: 0;
+  height: 100%;
   border-radius: 1rem;
 }
 
 .toolCard {
   --card-spacing: 1.25rem;
+  gap: 0;
 
   height: 100%;
-  min-height: 15.5rem;
-  padding-block: var(--card-spacing);
+  min-height: 20rem;
+  padding-block: 0;
   border: 1px solid var(--tools-line);
   border-radius: 1rem;
   box-shadow: none;
@@ -312,22 +314,40 @@
   background: color-mix(in oklab, var(--card) 95%, var(--muted));
 }
 
+.toolCard[data-available="false"] :where([data-slot="badge"]) {
+  border-color: color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+
 .cardHeader {
-  gap: 0.75rem;
+  gap: 0;
+  width: 100%;
+  padding: 0;
 }
 
 .cardTopline {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 0.35rem;
+  position: relative;
+  display: block;
+  margin: 0;
 }
 
 .cardMedia {
-  width: 6rem;
+  width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 0.75rem;
+  border-radius: 0;
+}
+
+.cardTopline > [data-slot="badge"] {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1;
+}
+
+.cardCopy {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1.125rem var(--card-spacing) 0;
 }
 
 .cardCover {
@@ -341,6 +361,7 @@
 .cardFooter {
   gap: 0.35rem;
   justify-content: space-between;
+  padding-block: 1rem 1.25rem;
   margin-top: auto;
   font-size: 0.78rem;
   font-weight: 650;
@@ -348,6 +369,7 @@
 }
 
 .toolCard[data-available="true"] .cardFooter {
+  justify-content: flex-start;
   color: var(--primary);
 }
 
@@ -361,7 +383,6 @@
   .toolCardLink:hover .toolCard {
     background: color-mix(in oklab, var(--primary) 2%, var(--card));
     border-color: color-mix(in oklab, var(--primary) 45%, var(--tools-line));
-    transform: translateY(-0.2rem);
   }
 
   .toolCardLink:hover .cardCover {
@@ -468,7 +489,16 @@
   }
 
   .toolCard {
-    min-height: 15rem;
+    min-height: 0;
+  }
+
+  .cardTopline > [data-slot="badge"] {
+    top: 0.875rem;
+    right: 0.875rem;
+  }
+
+  .cardCopy {
+    padding-inline: 1rem;
   }
 
   .toolSection + .toolSection {

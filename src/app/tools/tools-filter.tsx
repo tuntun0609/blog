@@ -57,8 +57,10 @@ const ToolCard = ({ tool }: { tool: ToolItem }) => {
             {isAvailable ? '可用' : '开发中'}
           </Badge>
         </div>
-        <CardTitle>{tool.name}</CardTitle>
-        <CardDescription>{tool.description}</CardDescription>
+        <div className={styles.cardCopy}>
+          <CardTitle>{tool.name}</CardTitle>
+          <CardDescription>{tool.description}</CardDescription>
+        </div>
       </CardHeader>
       <CardFooter className={styles.cardFooter}>
         <span>{isAvailable ? '打开工具' : '即将推出'}</span>

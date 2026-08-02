@@ -89,7 +89,7 @@ export default function ToolsPage() {
 
         <div className={styles.toolsLayout}>
           <header className={styles.heroCopy}>
-            <h1 className={styles.pageTitle}>造的一些轮子</h1>
+            <h1 className={styles.pageTitle}>人类的本质就是造轮子</h1>
             <p className={styles.pageIntroDescription}>
               收集全网工具，也收集自制工具。希望能帮助到你
             </p>
