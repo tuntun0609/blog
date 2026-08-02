@@ -4,8 +4,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { SiteHeader } from '@/components/site-header'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +29,7 @@ export const metadata: Metadata = {
 
 interface ToolItem {
   cover: string
+  description: string
   href?: string
   isExternal?: boolean
   name: string
@@ -43,15 +48,18 @@ const toolSections: ToolSection[] = [
     tools: [
       {
         cover: '/tools/video-compress.svg',
+        description: '在清晰度与文件体积之间取得平衡。',
         name: '视频压缩',
       },
       {
         cover: '/tools/video-convert.svg',
+        description: '直接在浏览器中转换常见视频格式。',
         href: '/tools/video-convert',
         name: '视频转码',
       },
       {
         cover: '/tools/video-cover.svg',
+        description: '从视频中快速截取清晰的封面画面。',
         name: '封面提取',
       },
     ],
@@ -62,14 +70,17 @@ const toolSections: ToolSection[] = [
     tools: [
       {
         cover: '/tools/image-compress.svg',
+        description: '减小图片体积，便于分享与发布。',
         name: '图片压缩',
       },
       {
         cover: '/tools/image-convert.svg',
+        description: '在常用图片格式之间轻松转换。',
         name: '格式转换',
       },
       {
         cover: '/tools/image-resize.svg',
+        description: '按像素或比例调整图片尺寸。',
         name: '尺寸调整',
       },
     ],
@@ -93,7 +104,7 @@ export default function ToolsPage() {
         <Sidebar
           className={styles.toolsSidebar}
           collapsible="offcanvas"
-          variant="floating"
+          variant="sidebar"
         >
           <SidebarContent className={styles.sidebarContent}>
             <SidebarGroup className={styles.sidebarGroup}>
@@ -111,10 +122,12 @@ export default function ToolsPage() {
 
         <div className={styles.pageArea}>
           <main className={styles.page} id="main-content">
-            <div className={styles.pageIntro}>
+            <header className={styles.pageIntro}>
               <h1 className={styles.pageTitle}>工具箱</h1>
-              <p>收录自制与第三方的视频、图片处理工具。</p>
-            </div>
+              <p className={styles.pageIntroDescription}>
+                收录自制与第三方的视频、图片处理工具。
+              </p>
+            </header>
 
             <div className={styles.mobileSidebarTrigger}>
               <SidebarTrigger aria-label="打开工具目录" />
@@ -153,13 +166,16 @@ export default function ToolsPage() {
                           </div>
                           <CardHeader>
                             <CardTitle className={styles.cardTitle}>
-                              {tool.name}
-                              {tool.isExternal ? (
-                                <Badge variant="outline">外部</Badge>
-                              ) : null}
-                              {tool.href || tool.isExternal ? null : (
-                                <Badge variant="secondary">暂未开放</Badge>
-                              )}
+                              <span>{tool.name}</span>
+                              <span
+                                className={
+                                  isAvailable
+                                    ? styles.availableStatus
+                                    : styles.unavailableStatus
+                                }
+                              >
+                                {isAvailable ? '可用' : '开发中'}
+                              </span>
                               {isAvailable ? (
                                 <ArrowUpRight
                                   aria-hidden="true"
@@ -167,6 +183,9 @@ export default function ToolsPage() {
                                 />
                               ) : null}
                             </CardTitle>
+                            <CardDescription className={styles.cardDescription}>
+                              {tool.description}
+                            </CardDescription>
                           </CardHeader>
                         </Card>
                       )

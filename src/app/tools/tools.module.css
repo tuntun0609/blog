@@ -1,10 +1,6 @@
 .shell {
   --tools-header-height: calc(var(--site-header-height) + 1px);
-  --tools-sidebar: color-mix(
-    in oklab,
-    var(--background) 98%,
-    var(--foreground)
-  );
+  --tools-sidebar: var(--background);
   --tools-line: color-mix(in oklab, var(--foreground) 9%, transparent);
   --tools-accent-soft: color-mix(
     in oklab,
@@ -55,19 +51,15 @@
   top: var(--tools-header-height);
   bottom: auto;
   height: calc(100svh - var(--tools-header-height));
-  padding: 1rem;
+  border-inline-end: 1px solid var(--tools-line);
 }
 
 .shell .toolsSidebar [data-sidebar="sidebar-inner"] {
   background: var(--tools-sidebar);
-  border-radius: 1rem;
-  box-shadow:
-    0 18px 42px -30px color-mix(in oklab, var(--foreground) 32%, transparent),
-    0 5px 14px -12px color-mix(in oklab, var(--foreground) 20%, transparent);
 }
 
 .sidebarContent {
-  padding: 0.75rem 0.5rem;
+  padding: 1.5rem 0.75rem;
 }
 
 .sidebarGroup {
@@ -79,10 +71,15 @@
 }
 
 .sidebarNavButton {
-  border-radius: 0.75rem;
+  border-radius: var(--radius-md);
   transition:
+    transform 100ms var(--ease-out),
     color var(--duration-press) var(--ease-out),
     background-color var(--duration-press) var(--ease-out);
+}
+
+.sidebarNavButton:active {
+  transform: scale(0.97);
 }
 
 .sidebarNavIcon {
@@ -101,7 +98,7 @@
 .page {
   width: min(calc(100% - 4rem), 66rem);
   min-height: calc(100vh - 12rem);
-  padding-block: 4.5rem 7.5rem;
+  padding-block: 5rem 7.5rem;
   margin-inline: auto;
 }
 
@@ -116,20 +113,20 @@
   margin-bottom: 4.5rem;
 }
 
+.pageIntroDescription {
+  max-width: 38rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+
 .pageTitle {
   margin: 0;
   font-size: clamp(2rem, 3vw, 2.25rem);
   font-weight: 720;
   line-height: 1.15;
   letter-spacing: -0.025em;
-}
-
-.pageIntro p {
-  max-width: 38rem;
-  margin: 0.75rem 0 0;
-  font-size: 0.9rem;
-  line-height: 1.7;
-  color: var(--muted-foreground);
 }
 
 .mobileSidebarTrigger {
@@ -179,18 +176,18 @@
 }
 
 .toolCardUnavailable {
-  background: color-mix(in oklab, var(--card) 92%, var(--muted));
+  background: color-mix(in oklab, var(--card) 96%, var(--muted));
 }
 
 .toolCardLink {
   display: block;
   min-width: 0;
-  border-radius: 1rem;
+  border-radius: var(--radius-xl);
 }
 
 a.toolCardLink:focus-visible .toolCard {
-  background-color: color-mix(in oklab, var(--primary) 2.5%, var(--card));
-  border-color: color-mix(in oklab, var(--primary) 40%, var(--border));
+  background-color: color-mix(in oklab, var(--primary) 2%, var(--card));
+  border-color: color-mix(in oklab, var(--primary) 50%, var(--border));
 }
 
 a.toolCardLink:focus-visible {
@@ -214,8 +211,8 @@ a.toolCardLink:focus-visible {
 }
 
 .toolCardUnavailable .cardCover {
-  opacity: 0.76;
-  filter: saturate(0.62);
+  opacity: 0.72;
+  filter: saturate(0.7);
 }
 
 .cardTitle {
@@ -228,6 +225,28 @@ a.toolCardLink:focus-visible {
   line-height: 1.35;
 }
 
+.availableStatus,
+.unavailableStatus {
+  margin-inline-start: auto;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
+.availableStatus {
+  color: var(--primary);
+}
+
+.unavailableStatus {
+  color: var(--muted-foreground);
+}
+
+.cardDescription {
+  min-height: 2.8em;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 .toolCardUnavailable .cardTitle {
   color: var(--muted-foreground);
 }
@@ -236,16 +255,20 @@ a.toolCardLink:focus-visible {
   flex: 0 0 auto;
   width: 1rem;
   height: 1rem;
-  margin-inline-start: auto;
+  margin-inline-start: 0.15rem;
   color: var(--primary);
   opacity: 0.72;
 }
 
 @media (hover: hover) and (pointer: fine) {
   a.toolCardLink:hover .toolCard {
-    background-color: color-mix(in oklab, var(--primary) 2.5%, var(--card));
-    border-color: color-mix(in oklab, var(--primary) 28%, var(--border));
+    background-color: color-mix(in oklab, var(--primary) 2%, var(--card));
+    border-color: color-mix(in oklab, var(--primary) 35%, var(--border));
   }
+}
+
+a.toolCardLink:active .toolCard {
+  background-color: color-mix(in oklab, var(--primary) 4%, var(--card));
 }
 
 .footer {
@@ -289,7 +312,7 @@ a.toolCardLink:focus-visible {
     color: var(--muted-foreground);
     background: var(--sidebar);
     border: 1px solid var(--sidebar-border);
-    border-radius: var(--radius-2xl);
+    border-radius: var(--radius-md);
   }
 }
 
@@ -348,5 +371,13 @@ a.toolCardLink:focus-visible {
   .sidebarNavButton,
   .toolCard {
     transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .shell .toolsSidebar [data-sidebar="sidebar-inner"],
+  .toolCard {
+    background: var(--card);
+    border-color: color-mix(in oklab, var(--foreground) 40%, transparent);
   }
 }
