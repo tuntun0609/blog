@@ -1,3 +1,4 @@
+import { ArrowUpRight } from 'lucide-react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -76,7 +77,7 @@ const toolSections: ToolSection[] = [
 ]
 
 const toolsSidebarStyle = {
-  '--sidebar-width': '17rem',
+  '--sidebar-width': '15rem',
 } as CSSProperties
 
 export default function ToolsPage() {
@@ -98,8 +99,7 @@ export default function ToolsPage() {
             <SidebarGroup className={styles.sidebarGroup}>
               <SidebarGroupLabel>分类</SidebarGroupLabel>
               <ToolsSidebarNav
-                sections={toolSections.map(({ id, label, tools }) => ({
-                  count: tools.length,
+                sections={toolSections.map(({ id, label }) => ({
                   id,
                   label,
                 }))}
@@ -111,7 +111,10 @@ export default function ToolsPage() {
 
         <div className={styles.pageArea}>
           <main className={styles.page} id="main-content">
-            <h1 className={styles.srOnly}>工具箱</h1>
+            <div className={styles.pageIntro}>
+              <h1 className={styles.pageTitle}>工具箱</h1>
+              <p>收录自制与第三方的视频、图片处理工具。</p>
+            </div>
 
             <div className={styles.mobileSidebarTrigger}>
               <SidebarTrigger aria-label="打开工具目录" />
@@ -132,21 +135,36 @@ export default function ToolsPage() {
 
                   <div className={styles.cardGrid}>
                     {section.tools.map((tool) => {
+                      const isAvailable = Boolean(tool.href || tool.isExternal)
                       const card = (
-                        <Card className={styles.toolCard} key={tool.name}>
-                          <Image
-                            alt=""
-                            className={styles.cardCover}
-                            height={360}
-                            sizes="(max-width: 680px) calc(100vw - 2rem), (max-width: 860px) 50vw, 22rem"
-                            src={tool.cover}
-                            width={640}
-                          />
+                        <Card
+                          className={`${styles.toolCard} ${isAvailable ? '' : styles.toolCardUnavailable}`}
+                          key={tool.name}
+                        >
+                          <div className={styles.cardMedia}>
+                            <Image
+                              alt=""
+                              className={styles.cardCover}
+                              height={360}
+                              sizes="(max-width: 680px) calc(100vw - 2rem), (max-width: 860px) 50vw, 22rem"
+                              src={tool.cover}
+                              width={640}
+                            />
+                          </div>
                           <CardHeader>
                             <CardTitle className={styles.cardTitle}>
                               {tool.name}
                               {tool.isExternal ? (
                                 <Badge variant="outline">外部</Badge>
+                              ) : null}
+                              {tool.href || tool.isExternal ? null : (
+                                <Badge variant="secondary">暂未开放</Badge>
+                              )}
+                              {isAvailable ? (
+                                <ArrowUpRight
+                                  aria-hidden="true"
+                                  className={styles.cardArrow}
+                                />
                               ) : null}
                             </CardTitle>
                           </CardHeader>

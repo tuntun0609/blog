@@ -1,8 +1,21 @@
 .shell {
-  --tools-header-height: calc(4.35rem + 1px);
-  --sidebar: color-mix(in oklab, var(--background) 97%, var(--primary));
-  --sidebar-accent: color-mix(in oklab, var(--primary) 9%, var(--background));
+  --tools-header-height: calc(var(--site-header-height) + 1px);
+  --tools-sidebar: color-mix(
+    in oklab,
+    var(--background) 98%,
+    var(--foreground)
+  );
+  --tools-line: color-mix(in oklab, var(--foreground) 9%, transparent);
+  --tools-accent-soft: color-mix(
+    in oklab,
+    var(--primary) 10%,
+    var(--background)
+  );
+  --sidebar: var(--tools-sidebar);
+  --sidebar-accent: var(--tools-accent-soft);
   --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--tools-line);
+  --sidebar-ring: var(--ring);
 
   min-height: 100vh;
   color: var(--foreground);
@@ -45,53 +58,78 @@
   padding: 1rem;
 }
 
+.shell .toolsSidebar [data-sidebar="sidebar-inner"] {
+  background: var(--tools-sidebar);
+  border-radius: 1rem;
+  box-shadow:
+    0 18px 42px -30px color-mix(in oklab, var(--foreground) 32%, transparent),
+    0 5px 14px -12px color-mix(in oklab, var(--foreground) 20%, transparent);
+}
+
 .sidebarContent {
-  padding-block: 0.35rem;
+  padding: 0.75rem 0.5rem;
 }
 
 .sidebarGroup {
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
 .sidebarMenu {
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .sidebarNavButton {
-  position: relative;
+  border-radius: 0.75rem;
+  transition:
+    color var(--duration-press) var(--ease-out),
+    background-color var(--duration-press) var(--ease-out);
 }
 
 .sidebarNavIcon {
   color: var(--muted-foreground);
-  transition: color var(--duration-fast) var(--ease-out);
+  transition: color var(--duration-press) var(--ease-out);
 }
 
 .sidebarNavButton[data-active="true"] .sidebarNavIcon {
   color: var(--primary);
 }
 
+.sidebarNavButton[data-active="true"] {
+  font-weight: 650;
+}
+
 .page {
-  width: min(calc(100% - 2.5rem), 62rem);
+  width: min(calc(100% - 4rem), 66rem);
   min-height: calc(100vh - 12rem);
-  padding-block: 3.5rem 8rem;
+  padding-block: 4.5rem 7.5rem;
   margin-inline: auto;
 }
 
 .pageArea {
   width: 100%;
   min-width: 0;
+  container: tools-content / inline-size;
 }
 
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  white-space: nowrap;
-  border: 0;
-  clip: rect(0, 0, 0, 0);
+.pageIntro {
+  max-width: 40rem;
+  margin-bottom: 4.5rem;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 2.25rem);
+  font-weight: 720;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.pageIntro p {
+  max-width: 38rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--muted-foreground);
 }
 
 .mobileSidebarTrigger {
@@ -106,6 +144,10 @@
   scroll-margin-top: 6.5rem;
 }
 
+.toolSection + .toolSection {
+  margin-top: 5.5rem;
+}
+
 .sectionHeader {
   align-items: end;
   margin-bottom: 1.5rem;
@@ -113,35 +155,42 @@
 
 .sectionHeader h2 {
   margin: 0;
-  font-size: 1.65rem;
-  font-weight: 730;
-  line-height: 1.2;
+  font-size: 1.1rem;
+  font-weight: 680;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
 }
 
 .cardGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr));
+  gap: 1.25rem;
 }
 
 .toolCard {
+  position: relative;
   height: 100%;
   padding-top: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
   transition:
-    border-color var(--duration-fast) var(--ease-out),
-    background-color var(--duration-fast) var(--ease-out);
+    border-color var(--duration-press) var(--ease-out),
+    background-color var(--duration-press) var(--ease-out);
+}
+
+.toolCardUnavailable {
+  background: color-mix(in oklab, var(--card) 92%, var(--muted));
 }
 
 .toolCardLink {
   display: block;
   min-width: 0;
-  border-radius: var(--radius-4xl);
+  border-radius: 1rem;
 }
 
-a.toolCardLink:hover .toolCard,
 a.toolCardLink:focus-visible .toolCard {
-  background-color: color-mix(in oklab, var(--foreground) 2%, var(--card));
-  border-color: color-mix(in oklab, var(--foreground) 20%, var(--border));
+  background-color: color-mix(in oklab, var(--primary) 2.5%, var(--card));
+  border-color: color-mix(in oklab, var(--primary) 40%, var(--border));
 }
 
 a.toolCardLink:focus-visible {
@@ -149,11 +198,24 @@ a.toolCardLink:focus-visible {
   outline-offset: 3px;
 }
 
-.cardCover {
-  width: 100%;
+.cardMedia {
+  position: relative;
   aspect-ratio: 16 / 9;
-  object-fit: cover;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--primary) 4%, var(--card));
   border-bottom: 1px solid var(--border);
+}
+
+.cardCover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.toolCardUnavailable .cardCover {
+  opacity: 0.76;
+  filter: saturate(0.62);
 }
 
 .cardTitle {
@@ -161,12 +223,35 @@ a.toolCardLink:focus-visible {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.toolCardUnavailable .cardTitle {
+  color: var(--muted-foreground);
+}
+
+.cardArrow {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  margin-inline-start: auto;
+  color: var(--primary);
+  opacity: 0.72;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.toolCardLink:hover .toolCard {
+    background-color: color-mix(in oklab, var(--primary) 2.5%, var(--card));
+    border-color: color-mix(in oklab, var(--primary) 28%, var(--border));
+  }
 }
 
 .footer {
   display: flex;
   justify-content: space-between;
-  width: min(calc(100% - 2.5rem), 62rem);
+  width: min(calc(100% - 4rem), 66rem);
   padding-block: 1.4rem 2.2rem;
   margin-inline: auto;
   font-family: var(--font-geist-mono), monospace;
@@ -194,10 +279,10 @@ a.toolCardLink:focus-visible {
 @media (max-width: 767px) {
   .mobileSidebarTrigger {
     display: flex;
-    gap: 0.2rem;
+    gap: 0.25rem;
     align-items: center;
     width: fit-content;
-    padding: 0.2rem 0.65rem 0.2rem 0.2rem;
+    padding: 0.25rem 0.75rem 0.25rem 0.25rem;
     margin-bottom: 2rem;
     font-size: 0.75rem;
     font-weight: 650;
@@ -210,26 +295,41 @@ a.toolCardLink:focus-visible {
 
 @media (max-width: 860px) {
   .page {
-    padding-block: 3.5rem 6rem;
+    padding-block: 4rem 6rem;
+  }
+}
+
+@container tools-content (max-width: 43rem) {
+  .footer {
+    flex-direction: column;
+    gap: 0.75rem;
   }
 }
 
 @media (max-width: 680px) {
-  .shell {
-    --tools-header-height: calc(4rem + 1px);
-  }
-
   .page,
   .footer {
-    width: min(calc(100% - 2rem), 62rem);
+    width: min(calc(100% - 2rem), 64rem);
   }
 
   .page {
     padding-block: 3rem 5rem;
   }
 
+  .pageIntro {
+    margin-bottom: 2.75rem;
+  }
+
+  .toolSection + .toolSection {
+    margin-top: 4rem;
+  }
+
+  .pageTitle {
+    font-size: 1.9rem;
+  }
+
   .cardGrid {
-    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .footer {
@@ -245,6 +345,7 @@ a.toolCardLink:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .skipLink,
   .sidebarNavIcon,
+  .sidebarNavButton,
   .toolCard {
     transition: none;
   }

@@ -5,7 +5,6 @@ import { type MouseEvent, useCallback, useEffect, useState } from 'react'
 import {
   SidebarGroupContent,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -19,7 +18,6 @@ const sectionIcons = {
 
 interface ToolsSidebarNavProps {
   sections: {
-    count: number
     id: string
     label: string
   }[]
@@ -100,7 +98,6 @@ export function ToolsSidebarNav({ sections }: ToolsSidebarNavProps) {
                   <Icon aria-hidden="true" className={styles.sidebarNavIcon} />
                   <span>{section.label}</span>
                 </SidebarMenuButton>
-                <SidebarMenuBadge>{section.count}</SidebarMenuBadge>
               </SidebarMenuItem>
             )
           })}

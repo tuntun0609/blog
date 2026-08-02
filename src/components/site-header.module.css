@@ -16,7 +16,7 @@
   align-items: center;
   justify-content: space-between;
   width: min(calc(100% - 2.5rem), 68rem);
-  height: 4.35rem;
+  height: var(--site-header-height);
   margin-inline: auto;
 }
 
@@ -99,7 +99,6 @@
 @media (max-width: 680px) {
   .headerInner {
     width: min(calc(100% - 2rem), 68rem);
-    height: 4rem;
   }
 
   .nav {
