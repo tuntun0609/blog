@@ -679,6 +679,13 @@
   }
 }
 
+@media (min-width: 881px) {
+  .hero {
+    box-sizing: border-box;
+    padding-inline-start: clamp(0rem, 2vw, 1.75rem);
+  }
+}
+
 @media (max-width: 680px) {
   .hero,
   .projectsSection,

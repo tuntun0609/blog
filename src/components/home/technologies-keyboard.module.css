@@ -547,3 +547,10 @@
     height: calc(100svh - 4.35rem);
   }
 }
+
+@media (min-width: 881px) {
+  .inner {
+    box-sizing: border-box;
+    padding-inline-start: clamp(0rem, 2vw, 1.75rem);
+  }
+}
