@@ -402,43 +402,6 @@
   transition-duration: 100ms;
 }
 
-.footer {
-  display: flex;
-  justify-content: space-between;
-  width: min(calc(100% - 5rem), 88rem);
-  padding-block: 1.5rem 2.25rem;
-  margin-inline: auto;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 0.75rem;
-  line-height: 1.5;
-  color: var(--muted-foreground);
-  border-top: 1px solid var(--tools-line);
-}
-
-.footer p,
-.footer div {
-  margin: 0;
-}
-
-.footer a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  padding-inline: 0.25rem;
-  margin-inline-end: -0.25rem;
-}
-
-.footer div {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-}
-
-.footer a:hover,
-.footer a:focus-visible {
-  color: var(--foreground);
-}
-
 @media (max-width: 960px) {
   .toolsLayout {
     width: min(calc(100% - 3rem), 88rem);
@@ -446,10 +409,6 @@
 
   .cardGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .footer {
-    width: min(calc(100% - 3rem), 88rem);
   }
 }
 
@@ -515,16 +474,6 @@
 
   .toolSection + .toolSection {
     margin-top: 4.5rem;
-  }
-
-  .footer {
-    flex-direction: column;
-    gap: 0.75rem;
-    width: min(calc(100% - 2rem), 88rem);
-  }
-
-  .footer div {
-    justify-content: space-between;
   }
 }
 

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { ToolsFilter } from './tools-filter'
 import { ToolsHeroField } from './tools-hero-field'
@@ -72,6 +72,19 @@ const toolSections: ToolSection[] = [
       },
     ],
   },
+  {
+    description: '在 JSON 字符串与普通文本之间快速来回转换。',
+    id: 'text-tools',
+    label: '文本工具',
+    tools: [
+      {
+        cover: '/tools/json-convert.svg',
+        description: '转义或还原 JSON 字符串，支持实时预览。',
+        href: '/tools/json-convert',
+        name: 'JSON 字符串转换',
+      },
+    ],
+  },
 ]
 
 export default function ToolsPage() {
@@ -103,13 +116,11 @@ export default function ToolsPage() {
         </div>
       </main>
 
-      <footer className={styles.footer}>
-        <p>Tuntun · Web Front-End Developer</p>
-        <div>
-          <span>持续收集，也持续构建</span>
-          <Link href="/">返回首页</Link>
-        </div>
-      </footer>
+      <SiteFooter
+        linkHref="/"
+        linkLabel="返回首页"
+        message="持续收集，也持续构建"
+      />
     </div>
   )
 }

@@ -1,0 +1,190 @@
+.converter {
+  --canvas: color-mix(in oklab, var(--background) 94%, var(--primary) 6%);
+  --surface: color-mix(in oklab, var(--card) 94%, transparent);
+  --ink: var(--foreground);
+  --muted: color-mix(in oklab, var(--foreground) 64%, var(--background));
+  --line: color-mix(in oklab, var(--foreground) 14%, transparent);
+  --panel: color-mix(in oklab, var(--background) 96%, var(--foreground) 4%);
+  --field: var(--background);
+  min-height: calc(100svh - var(--site-header-height));
+  padding: 4.5rem 1rem 6rem;
+  color: var(--ink);
+  background:
+    radial-gradient(
+      circle at 50% -10rem,
+      color-mix(in oklab, var(--background) 84%, var(--primary) 16%),
+      transparent 35rem
+    ),
+    var(--canvas);
+}
+.workspace {
+  width: min(100%, 68rem);
+  margin-inline: auto;
+}
+.hero {
+  text-align: center;
+}
+.hero h1 {
+  margin: 0;
+  font-size: clamp(1.85rem, 3.2vw, 2.5rem);
+  font-weight: 720;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+.hero p {
+  margin: 0.75rem auto 0;
+  font-size: 1rem;
+  color: var(--muted);
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.8rem 0.7rem 1rem;
+  margin-top: 3rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1rem 1rem 0 0;
+  box-shadow: 0 12px 32px color-mix(in oklab, var(--foreground) 6%, transparent);
+}
+.modeLabel {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+.actions {
+  display: flex;
+  gap: 0.35rem;
+}
+.actionButton {
+  min-height: 2.75rem;
+}
+.actions .actionButton {
+  color: var(--muted);
+}
+.actions .actionButton:hover,
+.actions .actionButton:focus-visible {
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 10%, var(--background));
+}
+.actions svg,
+.panelHeader svg {
+  width: 1rem;
+  height: 1rem;
+}
+.editorGrid {
+  display: grid;
+  grid-template-columns: 1fr 3rem 1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 1rem 1rem;
+  box-shadow: 0 28px 64px
+    color-mix(in oklab, var(--foreground) 10%, transparent);
+}
+.editorPanel {
+  position: relative;
+  min-width: 0;
+  padding: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+}
+.outputPanel {
+  background: color-mix(in oklab, var(--panel) 96%, var(--primary) 4%);
+}
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.hint {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.textarea {
+  min-height: 19rem;
+  padding: 0.9rem;
+  font:
+    0.86rem / 1.7 var(--font-geist-mono),
+    monospace;
+  color: var(--ink);
+  resize: vertical;
+  background: var(--field);
+  border-color: var(--line);
+  box-shadow: none;
+}
+.textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 14%, transparent);
+}
+.counter {
+  display: block;
+  margin-top: 0.6rem;
+  font:
+    0.72rem var(--font-geist-mono),
+    monospace;
+  color: var(--muted);
+  text-align: right;
+}
+.swapButton {
+  z-index: 1;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--primary);
+  background: var(--field);
+  border-radius: 50%;
+}
+.error {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--destructive);
+}
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  .converter {
+    padding-top: 2.5rem;
+  }
+  .toolbar {
+    gap: 0.75rem;
+    align-items: flex-start;
+    margin-top: 2rem;
+  }
+  .modeLabel {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.35;
+  }
+  .actions {
+    flex-shrink: 0;
+  }
+  .editorGrid {
+    grid-template-columns: 1fr;
+  }
+  .swapButton {
+    margin: -0.35rem auto;
+    transform: rotate(90deg);
+  }
+  .textarea {
+    min-height: 14rem;
+  }
+  .hint {
+    display: none;
+  }
+}

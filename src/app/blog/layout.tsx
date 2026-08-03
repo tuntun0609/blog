@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import styles from '@/components/blog/blog.module.css'
 
@@ -13,13 +13,11 @@ export default function BlogLayout({ children }: { children: ReactNode }) {
       <main className={styles.main} id="main-content">
         {children}
       </main>
-      <footer className={styles.footer}>
-        <p>Tuntun · Web Front-End Developer</p>
-        <div>
-          <span>持续记录，认真构建</span>
-          <Link href="/blog">文章归档</Link>
-        </div>
-      </footer>
+      <SiteFooter
+        linkHref="/blog"
+        linkLabel="文章归档"
+        message="持续记录，认真构建"
+      />
     </div>
   )
 }
