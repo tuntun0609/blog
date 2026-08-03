@@ -6,13 +6,14 @@ import { ToolsHeroField } from './tools-hero-field'
 import styles from './tools.module.css'
 
 export const metadata: Metadata = {
-  description: '收录自制与第三方的视频、图片处理工具。',
+  description: '收录自制与第三方的视频、图片、文本和其他实用工具。',
   title: '工具箱',
 }
 
 interface ToolItem {
   cover: string
   description: string
+  external?: boolean
   href?: string
   loading?: 'eager' | 'lazy'
   name: string
@@ -51,7 +52,7 @@ const toolSections: ToolSection[] = [
     ],
   },
   {
-    description: '缩小体积、转换格式，或调整图片尺寸。',
+    description: '缩小体积、转换格式、调整尺寸，也可以验证图片来源。',
     id: 'image-tools',
     label: '图片工具',
     tools: [
@@ -69,6 +70,13 @@ const toolSections: ToolSection[] = [
         cover: '/tools/image-resize.svg',
         description: '按像素或比例调整图片尺寸。',
         name: '尺寸调整',
+      },
+      {
+        cover: '/tools/openai-verify.svg',
+        description: '前往 OpenAI 的 Verify 页面。',
+        external: true,
+        href: 'https://openai.com/zh-Hans-CN/research/verify/',
+        name: 'OpenAI Verify',
       },
     ],
   },

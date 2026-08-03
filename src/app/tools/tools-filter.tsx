@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRightIcon } from 'lucide-react'
+import { ArrowRightIcon, ExternalLinkIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { MouseEvent } from 'react'
@@ -18,6 +18,7 @@ import styles from './tools.module.css'
 interface ToolItem {
   cover: string
   description: string
+  external?: boolean
   href?: string
   loading?: 'eager' | 'lazy'
   name: string
@@ -34,6 +35,16 @@ type CategoryId = 'all' | ToolSection['id']
 
 const ToolCard = ({ tool }: { tool: ToolItem }) => {
   const isAvailable = Boolean(tool.href)
+  const isExternal = tool.external === true
+  let footerLabel = '即将推出'
+
+  if (isExternal) {
+    footerLabel = '打开外部工具'
+  } else if (isAvailable) {
+    footerLabel = '打开工具'
+  }
+
+  const FooterIcon = isExternal ? ExternalLinkIcon : ArrowRightIcon
   const card = (
     <Card
       className={styles.toolCard}
@@ -53,9 +64,12 @@ const ToolCard = ({ tool }: { tool: ToolItem }) => {
               width={192}
             />
           </div>
-          <Badge variant={isAvailable ? 'default' : 'secondary'}>
-            {isAvailable ? '可用' : '开发中'}
-          </Badge>
+          <div className={styles.cardBadges}>
+            {isExternal ? <Badge variant="outline">外部工具</Badge> : null}
+            <Badge variant={isAvailable ? 'default' : 'secondary'}>
+              {isAvailable ? '可用' : '开发中'}
+            </Badge>
+          </div>
         </div>
         <div className={styles.cardCopy}>
           <CardTitle>{tool.name}</CardTitle>
@@ -63,14 +77,28 @@ const ToolCard = ({ tool }: { tool: ToolItem }) => {
         </div>
       </CardHeader>
       <CardFooter className={styles.cardFooter}>
-        <span>{isAvailable ? '打开工具' : '即将推出'}</span>
-        {isAvailable ? <ArrowRightIcon aria-hidden="true" /> : null}
+        <span>{footerLabel}</span>
+        {isAvailable ? <FooterIcon aria-hidden="true" /> : null}
       </CardFooter>
     </Card>
   )
 
   if (!tool.href) {
     return <div className={styles.toolCardItem}>{card}</div>
+  }
+
+  if (isExternal) {
+    return (
+      <a
+        aria-label={`打开${tool.name}（外部工具）`}
+        className={styles.toolCardLink}
+        href={tool.href}
+        rel="noopener"
+        target="_blank"
+      >
+        {card}
+      </a>
+    )
   }
 
   return (
