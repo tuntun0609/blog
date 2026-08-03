@@ -30,68 +30,23 @@
   transform: translateY(0);
 }
 
-.homeIntroLayout {
-  --home-intro-gap: clamp(0rem, 1.5vw, 1.5rem);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  row-gap: var(--home-intro-gap);
-}
-
 .hero {
-  position: relative;
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.55fr) minmax(0, 1.45fr);
+  gap: clamp(2.5rem, 8vw, 7rem);
+  align-content: center;
+  align-items: start;
   width: min(calc(100% - 2.5rem), 68rem);
   min-height: max(39rem, calc(100svh - 4.35rem));
-  padding-block: 5rem 6.5rem;
+  padding-block: 6.75rem 6.5rem;
   margin-inline: auto;
-  isolation: isolate;
 }
 
-.heroBackground {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
+.profile {
+  align-self: start;
 }
 
-.heroBackgroundOrb {
-  position: absolute;
-  top: 6%;
-  right: -15%;
-  width: min(42rem, 68vw);
-  aspect-ratio: 1;
-  background: radial-gradient(
-    circle at 42% 42%,
-    color-mix(in srgb, var(--home-blue) 15%, transparent),
-    color-mix(in srgb, var(--home-blue) 5%, transparent) 42%,
-    transparent 72%
-  );
-  border: 1px solid color-mix(in srgb, var(--home-blue) 22%, transparent);
-  border-radius: 48% 52% 58% 42%;
-  transform: rotate(-12deg);
-}
-
-.heroAvatar {
-  position: absolute;
-  top: 50%;
-  right: clamp(1rem, 7vw, 5rem);
-  display: grid;
-  place-items: center;
-  width: clamp(12rem, 20vw, 16rem);
-  aspect-ratio: 1;
-  pointer-events: auto;
-  transform: translateY(-52%);
-}
-
-.heroContent {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 48rem);
-  padding-right: clamp(3rem, 12vw, 10rem);
-}
-
-.heroIdentity,
+.profile,
 .eyebrow,
 .heroTitle,
 .heroLead,
@@ -123,7 +78,7 @@
 }
 
 @starting-style {
-  .heroIdentity,
+  .profile,
   .eyebrow,
   .heroTitle,
   .heroLead,
@@ -134,11 +89,13 @@
   }
 }
 
-.heroIdentity {
+.profileIdentity {
+  position: relative;
+  z-index: 1;
   display: flex;
-  gap: 1.5rem;
-  align-items: center;
-  margin-bottom: 4.25rem;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-top: 2rem;
 }
 
 .profileName {
@@ -209,7 +166,7 @@
 .heroCopy {
   position: relative;
   z-index: 1;
-  max-width: 43rem;
+  max-width: 48rem;
 }
 
 .eyebrow,
@@ -619,6 +576,33 @@
   height: 1rem;
 }
 
+.footer {
+  display: flex;
+  justify-content: space-between;
+  width: min(calc(100% - 2.5rem), 68rem);
+  padding-block: 1.4rem 2.2rem;
+  margin-inline: auto;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.65rem;
+  color: var(--home-muted);
+}
+
+.footer p,
+.footer div {
+  margin: 0;
+}
+
+.footer div {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.footer a:hover,
+.footer a:focus-visible {
+  color: var(--home-ink);
+}
+
 .page [data-reveal] {
   --reveal-delay: 0ms;
   opacity: 1;
@@ -684,16 +668,10 @@
 
 @media (max-width: 880px) {
   .hero {
+    grid-template-columns: 10rem minmax(0, 1fr);
+    gap: 3rem;
     min-height: auto;
     padding-block: 5.5rem 5.75rem;
-  }
-
-  .heroContent {
-    padding-right: clamp(2rem, 10vw, 6rem);
-  }
-
-  .heroAvatar {
-    right: 0;
   }
 
   .githubSection {
@@ -706,7 +684,8 @@
   .projectsSection,
   .notesSection,
   .githubSection,
-  .contactSection {
+  .contactSection,
+  .footer {
     width: min(calc(100% - 2rem), 68rem);
   }
 
@@ -715,38 +694,17 @@
     padding-block: 4rem 4.75rem;
   }
 
-  .homeIntroLayout {
-    --home-intro-gap: 0rem;
-  }
-
-  .heroBackground {
-    position: relative;
-    inset: auto;
-    height: 10rem;
-    margin-bottom: 2rem;
-  }
-
-  .heroBackgroundOrb {
-    top: -4rem;
-    right: -4rem;
-    width: 18rem;
-  }
-
-  .heroAvatar {
-    top: 0;
-    right: 0;
-    width: 10rem;
-    transform: none;
-  }
-
-  .heroContent {
-    width: 100%;
-    padding-right: 0;
-  }
-
-  .heroIdentity {
-    gap: 0.85rem;
+  .profile {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    padding-top: 0;
     margin-bottom: 3.25rem;
+  }
+
+  .profileIdentity {
+    gap: 0.85rem;
+    padding-top: 0;
   }
 
   .socials {
@@ -816,10 +774,21 @@
     margin-top: 3rem;
     font-size: 0.74rem;
   }
+
+  .footer {
+    display: block;
+    padding-bottom: 1.5rem;
+    line-height: 1.7;
+  }
+
+  .footer div {
+    justify-content: space-between;
+    margin-top: 0.75rem;
+  }
 }
 
 @media (max-width: 360px) {
-  .heroIdentity {
+  .profile {
     gap: 1rem;
   }
 }
@@ -830,7 +799,7 @@
     transition: none;
   }
 
-  .heroIdentity,
+  .profile,
   .eyebrow,
   .heroTitle,
   .heroLead,
@@ -863,7 +832,7 @@
   }
 
   @starting-style {
-    .heroIdentity,
+    .profile,
     .eyebrow,
     .heroTitle,
     .heroLead,

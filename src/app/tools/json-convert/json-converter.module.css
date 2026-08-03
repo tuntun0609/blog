@@ -1,5 +1,4 @@
 .converter {
-  --canvas: color-mix(in oklab, var(--background) 94%, var(--primary) 6%);
   --surface: color-mix(in oklab, var(--card) 94%, transparent);
   --ink: var(--foreground);
   --muted: color-mix(in oklab, var(--foreground) 64%, var(--background));
@@ -9,13 +8,7 @@
   min-height: calc(100svh - var(--site-header-height));
   padding: 4.5rem 1rem 6rem;
   color: var(--ink);
-  background:
-    radial-gradient(
-      circle at 50% -10rem,
-      color-mix(in oklab, var(--background) 84%, var(--primary) 16%),
-      transparent 35rem
-    ),
-    var(--canvas);
+  background: var(--background);
 }
 .workspace {
   width: min(100%, 68rem);
