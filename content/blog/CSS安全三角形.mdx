@@ -1,0 +1,211 @@
+---
+title: "用安全三角形解决二级菜单误触"
+description: "使用 CSS clip-path、CSS 变量和指针坐标，为二级菜单增加不会拖慢交互的安全区域。"
+date: "2026-08-05"
+category: "前端工程"
+cover: "/blog/css-safe-triangle-cover.svg"
+published: true
+path: "css-safe-triangle"
+tags: ["CSS", "JavaScript", "交互设计", "前端工程"]
+---
+
+二级菜单有一个很常见的误触问题：鼠标从父菜单斜着移向右侧子菜单时，指针会短暂经过旁边的菜单项。新菜单随即展开，用户原本想进入的子菜单反而消失了。
+
+给菜单增加一段悬停延迟可以缓解这个问题，但所有正常操作也会一起变慢。另一种处理方式是根据指针与子菜单的位置，临时增加一块三角形命中区域。只要指针仍在这块区域内，就继续保持当前子菜单打开。
+
+这块区域通常叫作安全三角形，也会被称为 safe polygon、safe area 或 menu aim。
+
+## 安全三角形做了什么
+
+假设父菜单在左边，子菜单在右边。三角形的三个点分别是：
+
+- 当前指针的位置。
+- 子菜单左上角。
+- 子菜单左下角。
+
+<img
+  alt="没有安全三角形时，斜向移动会经过其他菜单项；加入安全三角形后，当前菜单项的命中区域会延伸到子菜单"
+  height={720}
+  src="/blog/css-safe-triangle-principle.svg"
+  width={1400}
+/>
+
+指针斜向移动时虽然离开了父菜单按钮，但仍然位于这个三角形里。页面会把它视为当前菜单项的一部分，不会让途中经过的菜单项接管悬停状态。
+
+它和固定延迟的区别在于：安全三角形只保护正在前往子菜单的路径。指针向其他方向移动并离开三角形后，菜单仍然可以立即切换。
+
+## 先搭出二级菜单
+
+先用一个列表表示父菜单，每个菜单项里放一个按钮和对应的子菜单：
+
+```html
+<ul class="menu">
+  <li class="menu-item">
+    <button class="menu-trigger" type="button">产品</button>
+    <ul class="submenu">
+      <li><a href="/products/design">设计工具</a></li>
+      <li><a href="/products/develop">开发工具</a></li>
+    </ul>
+  </li>
+  <li class="menu-item">
+    <button class="menu-trigger" type="button">团队</button>
+    <ul class="submenu">
+      <li><a href="/team/members">成员</a></li>
+      <li><a href="/team/jobs">招聘</a></li>
+    </ul>
+  </li>
+</ul>
+```
+
+子菜单放在父菜单右侧，鼠标悬停或键盘焦点进入当前菜单项时显示：
+
+```css
+.menu {
+  position: relative;
+  width: 12rem;
+}
+
+.menu-item {
+  position: relative;
+}
+
+.menu-trigger {
+  width: 100%;
+}
+
+.submenu {
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  left: 100%;
+  display: none;
+  width: 14rem;
+}
+
+.menu-item:hover > .submenu,
+.menu-item:focus-within > .submenu {
+  display: block;
+}
+```
+
+`focus-within` 用来保留键盘操作。安全三角形只是鼠标交互的增强，不能代替菜单原本需要的焦点管理、方向键操作和关闭逻辑。
+
+## 用伪元素画出命中区域
+
+三角形不需要额外添加一个 DOM 元素，可以直接使用菜单项的 `::before`。先让伪元素成为一个固定定位的矩形，再用 `clip-path: polygon()` 裁成三角形：
+
+```css
+.menu-item::before {
+  position: fixed;
+  z-index: 10;
+  top: var(--safe-top, 0);
+  left: var(--safe-left, 0);
+  display: none;
+  width: var(--safe-width, 0);
+  height: var(--safe-height, 0);
+  content: "";
+  clip-path: polygon(
+    0 var(--safe-y, 50%),
+    100% 0,
+    100% 100%
+  );
+}
+```
+
+这里的矩形从指针位置延伸到子菜单左侧，矩形高度与子菜单一致。`--safe-y` 表示指针在这个矩形左边缘的位置，另外两个点固定在右上角和右下角。
+
+虽然伪元素本身是矩形，但 `clip-path` 会同时限制绘制区域和指针命中区域。三角形之外的菜单项仍然可以正常接收鼠标事件。
+
+## 把指针位置传给 CSS
+
+伪元素的尺寸取决于指针和子菜单的位置，需要在 `pointermove` 时读取坐标，再通过 CSS 变量交给伪元素：
+
+```ts
+const SAFE_OVERLAP = 4
+const menuItems = document.querySelectorAll<HTMLElement>('.menu-item')
+
+for (const menuItem of menuItems) {
+  const submenu = menuItem.querySelector<HTMLElement>('.submenu')
+
+  if (!submenu) {
+    continue
+  }
+
+  menuItem.addEventListener('pointermove', (event) => {
+    if (event.pointerType !== 'mouse') {
+      return
+    }
+
+    const submenuRect = submenu.getBoundingClientRect()
+    const safeLeft = Math.min(
+      event.clientX - SAFE_OVERLAP,
+      submenuRect.left
+    )
+    const safeWidth = Math.max(submenuRect.left - safeLeft, 0)
+    const safeY = Math.min(
+      Math.max(event.clientY - submenuRect.top, 0),
+      submenuRect.height
+    )
+
+    menuItem.style.setProperty('--safe-top', `${submenuRect.top}px`)
+    menuItem.style.setProperty('--safe-left', `${safeLeft}px`)
+    menuItem.style.setProperty('--safe-width', `${safeWidth}px`)
+    menuItem.style.setProperty('--safe-height', `${submenuRect.height}px`)
+    menuItem.style.setProperty('--safe-y', `${safeY}px`)
+  })
+}
+```
+
+这里使用 `clientX`、`clientY` 和 `getBoundingClientRect()`，因为它们都以当前视口为坐标系，正好对应伪元素的 `position: fixed`。
+
+`SAFE_OVERLAP` 让三角形起点稍微覆盖指针，避免指针刚好落在裁切边缘时离开命中区域。`safeY` 也被限制在子菜单高度以内，防止指针坐标超出矩形后生成异常形状。
+
+当指针进入三角形后，伪元素仍然属于当前 `.menu-item`，所以当前项会继续保持 `:hover`。指针越接近子菜单，三角形会跟着缩小；进入子菜单后，父子元素之间原本的悬停关系就可以继续维持打开状态。
+
+## 只为鼠标启用
+
+安全三角形处理的是精确指针设备上的悬停问题。触屏设备不需要这块透明命中区域，可以通过媒体查询限制启用条件：
+
+```css
+@media (hover: hover) and (pointer: fine) {
+  .menu-item:hover::before {
+    display: block;
+  }
+}
+```
+
+`hover: hover` 表示主要输入设备支持悬停，`pointer: fine` 表示它能够进行较精确的指向。JavaScript 中再检查一次 `event.pointerType`，可以避免触控笔或触摸事件更新三角形。
+
+这段实现假设子菜单位于右侧。如果菜单向左展开，需要把三角形的两个固定点换到矩形左边缘；如果向下展开，则要改为连接子菜单的左上角和右上角。实际组件还要在滚动、窗口缩放和浮层重新定位后更新坐标。
+
+## 已有组件库时直接使用
+
+自己实现适合结构固定、交互简单的菜单。如果项目已经使用浮层或无头组件库，我会先检查它是否已经处理安全区域。
+
+Floating UI 在 `useHover` 中提供了 `safePolygon()`：
+
+```tsx
+const hover = useHover(context, {
+  mouseOnly: true,
+  handleClose: safePolygon({
+    blockPointerEvents: true,
+  }),
+})
+```
+
+它会根据指针移动方向动态生成多边形，并处理浮层位置变化。React Aria 的子菜单组件也包含类似的指针意图判断。MUI、shadcn/ui 等组件库使用的菜单基础组件可能已经提供这类行为，接入前可以先实际测试，再确认底层实现。
+
+组件库方案通常还会一起处理键盘导航、焦点恢复、碰撞检测和触屏操作。只为了一个三角形重新维护整套菜单交互，成本往往比看起来更高。
+
+## 小结
+
+安全三角形没有让菜单等待，而是扩大了用户前往子菜单时的临时命中区域。`clip-path` 负责裁出形状，CSS 变量负责定位，JavaScript 只需要计算指针与子菜单之间的矩形。
+
+对于简单的固定菜单，可以用伪元素完成；已经使用 Floating UI、React Aria 或菜单组件库时，优先复用现成的指针意图处理。无论采用哪种方式，安全三角形都应该只是鼠标体验的补充，键盘和触屏交互仍然需要单独保证。
+
+## 参考资料
+
+- [Using a CSS safe triangle to prevent accidental submenu switching](https://ics.media/en/entry/260803/)
+- [Floating UI：safePolygon](https://floating-ui.com/docs/usehover#safepolygon)
+- [React Aria：Creating a pointer-friendly submenu experience](https://react-aria.adobe.com/blog/creating-a-pointer-friendly-submenu-experience)
+- [CSS Masking Module Level 1：Clipping Paths](https://www.w3.org/TR/css-masking-1/#clipping-paths)
