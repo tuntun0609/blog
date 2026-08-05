@@ -11,6 +11,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import readingTime from 'reading-time'
+import { CopyMarkdownButton } from '@/components/blog/copy-markdown-button'
 import { ReadingProgress } from '@/components/blog/reading-progress'
 import { getMdxComponents } from '@/components/mdx'
 import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
@@ -78,31 +79,36 @@ export default async function PostPage({ params }: PostPageProps) {
             <h1 className={styles.articleTitle}>{post.data.title}</h1>
             <p className={styles.articleDescription}>{post.data.description}</p>
           </div>
-          <dl className={styles.articleMeta}>
-            <div>
-              <dt>发布日期</dt>
-              <dd>
-                <CalendarDaysIcon aria-hidden="true" />
-                <time dateTime={post.data.date}>
-                  {formatPostDate(post.data.date)}
-                </time>
-              </dd>
+          <div className={styles.articleSidebar}>
+            <dl className={styles.articleMeta}>
+              <div>
+                <dt>发布日期</dt>
+                <dd>
+                  <CalendarDaysIcon aria-hidden="true" />
+                  <time dateTime={post.data.date}>
+                    {formatPostDate(post.data.date)}
+                  </time>
+                </dd>
+              </div>
+              <div>
+                <dt>阅读时间</dt>
+                <dd>
+                  <Clock3Icon aria-hidden="true" />
+                  {readTimeInMinutes} 分钟
+                </dd>
+              </div>
+              <div>
+                <dt>文章分类</dt>
+                <dd>
+                  <Layers3Icon aria-hidden="true" />
+                  {post.data.category}
+                </dd>
+              </div>
+            </dl>
+            <div className={styles.articleActions}>
+              <CopyMarkdownButton markdownUrl={`${post.url}.md`} />
             </div>
-            <div>
-              <dt>阅读时间</dt>
-              <dd>
-                <Clock3Icon aria-hidden="true" />
-                {readTimeInMinutes} 分钟
-              </dd>
-            </div>
-            <div>
-              <dt>文章分类</dt>
-              <dd>
-                <Layers3Icon aria-hidden="true" />
-                {post.data.category}
-              </dd>
-            </div>
-          </dl>
+          </div>
         </header>
 
         <div className={styles.articleCover}>

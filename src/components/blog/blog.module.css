@@ -326,6 +326,10 @@
   color: var(--home-muted);
 }
 
+.articleSidebar {
+  min-width: 0;
+}
+
 .articleMeta {
   display: flex;
   flex-direction: column;
@@ -356,6 +360,13 @@
   width: 0.9rem;
   height: 0.9rem;
   color: var(--home-blue);
+}
+
+.articleActions {
+  display: flex;
+  padding-top: 1.15rem;
+  margin-top: 1.15rem;
+  border-top: 1px solid var(--home-soft-line);
 }
 
 .articleCover {

@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        destination: '/llms.mdx/blog/:path*',
+        source: '/blog/:path*.md',
+      },
+    ]
+  },
 }
 
 const withMDX = createMDX()

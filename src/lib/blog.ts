@@ -40,6 +40,14 @@ export function getPublishedPosts() {
   return publishedPosts
 }
 
+export async function getPostMarkdown(
+  post: (typeof blogSource)['$inferPage']
+): Promise<string> {
+  const processedMarkdown = await post.data.getText('processed')
+
+  return `# ${post.data.title}\n\n${post.data.description}\n\n${processedMarkdown.trim()}\n`
+}
+
 export function getRecentPosts(limit: number) {
   return publishedPosts.slice(0, limit)
 }
