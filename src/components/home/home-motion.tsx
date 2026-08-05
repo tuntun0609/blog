@@ -33,7 +33,29 @@ export function HomeMotion({ rootId }: HomeMotionProps) {
     }
 
     updateMotionPreference()
-    motionPreference.addEventListener('change', updateMotionPreference)
+    const supportsMediaQueryEventListener =
+      typeof motionPreference.addEventListener === 'function'
+
+    if (supportsMediaQueryEventListener) {
+      motionPreference.addEventListener('change', updateMotionPreference)
+    } else {
+      motionPreference.addListener(updateMotionPreference)
+    }
+
+    if (typeof IntersectionObserver !== 'function') {
+      for (const element of revealElements) {
+        element.dataset.visible = 'true'
+      }
+
+      return () => {
+        if (supportsMediaQueryEventListener) {
+          motionPreference.removeEventListener('change', updateMotionPreference)
+        } else {
+          motionPreference.removeListener(updateMotionPreference)
+        }
+        delete root.dataset.motion
+      }
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -55,7 +77,11 @@ export function HomeMotion({ rootId }: HomeMotionProps) {
 
     return () => {
       observer.disconnect()
-      motionPreference.removeEventListener('change', updateMotionPreference)
+      if (supportsMediaQueryEventListener) {
+        motionPreference.removeEventListener('change', updateMotionPreference)
+      } else {
+        motionPreference.removeListener(updateMotionPreference)
+      }
       delete root.dataset.motion
     }
   }, [rootId])

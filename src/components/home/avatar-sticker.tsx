@@ -14,7 +14,7 @@ type LoadStatus = 'error' | 'idle' | 'loading' | 'ready'
 
 const STATUS_LABELS: Record<LoadStatus, string> = {
   error: '互动头像不可用，已显示静态头像。',
-  idle: '静态头像已显示，互动头像将在标题动画结束后加载。',
+  idle: '静态头像已显示，互动头像正在准备。',
   loading: '正在加载互动头像。',
   ready: '互动头像已就绪，可以从边缘拖动。',
 }
@@ -93,6 +93,32 @@ interface StickerOptions {
 
 let avatarSourcePromise: Promise<string> | null = null
 
+const clipRoundedAvatar = (
+  context: CanvasRenderingContext2D,
+  size: number,
+  radius: number
+): void => {
+  context.beginPath()
+
+  if (typeof context.roundRect === 'function') {
+    context.roundRect(0, 0, size, size, radius)
+  } else {
+    const right = size - radius
+    context.moveTo(radius, 0)
+    context.lineTo(right, 0)
+    context.arcTo(size, 0, size, radius, radius)
+    context.lineTo(size, right)
+    context.arcTo(size, size, right, size, radius)
+    context.lineTo(radius, size)
+    context.arcTo(0, size, 0, right, radius)
+    context.lineTo(0, radius)
+    context.arcTo(0, 0, radius, 0, radius)
+  }
+
+  context.closePath()
+  context.clip()
+}
+
 const createAvatarSource = async (): Promise<string> => {
   const avatarImage = new window.Image()
   avatarImage.decoding = 'async'
@@ -108,15 +134,7 @@ const createAvatarSource = async (): Promise<string> => {
     throw new Error('无法创建头像贴纸画布。')
   }
 
-  context.beginPath()
-  context.roundRect(
-    0,
-    0,
-    AVATAR_SOURCE_SIZE,
-    AVATAR_SOURCE_SIZE,
-    AVATAR_CORNER_RADIUS
-  )
-  context.clip()
+  clipRoundedAvatar(context, AVATAR_SOURCE_SIZE, AVATAR_CORNER_RADIUS)
   context.drawImage(avatarImage, 0, 0, AVATAR_SOURCE_SIZE, AVATAR_SOURCE_SIZE)
 
   return canvas.toDataURL('image/png')
@@ -162,6 +180,7 @@ export function AvatarSticker({ isRuntimeEnabled }: AvatarStickerProps) {
     let readyCancellationFrame = 0
     let stickerInstance: StickerInstance | null = null
     let resizeObserver: ResizeObserver | null = null
+    let resizeListener: (() => void) | null = null
 
     const handlePeelChange = (event: Event): void => {
       const { progress } = (event as CustomEvent<{ progress: number }>).detail
@@ -273,14 +292,21 @@ export function AvatarSticker({ isRuntimeEnabled }: AvatarStickerProps) {
         host.dataset.peelProgress = '0.000'
         host.dataset.peeling = 'false'
 
-        resizeObserver = new ResizeObserver(() => {
+        const resizeSticker = (): void => {
           const nextDisplaySize = getDisplaySize(frame)
           instance.setOptions({
             display: { height: nextDisplaySize, width: nextDisplaySize },
           })
           instance.resize()
-        })
-        resizeObserver.observe(frame)
+        }
+
+        if (typeof ResizeObserver === 'function') {
+          resizeObserver = new ResizeObserver(resizeSticker)
+          resizeObserver.observe(frame)
+        } else {
+          resizeListener = resizeSticker
+          window.addEventListener('resize', resizeListener)
+        }
 
         readyCancellationFrame = requestAnimationFrame(() => {
           readyCancellationFrame = requestAnimationFrame(() => {
@@ -302,6 +328,9 @@ export function AvatarSticker({ isRuntimeEnabled }: AvatarStickerProps) {
       cancelAnimationFrame(hintCancellationFrame)
       cancelAnimationFrame(readyCancellationFrame)
       resizeObserver?.disconnect()
+      if (resizeListener) {
+        window.removeEventListener('resize', resizeListener)
+      }
       host.removeEventListener('cyclecomplete', handleCycleComplete)
       host.removeEventListener('detachcomplete', handleDetachComplete)
       host.removeEventListener('error', handleRendererError)

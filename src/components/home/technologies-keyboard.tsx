@@ -299,26 +299,52 @@ export function TechnologiesKeyboard() {
       }
     }
 
-    const resizeObserver = new ResizeObserver(scheduleScrollUpdate)
+    let resizeObserver: ResizeObserver | null = null
     scheduleCableGeometryUpdateRef.current = scheduleScrollUpdate
-    resizeObserver.observe(section)
-    resizeObserver.observe(inner)
-    resizeObserver.observe(scene)
+    if (typeof ResizeObserver === 'function') {
+      resizeObserver = new ResizeObserver(scheduleScrollUpdate)
+      resizeObserver.observe(section)
+      resizeObserver.observe(inner)
+      resizeObserver.observe(scene)
+    }
     window.addEventListener('resize', scheduleScrollUpdate)
     window.addEventListener('scroll', scheduleScrollUpdate, { passive: true })
-    desktopLayout.addEventListener('change', scheduleScrollUpdate)
-    reducedMotion.addEventListener('change', scheduleScrollUpdate)
+    const desktopLayoutSupportsEventListener =
+      typeof desktopLayout.addEventListener === 'function'
+    const reducedMotionSupportsEventListener =
+      typeof reducedMotion.addEventListener === 'function'
+
+    if (desktopLayoutSupportsEventListener) {
+      desktopLayout.addEventListener('change', scheduleScrollUpdate)
+    } else {
+      desktopLayout.addListener(scheduleScrollUpdate)
+    }
+
+    if (reducedMotionSupportsEventListener) {
+      reducedMotion.addEventListener('change', scheduleScrollUpdate)
+    } else {
+      reducedMotion.addListener(scheduleScrollUpdate)
+    }
     updateScrollStyles()
 
     return () => {
       if (animationFrame !== 0) {
         window.cancelAnimationFrame(animationFrame)
       }
-      resizeObserver.disconnect()
+      resizeObserver?.disconnect()
       window.removeEventListener('resize', scheduleScrollUpdate)
       window.removeEventListener('scroll', scheduleScrollUpdate)
-      desktopLayout.removeEventListener('change', scheduleScrollUpdate)
-      reducedMotion.removeEventListener('change', scheduleScrollUpdate)
+      if (desktopLayoutSupportsEventListener) {
+        desktopLayout.removeEventListener('change', scheduleScrollUpdate)
+      } else {
+        desktopLayout.removeListener(scheduleScrollUpdate)
+      }
+
+      if (reducedMotionSupportsEventListener) {
+        reducedMotion.removeEventListener('change', scheduleScrollUpdate)
+      } else {
+        reducedMotion.removeListener(scheduleScrollUpdate)
+      }
       scheduleCableGeometryUpdateRef.current = () => undefined
       resetScrollStyles()
     }

@@ -498,24 +498,22 @@ export function TechnologiesKeyboardCanvas({
       setIsUnavailable(true)
     }
 
-    const resizeObserver = new ResizeObserver(() => {
+    const resizeCanvas = (): void => {
       updateCamera()
       renderer.render(scene, camera)
-    })
-    const visibilityObserver = new IntersectionObserver(
-      ([entry]) => {
-        isVisible =
-          Boolean(entry?.isIntersecting) &&
-          document.visibilityState === 'visible'
+    }
+    let resizeObserver: ResizeObserver | null = null
+    const updateVisibility = ([entry]: IntersectionObserverEntry[]): void => {
+      isVisible =
+        Boolean(entry?.isIntersecting) && document.visibilityState === 'visible'
 
-        if (isVisible) {
-          startRendering()
-        } else {
-          stopRendering()
-        }
-      },
-      { rootMargin: '160px', threshold: 0.01 }
-    )
+      if (isVisible) {
+        startRendering()
+      } else {
+        stopRendering()
+      }
+    }
+    let visibilityObserver: IntersectionObserver | null = null
 
     canvas.addEventListener('pointermove', handlePointerMove)
     canvas.addEventListener('pointerdown', handlePointerDown)
@@ -524,8 +522,19 @@ export function TechnologiesKeyboardCanvas({
     canvas.addEventListener('pointerleave', handlePointerLeave)
     canvas.addEventListener('webglcontextlost', handleContextLost)
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    resizeObserver.observe(canvas)
-    visibilityObserver.observe(canvas)
+    if (typeof ResizeObserver === 'function') {
+      resizeObserver = new ResizeObserver(resizeCanvas)
+      resizeObserver.observe(canvas)
+    } else {
+      window.addEventListener('resize', resizeCanvas)
+    }
+    if (typeof IntersectionObserver === 'function') {
+      visibilityObserver = new IntersectionObserver(updateVisibility, {
+        rootMargin: '160px',
+        threshold: 0.01,
+      })
+      visibilityObserver.observe(canvas)
+    }
     updateCamera()
     renderer.render(scene, camera)
     startRendering()
@@ -534,8 +543,11 @@ export function TechnologiesKeyboardCanvas({
       isDestroyed = true
       stopRendering()
       setHoveredSlot(null)
-      resizeObserver.disconnect()
-      visibilityObserver.disconnect()
+      resizeObserver?.disconnect()
+      if (typeof ResizeObserver !== 'function') {
+        window.removeEventListener('resize', resizeCanvas)
+      }
+      visibilityObserver?.disconnect()
       canvas.removeEventListener('pointermove', handlePointerMove)
       canvas.removeEventListener('pointerdown', handlePointerDown)
       canvas.removeEventListener('pointerup', handlePointerUp)
