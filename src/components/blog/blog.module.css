@@ -364,6 +364,8 @@
 
 .articleActions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   padding-top: 1.15rem;
   margin-top: 1.15rem;
   border-top: 1px solid var(--home-soft-line);

@@ -3,6 +3,9 @@ import { loader } from 'fumadocs-core/source'
 import { slugsFromData } from 'fumadocs-core/source/plugins/slugs'
 import type { BlogTagFacet } from '@/lib/blog-types'
 
+const BLOG_GITHUB_SOURCE_BASE_URL =
+  'https://github.com/tuntun0609/blog/blob/master'
+
 export const blogSource = loader({
   baseUrl: '/blog',
   slugs: slugsFromData('path'),
@@ -46,6 +49,18 @@ export async function getPostMarkdown(
   const processedMarkdown = await post.data.getText('processed')
 
   return `# ${post.data.title}\n\n${post.data.description}\n\n${processedMarkdown.trim()}\n`
+}
+
+export function getPostGitHubUrl(
+  post: (typeof blogSource)['$inferPage']
+): string {
+  const sourcePath = post.absolutePath ?? `content/blog/${post.path}`
+  const encodedSourcePath = sourcePath
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/')
+
+  return `${BLOG_GITHUB_SOURCE_BASE_URL}/${encodedSourcePath}`
 }
 
 export function getRecentPosts(limit: number) {

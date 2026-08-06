@@ -11,11 +11,16 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import readingTime from 'reading-time'
-import { CopyMarkdownButton } from '@/components/blog/copy-markdown-button'
+import { ArticlePageActions } from '@/components/blog/page-actions'
 import { ReadingProgress } from '@/components/blog/reading-progress'
 import { getMdxComponents } from '@/components/mdx'
 import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
-import { blogSource, formatPostDate, getPublishedPosts } from '@/lib/blog'
+import {
+  blogSource,
+  formatPostDate,
+  getPostGitHubUrl,
+  getPublishedPosts,
+} from '@/lib/blog'
 import styles from '@/components/blog/blog.module.css'
 
 interface PostPageProps {
@@ -62,6 +67,10 @@ export default async function PostPage({ params }: PostPageProps) {
   const nextPost = posts[currentPostIndex + 1]
   const readTime = readingTime(await post.data.getText('processed'))
   const readTimeInMinutes = Math.ceil(readTime.minutes)
+  const pageUrl = new URL(
+    post.url,
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+  ).toString()
 
   return (
     <div className={styles.postPage}>
@@ -106,7 +115,11 @@ export default async function PostPage({ params }: PostPageProps) {
               </div>
             </dl>
             <div className={styles.articleActions}>
-              <CopyMarkdownButton markdownUrl={`${post.url}.md`} />
+              <ArticlePageActions
+                githubUrl={getPostGitHubUrl(post)}
+                markdownUrl={`${post.url}.md`}
+                pageUrl={pageUrl}
+              />
             </div>
           </div>
         </header>
