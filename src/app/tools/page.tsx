@@ -81,7 +81,7 @@ const toolSections: ToolSection[] = [
     ],
   },
   {
-    description: '在 JSON 字符串与普通文本之间快速来回转换。',
+    description: '转换字符串，也可以精确比较两个文字版本之间的变化。',
     id: 'text-tools',
     label: '文本工具',
     tools: [
@@ -90,6 +90,12 @@ const toolSections: ToolSection[] = [
         description: '转义或还原 JSON 字符串，支持实时预览。',
         href: '/tools/json-convert',
         name: 'JSON 字符串转换',
+      },
+      {
+        cover: '/tools/text-diff.svg',
+        description: '比较两个文字版本，精确标记到字符。',
+        href: '/tools/text-diff',
+        name: '文字内容 Diff',
       },
     ],
   },

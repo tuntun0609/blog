@@ -26,6 +26,11 @@ const staticPages: MetadataRoute.Sitemap = [
     priority: 0.6,
     url: new URL('/tools/video-convert', siteUrl).toString(),
   },
+  {
+    changeFrequency: 'monthly',
+    priority: 0.6,
+    url: new URL('/tools/text-diff', siteUrl).toString(),
+  },
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {
