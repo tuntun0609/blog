@@ -1,0 +1,98 @@
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 0.8fr) minmax(10rem, 1.2fr);
+  gap: 1rem;
+  min-height: 20rem;
+  padding: 1rem;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--muted) 72%, transparent);
+  border-radius: var(--radius-xl);
+  isolation: isolate;
+}
+
+.menuColumn {
+  position: relative;
+  z-index: 1;
+  align-self: start;
+  min-width: 0;
+}
+
+.menuList,
+.submenuList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.menuTrigger,
+.submenuButton {
+  justify-content: space-between;
+  width: 100%;
+}
+
+.safeArea {
+  position: fixed;
+  z-index: 10;
+  pointer-events: auto;
+  outline: 1px dashed transparent;
+  outline-offset: -1px;
+  background: transparent;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    outline-color var(--duration-fast) var(--ease-out);
+}
+
+.safeArea[data-visible="true"] {
+  outline-color: color-mix(in oklab, var(--primary) 68%, transparent);
+  background: color-mix(in oklab, var(--primary) 17%, transparent);
+}
+
+.submenuPanel {
+  position: relative;
+  z-index: 20;
+  align-self: stretch;
+  min-width: 0;
+  padding: 1rem;
+  background: var(--background);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 12px 32px color-mix(in oklab, var(--foreground) 9%, transparent);
+}
+
+.submenuHeader {
+  min-width: 0;
+}
+
+.submenuTitle {
+  font-weight: 650;
+  color: var(--foreground);
+}
+
+.submenuDescription {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 520px) {
+  .stage {
+    grid-template-columns: minmax(6.5rem, 0.75fr) minmax(8rem, 1.25fr);
+    gap: 0.5rem;
+    min-height: 18rem;
+    padding: 0.5rem;
+  }
+
+  .submenuPanel {
+    padding: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .safeArea {
+    transition: none;
+  }
+}
