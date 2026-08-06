@@ -93,10 +93,14 @@
 }
 
 .textarea {
+  field-sizing: fixed;
+  height: 16rem;
   min-height: 16rem;
+  max-height: min(32rem, max(12rem, 60svh));
   font:
     0.86rem / 1.7 var(--font-geist-mono),
     monospace;
+  overflow-y: auto;
   resize: vertical;
   background: var(--diff-panel);
   border-color: var(--diff-input-line);
@@ -246,7 +250,9 @@
   }
 
   .textarea {
+    height: 12rem;
     min-height: 12rem;
+    max-height: min(28rem, max(12rem, 60svh));
   }
 
   .result {
