@@ -38,7 +38,7 @@ import { SafeTriangleCase } from "@/components/blog/cases/safe-triangle/safe-tri
 
 ## 先体验安全三角形
 
-先把鼠标停在左侧的“产品”上，再斜向右下方移动到子菜单。途中即使经过“解决方案”，当前子菜单也会保持打开。
+先把鼠标停在左侧的“产品”上，再斜向右下方移动到子菜单。途中即使经过“解决方案”，当前子菜单也会保持打开；如果改为垂直向下移动，“解决方案”仍会立即接管悬停状态。
 
 下面的按钮只控制半透明安全区域是否可见，不会关闭实际的命中逻辑。隐藏辅助区域后再操作一次，可以看到菜单仍然会判断指针的移动意图。
 
@@ -131,11 +131,14 @@ import { SafeTriangleCase } from "@/components/blog/cases/safe-triangle/safe-tri
 伪元素的尺寸取决于指针和子菜单的位置，需要在 `pointermove` 时读取坐标，再通过 CSS 变量交给伪元素：
 
 ```ts
-const SAFE_OVERLAP = 4
+const SAFE_OVERLAP = 2
+const POINTER_INTENT_SAMPLE_DISTANCE = 6
+const MAX_VERTICAL_SLOPE = 2
 const menuItems = document.querySelectorAll<HTMLElement>('.menu-item')
 
 for (const menuItem of menuItems) {
   const submenu = menuItem.querySelector<HTMLElement>('.submenu')
+  let previousPointer: { x: number; y: number } | null = null
 
   if (!submenu) {
     continue
@@ -146,14 +149,44 @@ for (const menuItem of menuItems) {
       return
     }
 
+    const currentPointer = { x: event.clientX, y: event.clientY }
+
+    if (!previousPointer) {
+      previousPointer = currentPointer
+      return
+    }
+
+    const horizontalMovement = currentPointer.x - previousPointer.x
+    const verticalMovement = currentPointer.y - previousPointer.y
+    const movementDistance = Math.hypot(
+      horizontalMovement,
+      verticalMovement
+    )
+
+    if (movementDistance < POINTER_INTENT_SAMPLE_DISTANCE) {
+      return
+    }
+
+    previousPointer = currentPointer
+
+    const isMovingTowardSubmenu =
+      horizontalMovement > 0 &&
+      Math.abs(verticalMovement) <=
+        horizontalMovement * MAX_VERTICAL_SLOPE
+
+    if (!isMovingTowardSubmenu) {
+      menuItem.style.setProperty('--safe-width', '0px')
+      return
+    }
+
     const submenuRect = submenu.getBoundingClientRect()
     const safeLeft = Math.min(
-      event.clientX - SAFE_OVERLAP,
+      currentPointer.x - SAFE_OVERLAP,
       submenuRect.left
     )
     const safeWidth = Math.max(submenuRect.left - safeLeft, 0)
     const safeY = Math.min(
-      Math.max(event.clientY - submenuRect.top, 0),
+      Math.max(currentPointer.y - submenuRect.top, 0),
       submenuRect.height
     )
 
@@ -163,12 +196,19 @@ for (const menuItem of menuItems) {
     menuItem.style.setProperty('--safe-height', `${submenuRect.height}px`)
     menuItem.style.setProperty('--safe-y', `${safeY}px`)
   })
+
+  menuItem.addEventListener('pointerleave', () => {
+    previousPointer = null
+    menuItem.style.setProperty('--safe-width', '0px')
+  })
 }
 ```
 
 这里使用 `clientX`、`clientY` 和 `getBoundingClientRect()`，因为它们都以当前视口为坐标系，正好对应伪元素的 `position: fixed`。
 
-`SAFE_OVERLAP` 让三角形起点稍微覆盖指针，避免指针刚好落在裁切边缘时离开命中区域。`safeY` 也被限制在子菜单高度以内，防止指针坐标超出矩形后生成异常形状。
+`POINTER_INTENT_SAMPLE_DISTANCE` 会累积一小段移动距离后再判断方向，避免手部抖动反复开关安全区。只有指针向右移动，并且纵向位移不超过横向位移的 `MAX_VERTICAL_SLOPE` 倍时，才认为它正在前往子菜单；垂直移动或过陡的向下移动会把安全区宽度归零，让新的父菜单项立即接管悬停。
+
+`SAFE_OVERLAP` 让三角形起点稍微覆盖指针，避免指针刚好落在裁切边缘时离开命中区域。这里把覆盖收紧为 `2px`，在连续斜向移动的稳定性和方向切换的灵敏度之间取平衡。`safeY` 也被限制在子菜单高度以内，防止指针坐标超出矩形后生成异常形状。
 
 当指针进入三角形后，伪元素仍然属于当前 `.menu-item`，所以当前项会继续保持 `:hover`。指针越接近子菜单，三角形会跟着缩小；进入子菜单后，父子元素之间原本的悬停关系就可以继续维持打开状态。
 
