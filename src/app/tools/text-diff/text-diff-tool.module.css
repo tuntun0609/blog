@@ -1,18 +1,14 @@
 .tool {
-  --diff-surface: var(--card);
-  --diff-panel: var(--background);
-  --diff-line: var(--border);
-  --diff-input-line: color-mix(
-    in oklab,
-    var(--foreground) 22%,
-    var(--background)
-  );
-  --diff-muted: var(--muted-foreground);
+  --diff-surface: #fff;
+  --diff-panel: #fff;
+  --diff-line: #e5e5e5;
+  --diff-input-line: #e5e5e5;
+  --diff-muted: #737373;
 
   min-height: calc(100svh - var(--site-header-height));
-  padding: 3rem 1rem 4rem;
+  padding: 1.5rem 1rem 4rem;
   color: var(--foreground);
-  background: var(--background);
+  background: #fff;
 }
 
 .workspace {
@@ -20,26 +16,23 @@
   margin-inline: auto;
 }
 
-.hero {
-  text-align: center;
-}
-
-.hero h1 {
-  margin: 0;
-  font-size: 2.25rem;
-  font-weight: 720;
-  line-height: 1.15;
-  letter-spacing: -0.035em;
-  text-wrap: balance;
-}
-
-.hero p {
-  max-width: 65ch;
-  margin: 0.5rem auto 0;
-  font-size: 1rem;
-  line-height: 1.6;
+.usageNote {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
   color: var(--diff-muted);
-  text-wrap: balance;
+}
+
+.workspaceLayout {
+  display: block;
+}
+
+.editorSurface {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--diff-surface);
+  border: 1px solid var(--diff-line);
+  border-radius: 0.9rem;
 }
 
 .toolbar {
@@ -47,10 +40,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 0.5rem 0.5rem 0.75rem;
-  margin-top: 2rem;
+  margin-top: 0;
   background: var(--diff-surface);
-  border: 1px solid var(--diff-line);
-  border-radius: 0.75rem 0.75rem 0 0;
+  border-bottom: 1px solid var(--diff-line);
 }
 
 .toolbar > p {
@@ -66,14 +58,11 @@
 
 .editorGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 2rem minmax(0, 1fr);
-  gap: 0.25rem;
+  grid-template-columns: minmax(0, 1fr) 2.75rem minmax(0, 1fr);
+  gap: 0.5rem;
   align-items: start;
-  padding: 0.75rem;
+  padding: 1rem;
   background: var(--diff-surface);
-  border: 1px solid var(--diff-line);
-  border-top: 0;
-  border-radius: 0 0 0.75rem 0.75rem;
 }
 
 .editorPanel {
@@ -87,22 +76,17 @@
   justify-content: space-between;
 }
 
-.panelHeader > span {
-  font-size: 0.72rem;
-  color: var(--diff-muted);
-}
-
 .textarea {
   field-sizing: fixed;
-  height: 16rem;
-  min-height: 16rem;
+  height: 11rem;
+  min-height: 9rem;
   max-height: min(32rem, max(12rem, 60svh));
   font:
     0.86rem / 1.7 var(--font-geist-mono),
     monospace;
   overflow-y: auto;
   resize: vertical;
-  background: var(--diff-panel);
+  background: #fff;
   border-color: var(--diff-input-line);
 }
 
@@ -115,41 +99,39 @@
 
 .swapButton {
   align-self: center;
+  justify-self: center;
+  margin-top: 0;
   border-radius: 50%;
 }
 
 .result {
-  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-top: 1.5rem;
 }
 
 .resultHeader {
   display: flex;
-  gap: 1.5rem;
-  align-items: end;
+  gap: 1rem;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
-}
-
-.resultHeader h2 {
-  margin: 0;
-  font-size: 1.35rem;
-  font-weight: 680;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  padding: 0 0.25rem 0.6rem;
 }
 
 .resultHeader p {
-  margin: 0.5rem 0 0;
+  max-width: 48ch;
+  margin: 0;
   font-size: 0.82rem;
   line-height: 1.5;
   color: var(--diff-muted);
 }
 
 .resultFrame {
-  min-height: 13rem;
+  min-height: 18rem;
   background: var(--diff-panel);
   border: 1px solid var(--diff-line);
-  border-radius: 0.75rem;
+  border-radius: 0.9rem;
 }
 
 .resultFrame[aria-busy="true"] {
@@ -159,11 +141,11 @@
 .diffRenderer {
   display: block;
   width: 100%;
-  min-height: 13rem;
+  min-height: 18rem;
 }
 
 .diffRendererShell {
-  min-height: 13rem;
+  min-height: 18rem;
 }
 
 .diffRendererShell:not([data-render-state="ready"]) .diffRenderer {
@@ -173,11 +155,11 @@
 .diffHost {
   display: block;
   width: 100%;
-  min-height: 13rem;
+  min-height: 18rem;
 }
 
 .emptyState {
-  min-height: 13rem;
+  min-height: 18rem;
   border: 0;
 }
 
@@ -185,7 +167,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  min-height: 13rem;
+  min-height: 18rem;
   padding: 1.5rem;
 }
 
@@ -215,30 +197,29 @@
 }
 
 @media (max-width: 899px) {
+  .workspaceLayout {
+    display: block;
+  }
+
   .editorGrid {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.5rem;
   }
 
   .swapButton {
-    margin-inline: auto;
+    margin: 0.25rem auto;
     transform: rotate(90deg);
   }
 }
 
 @media (max-width: 767px) {
   .tool {
-    padding: 2rem 1rem 3rem;
-  }
-
-  .hero h1 {
-    font-size: 2rem;
+    padding: 1.25rem 1rem 3rem;
   }
 
   .toolbar {
     gap: 0.75rem;
     align-items: flex-start;
-    margin-top: 1.5rem;
   }
 
   .toolbar > p {
@@ -256,7 +237,7 @@
   }
 
   .result {
-    margin-top: 2rem;
+    margin-top: 1.5rem;
   }
 
   .resultHeader {
@@ -272,6 +253,15 @@
   .resultHeader [data-slot="toggle-group-item"] {
     flex: 1;
   }
+
+  .resultFrame,
+  .diffRenderer,
+  .diffRendererShell,
+  .diffHost,
+  .emptyState,
+  .skeleton {
+    min-height: 13rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -285,6 +275,6 @@
   }
 
   .actions {
-    justify-content: space-between;
+    justify-content: flex-end;
   }
 }

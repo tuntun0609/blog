@@ -7,7 +7,6 @@ import {
   EraserIcon,
   FileDiffIcon,
   Rows3Icon,
-  SparklesIcon,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useTheme } from 'next-themes'
@@ -46,15 +45,6 @@ import {
 import styles from './text-diff-tool.module.css'
 
 const DEBOUNCE_DELAY_MS = 200
-const SAMPLE_TEXTS: TextPair = {
-  modified: `我们正在构建一个好用的文字比较工具。
-它可以准确找到两段文字之间的差异。
-所有处理都会在你的浏览器中完成。`,
-  original: `我们正在构建一个简单的文字比较工具。
-它可以快速找到两段内容之间的不同。
-所有处理都在浏览器中完成。`,
-}
-
 const DiffResult = dynamic(
   () => import('./diff-result').then((module) => module.DiffResult),
   {
@@ -86,7 +76,7 @@ const getResultDescription = (
   if (comparisonState === 'identical') {
     return '两段文字完全一致。'
   }
-  return '输入两段文字后会自动开始比较。'
+  return '粘贴两个版本后会自动开始比较。'
 }
 
 function DiffResultSkeleton() {
@@ -162,9 +152,6 @@ export function TextDiffTool() {
     },
     []
   )
-  const fillSample = useCallback(() => {
-    setTexts(SAMPLE_TEXTS)
-  }, [])
   const clearTexts = useCallback(() => {
     setTexts(EMPTY_TEXT_PAIR)
     setComparisonTexts(EMPTY_TEXT_PAIR)
@@ -187,159 +174,152 @@ export function TextDiffTool() {
   return (
     <section className={styles.tool}>
       <div className={styles.workspace}>
-        <header className={styles.hero}>
-          <h1>文字内容 Diff</h1>
-          <p>粘贴两个版本，精确查看每一处新增、删除与字符变化。</p>
-        </header>
+        <p className={styles.usageNote}>粘贴两个版本，差异会自动显示。</p>
 
-        <div className={styles.toolbar}>
-          <p>文字版本对比</p>
-          <div className={styles.actions}>
-            <Button onClick={fillSample} size="sm" variant="ghost">
-              <SparklesIcon aria-hidden="true" data-icon="inline-start" />
-              载入示例
-            </Button>
-            <Button
-              disabled={!hasInput}
-              onClick={clearTexts}
-              size="sm"
-              variant="ghost"
-            >
-              <EraserIcon aria-hidden="true" data-icon="inline-start" />
-              清空
-            </Button>
+        <div className={styles.workspaceLayout}>
+          <div className={styles.editorSurface}>
+            <div className={styles.toolbar}>
+              <p>输入版本</p>
+              <div className={styles.actions}>
+                <Button
+                  disabled={!hasInput}
+                  onClick={clearTexts}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <EraserIcon aria-hidden="true" data-icon="inline-start" />
+                  清空
+                </Button>
+              </div>
+            </div>
+
+            <FieldGroup className={styles.editorGrid}>
+              <Field className={styles.editorPanel}>
+                <div className={styles.panelHeader}>
+                  <FieldLabel htmlFor="original-text">原始文本</FieldLabel>
+                </div>
+                <Textarea
+                  aria-describedby="original-text-count"
+                  className={styles.textarea}
+                  id="original-text"
+                  onChange={handleOriginalChange}
+                  placeholder="在这里粘贴原始版本…"
+                  spellCheck={false}
+                  value={texts.original}
+                />
+                <FieldDescription
+                  className={styles.counter}
+                  id="original-text-count"
+                >
+                  {countCharacters(texts.original)} 个字符
+                </FieldDescription>
+              </Field>
+
+              <Button
+                aria-label="交换原始文本与修改后文本"
+                className={styles.swapButton}
+                disabled={!hasInput}
+                onClick={swapTexts}
+                size="icon"
+                title="交换两段文字"
+                variant="outline"
+              >
+                <ArrowLeftRightIcon aria-hidden="true" />
+              </Button>
+
+              <Field className={styles.editorPanel}>
+                <div className={styles.panelHeader}>
+                  <FieldLabel htmlFor="modified-text">修改后文本</FieldLabel>
+                </div>
+                <Textarea
+                  aria-describedby="modified-text-count"
+                  className={styles.textarea}
+                  id="modified-text"
+                  onChange={handleModifiedChange}
+                  placeholder="在这里粘贴修改后的版本…"
+                  spellCheck={false}
+                  value={texts.modified}
+                />
+                <FieldDescription
+                  className={styles.counter}
+                  id="modified-text-count"
+                >
+                  {countCharacters(texts.modified)} 个字符
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
           </div>
-        </div>
 
-        <FieldGroup className={styles.editorGrid}>
-          <Field className={styles.editorPanel}>
-            <div className={styles.panelHeader}>
-              <FieldLabel htmlFor="original-text">原始文本</FieldLabel>
-              <span>对比前</span>
-            </div>
-            <Textarea
-              aria-describedby="original-text-count"
-              className={styles.textarea}
-              id="original-text"
-              onChange={handleOriginalChange}
-              placeholder="在这里粘贴原始版本…"
-              spellCheck={false}
-              value={texts.original}
-            />
-            <FieldDescription
-              className={styles.counter}
-              id="original-text-count"
-            >
-              {countCharacters(texts.original)} 个字符
-            </FieldDescription>
-          </Field>
-
-          <Button
-            aria-label="交换原始文本与修改后文本"
-            className={styles.swapButton}
-            disabled={!hasInput}
-            onClick={swapTexts}
-            size="icon"
-            title="交换两段文字"
-            variant="outline"
-          >
-            <ArrowLeftRightIcon aria-hidden="true" />
-          </Button>
-
-          <Field className={styles.editorPanel}>
-            <div className={styles.panelHeader}>
-              <FieldLabel htmlFor="modified-text">修改后文本</FieldLabel>
-              <span>对比后</span>
-            </div>
-            <Textarea
-              aria-describedby="modified-text-count"
-              className={styles.textarea}
-              id="modified-text"
-              onChange={handleModifiedChange}
-              placeholder="在这里粘贴修改后的版本…"
-              spellCheck={false}
-              value={texts.modified}
-            />
-            <FieldDescription
-              className={styles.counter}
-              id="modified-text-count"
-            >
-              {countCharacters(texts.modified)} 个字符
-            </FieldDescription>
-          </Field>
-        </FieldGroup>
-
-        <section aria-labelledby="diff-result-title" className={styles.result}>
-          <header className={styles.resultHeader}>
-            <div>
-              <h2 id="diff-result-title">比较结果</h2>
+          <section aria-label="比较结果" className={styles.result}>
+            <header className={styles.resultHeader}>
               <p>{resultDescription}</p>
-            </div>
-            <ToggleGroup
-              aria-label="比较结果视图"
-              onValueChange={handleViewChange}
-              size="sm"
-              spacing={0}
-              value={[viewMode]}
-              variant="outline"
-            >
-              <ToggleGroupItem aria-label="并排视图" value="split">
-                <Columns2Icon aria-hidden="true" />
-                并排
-              </ToggleGroupItem>
-              <ToggleGroupItem aria-label="统一视图" value="unified">
-                <Rows3Icon aria-hidden="true" />
-                统一
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </header>
+              <ToggleGroup
+                aria-label="比较结果视图"
+                onValueChange={handleViewChange}
+                size="sm"
+                spacing={0}
+                value={[viewMode]}
+                variant="outline"
+              >
+                <ToggleGroupItem aria-label="并排视图" value="split">
+                  <Columns2Icon aria-hidden="true" />
+                  并排
+                </ToggleGroupItem>
+                <ToggleGroupItem aria-label="统一视图" value="unified">
+                  <Rows3Icon aria-hidden="true" />
+                  统一
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </header>
 
-          <div
-            aria-busy={
-              isUpdating ||
-              (comparisonState === 'different' && diffRenderState === 'loading')
-            }
-            className={styles.resultFrame}
-            data-state={comparisonState}
-          >
-            {isUpdating && comparisonState === 'empty' ? (
-              <DiffResultSkeleton />
-            ) : null}
-            {!isUpdating && comparisonState === 'empty' ? (
-              <Empty className={styles.emptyState}>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <FileDiffIcon aria-hidden="true" />
-                  </EmptyMedia>
-                  <EmptyTitle>等待两段文字</EmptyTitle>
-                  <EmptyDescription>
-                    输入或载入示例后，字符级差异会显示在这里。
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : null}
-            {!isUpdating && comparisonState === 'identical' ? (
-              <Empty className={styles.emptyState}>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <CheckCircle2Icon aria-hidden="true" />
-                  </EmptyMedia>
-                  <EmptyTitle>没有发现差异</EmptyTitle>
-                  <EmptyDescription>两段文字完全一致。</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : null}
-            {comparisonState === 'different' ? (
-              <DiffResult
-                modified={comparisonTexts.modified}
-                onRenderStateChange={setDiffRenderState}
-                original={comparisonTexts.original}
-                themeType={themeType}
-                viewMode={viewMode}
-              />
-            ) : null}
-          </div>
-        </section>
+            <div
+              aria-busy={
+                isUpdating ||
+                (comparisonState === 'different' &&
+                  diffRenderState === 'loading')
+              }
+              className={styles.resultFrame}
+              data-state={comparisonState}
+            >
+              {isUpdating && comparisonState === 'empty' ? (
+                <DiffResultSkeleton />
+              ) : null}
+              {!isUpdating && comparisonState === 'empty' ? (
+                <Empty className={styles.emptyState}>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <FileDiffIcon aria-hidden="true" />
+                    </EmptyMedia>
+                    <EmptyTitle>等待两段文字</EmptyTitle>
+                    <EmptyDescription>
+                      粘贴两个版本后，字符级差异会显示在这里。
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : null}
+              {!isUpdating && comparisonState === 'identical' ? (
+                <Empty className={styles.emptyState}>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <CheckCircle2Icon aria-hidden="true" />
+                    </EmptyMedia>
+                    <EmptyTitle>没有发现差异</EmptyTitle>
+                    <EmptyDescription>两段文字完全一致。</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : null}
+              {comparisonState === 'different' ? (
+                <DiffResult
+                  modified={comparisonTexts.modified}
+                  onRenderStateChange={setDiffRenderState}
+                  original={comparisonTexts.original}
+                  themeType={themeType}
+                  viewMode={viewMode}
+                />
+              ) : null}
+            </div>
+          </section>
+        </div>
 
         <footer className={styles.privacyNote}>
           <span>所有比较均在浏览器本地完成</span>
