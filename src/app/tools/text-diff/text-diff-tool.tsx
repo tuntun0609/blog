@@ -54,7 +54,7 @@ const DiffResult = dynamic(
 )
 
 const isDiffViewMode = (value: string | undefined): value is DiffViewMode =>
-  value === 'split' || value === 'unified'
+  value === 'split' || value === 'stacked'
 
 const getResultDescription = (
   diffRenderState: DiffRenderState,
@@ -105,7 +105,7 @@ export function TextDiffTool() {
     if (hasChosenView) {
       return
     }
-    setViewMode(isMobile ? 'unified' : 'split')
+    setViewMode(isMobile ? 'stacked' : 'split')
   }, [hasChosenView, isMobile])
 
   useEffect(() => {
@@ -252,7 +252,10 @@ export function TextDiffTool() {
 
           <section aria-label="比较结果" className={styles.result}>
             <header className={styles.resultHeader}>
-              <p>{resultDescription}</p>
+              <div className={styles.resultHeading}>
+                <h2>差异预览</h2>
+                <p>{resultDescription}</p>
+              </div>
               <ToggleGroup
                 aria-label="比较结果视图"
                 onValueChange={handleViewChange}
@@ -261,13 +264,13 @@ export function TextDiffTool() {
                 value={[viewMode]}
                 variant="outline"
               >
-                <ToggleGroupItem aria-label="并排视图" value="split">
+                <ToggleGroupItem aria-label="Split 并排视图" value="split">
                   <Columns2Icon aria-hidden="true" />
-                  并排
+                  Split
                 </ToggleGroupItem>
-                <ToggleGroupItem aria-label="统一视图" value="unified">
+                <ToggleGroupItem aria-label="Stacked 堆叠视图" value="stacked">
                   <Rows3Icon aria-hidden="true" />
-                  统一
+                  Stacked
                 </ToggleGroupItem>
               </ToggleGroup>
             </header>

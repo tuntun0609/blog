@@ -21,7 +21,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import styles from './text-diff-tool.module.css'
 
-export type DiffViewMode = 'split' | 'unified'
+export type DiffViewMode = 'split' | 'stacked'
 export type DiffRenderState = 'error' | 'loading' | 'ready'
 
 interface DiffResultProps {
@@ -32,9 +32,26 @@ interface DiffResultProps {
   viewMode: DiffViewMode
 }
 
-const FILE_NAME = 'comparison.txt'
+const ORIGINAL_FILE_NAME = 'original.txt'
+const MODIFIED_FILE_NAME = 'modified.txt'
 const DIFF_CONTEXT_LINES = 4
 const EXPANSION_LINE_COUNT = 80
+const DIFF_CUSTOM_CSS = `
+  :host {
+    --diffs-font-family: var(--font-geist-mono), monospace;
+    --diffs-font-size: 13px;
+    --diffs-header-font-family: var(--font-sans), sans-serif;
+    --diffs-line-height: 21px;
+  }
+
+  [data-diff][data-overflow="wrap"] {
+    padding-top: 0;
+  }
+
+  [data-diffs-header="default"] {
+    border-bottom: 1px solid color-mix(in lab, var(--diffs-bg) 88%, var(--diffs-fg));
+  }
+`
 
 function DiffLoadingState() {
   return (
@@ -57,19 +74,19 @@ export function DiffResult({
   const [renderAttempt, setRenderAttempt] = useState(0)
   const [renderState, setRenderState] = useState<DiffRenderState>('loading')
   const oldFile = useMemo<FileContents>(
-    () => ({ contents: original, lang: 'text', name: FILE_NAME }),
+    () => ({ contents: original, lang: 'text', name: ORIGINAL_FILE_NAME }),
     [original]
   )
   const newFile = useMemo<FileContents>(
-    () => ({ contents: modified, lang: 'text', name: FILE_NAME }),
+    () => ({ contents: modified, lang: 'text', name: MODIFIED_FILE_NAME }),
     [modified]
   )
   const options = useMemo<FileDiffOptions<undefined>>(
     () => ({
       collapsedContextThreshold: 2,
       diffIndicators: 'classic',
-      diffStyle: viewMode,
-      disableFileHeader: true,
+      diffStyle: viewMode === 'stacked' ? 'unified' : 'split',
+      disableFileHeader: false,
       disableLineNumbers: false,
       expansionLineCount: EXPANSION_LINE_COUNT,
       hunkSeparators: 'line-info-basic',
@@ -79,6 +96,7 @@ export function DiffResult({
       parseDiffOptions: { context: DIFF_CONTEXT_LINES },
       theme: { dark: 'pierre-dark', light: 'pierre-light' },
       themeType,
+      unsafeCSS: DIFF_CUSTOM_CSS,
     }),
     [themeType, viewMode]
   )

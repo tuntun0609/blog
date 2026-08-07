@@ -1,14 +1,16 @@
 .tool {
-  --diff-surface: #fff;
-  --diff-panel: #fff;
-  --diff-line: #e5e5e5;
-  --diff-input-line: #e5e5e5;
-  --diff-muted: #737373;
+  --diff-surface: var(--background);
+  --diff-panel: var(--background);
+  --diff-line: var(--border);
+  --diff-input-line: var(--input);
+  --diff-muted: var(--muted-foreground);
+  --diff-editor-line: var(--border);
+  --diff-editor-surface: var(--background);
 
   min-height: calc(100svh - var(--site-header-height));
   padding: 1.5rem 1rem 4rem;
   color: var(--foreground);
-  background: #fff;
+  background: var(--background);
 }
 
 .workspace {
@@ -86,7 +88,7 @@
     monospace;
   overflow-y: auto;
   resize: vertical;
-  background: #fff;
+  background: var(--background);
   border-color: var(--diff-input-line);
 }
 
@@ -114,12 +116,26 @@
 .resultHeader {
   display: flex;
   gap: 1rem;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  padding: 0 0.25rem 0.6rem;
+  padding: 0 0.25rem 0.75rem;
 }
 
-.resultHeader p {
+.resultHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.resultHeading h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.resultHeading p {
   max-width: 48ch;
   margin: 0;
   font-size: 0.82rem;
@@ -129,9 +145,18 @@
 
 .resultFrame {
   min-height: 18rem;
+  overflow: hidden;
   background: var(--diff-panel);
   border: 1px solid var(--diff-line);
   border-radius: 0.9rem;
+}
+
+.resultFrame[data-state="different"] {
+  --diff-skeleton-line: var(--diff-editor-line);
+  --diff-skeleton-surface: var(--diff-editor-surface);
+
+  background: var(--diff-editor-surface);
+  border-color: var(--diff-editor-line);
 }
 
 .resultFrame[aria-busy="true"] {
@@ -156,6 +181,7 @@
   display: block;
   width: 100%;
   min-height: 18rem;
+  background: var(--diff-editor-surface);
 }
 
 .emptyState {
@@ -169,17 +195,20 @@
   gap: 0.75rem;
   min-height: 18rem;
   padding: 1.5rem;
+  background: var(--diff-skeleton-surface, transparent);
 }
 
 .skeletonHeading {
   width: 9rem;
   height: 1rem;
+  background: var(--diff-skeleton-line, var(--accent));
 }
 
 .skeletonLine,
 .skeletonShortLine {
   width: 100%;
   height: 2.5rem;
+  background: var(--diff-skeleton-line, var(--accent));
 }
 
 .skeletonShortLine {
