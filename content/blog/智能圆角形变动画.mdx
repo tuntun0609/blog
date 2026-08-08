@@ -1,0 +1,216 @@
+---
+title: "用距离驱动智能圆角形变动画"
+description: "拆解标签页拖拽时的智能圆角形变：用伪元素补出切口，再把拖拽距离映射为圆角进度。"
+date: "2026-08-07"
+category: "前端工程"
+cover: "/blog/smart-corner-morph-cover.svg"
+published: true
+path: "smart-corner-morph"
+tags: ["CSS", "React", "Motion", "交互设计"]
+---
+
+标签页拖拽时，标签页贴着画布左侧，两者可以用直角连在一起；标签页向右移动后，画布左上角和标签页下方的切口则逐渐变圆。
+
+它看起来像是在插值一条复杂的 SVG 路径，实际只需要普通的 `border-radius`、一个 `::before` 伪元素、Framer Motion 的拖拽能力，再把移动距离映射成圆角进度。
+
+真正让它自然的不是更复杂的曲线，而是圆角只在几何关系发生变化时出现。
+
+## 形变发生在什么时候
+
+当标签页停在最左侧时，它的左边缘与画布左边缘重合，两个圆角都是 `0`。此时如果仍然保留完整圆角，连接处会多出一个没有意义的凹口。
+
+标签页离开左侧后，画布需要重新拥有独立的左上角，标签页下方也需要补出一段切口。标签页可以继续向右移动，但超过 `20px` 后，参与形变的距离会被截断，两个圆角不再继续增大。
+
+## 它不是路径变形
+
+可以先把画面拆成三层：
+
+```tsx
+<div className="tabBar">
+  <motion.div className="activeTab" drag="x">
+    Draft 04
+  </motion.div>
+</div>
+
+<motion.div className="canvas">
+  {/* 编辑器内容 */}
+</motion.div>
+```
+
+深色区域是标签栏，白色的 `.activeTab` 是普通圆角矩形，下面的 `.canvas` 是内容画布。两块白色区域使用同一种背景色，视觉上会被看成一个连续形状。
+
+画布左上角直接使用 `border-top-left-radius`。标签页左下方的凹形切口则交给 `::before`：
+
+```css
+.activeTab::before {
+  position: absolute;
+  bottom: 0;
+  left: calc(-1 * var(--tab-cutout-radius));
+  width: var(--tab-cutout-radius);
+  height: var(--tab-cutout-radius);
+  content: '';
+  border-bottom-right-radius: var(--tab-cutout-radius);
+  box-shadow:
+    calc(var(--tab-cutout-radius) / 2)
+    calc(var(--tab-cutout-radius) / 2) 0
+    calc(var(--tab-cutout-radius) / 2) var(--canvas-color);
+}
+
+.canvas {
+  border-top-left-radius: var(--canvas-radius);
+}
+```
+
+伪元素本身是透明的，圆角和同色 `box-shadow` 共同补出切口。半径为 `0` 时，伪元素的宽高也会归零；半径增大后，它才逐渐出现在标签页左侧。
+
+这也是整段动画最取巧的地方：页面没有真的改变一个复杂轮廓，只是在正确的位置同步改变两个普通圆角。
+
+示例右侧还镜像放了一个固定的 `::after`，用于补齐标签页另一侧的切口。它距离画布边界很远，不参与这次形变，因此保持完整半径即可。
+
+## 把距离归一化为进度
+
+原帖的调试视图给出了三个关键值：最大距离 `20px`、画布最大圆角 `10px`、标签页切口最大圆角 `8px`。
+
+先计算标签页左边缘和画布左边缘的距离：
+
+```ts
+const MORPH_DISTANCE = 20
+
+const distance = clamp(tabLeft - canvasLeft, 0, MORPH_DISTANCE)
+const progress = distance / MORPH_DISTANCE
+```
+
+`clamp` 把距离限制在 `0` 到 `20` 之间，因此 `progress` 始终位于 `0` 到 `1`。再用同一个进度驱动两个半径：
+
+```ts
+const canvasRadius = progress * 10
+const tabCutoutRadius = progress * 8
+```
+
+关系可以写成：
+
+```txt
+distance = clamp(tabLeft - canvasLeft, 0, 20)
+progress = distance / 20
+
+canvasRadius = 10 × progress
+cutoutRadius = 8 × progress
+```
+
+例如标签页移动 `11px` 时，进度是 `55%`，画布圆角约为 `5.5px`，切口圆角约为 `4.4px`。继续拖到 `28px`，距离仍会被限制为 `20px`，圆角保持最大值。
+
+这里应该使用“标签页和画布之间的相对距离”，而不是指针的绝对坐标。前者描述的是组件当前的几何关系，即使组件整体换了位置，公式仍然成立。
+
+调试时要把这两个数分开显示：`x` 是标签页真实移动了多远，`distance` 是经过 `clamp` 后真正参与形变的距离。否则标签页已经移动了 `100px`，面板却只显示 “Distance 20px”，很容易误以为拖拽位置算错了。
+
+## 用 MotionValue 直接驱动样式
+
+当前项目使用的是 Motion for React，所以示例从 `motion/react` 导入 API。它和原帖提到的 Framer Motion 是同一套实现思路。
+
+拖拽位置先存进 `MotionValue`，再通过 `useTransform` 派生进度和两个圆角：
+
+```tsx
+const dragPosition = useMotionValue(0)
+
+const progress = useTransform(
+  dragPosition,
+  [0, 20],
+  [0, 1],
+  { clamp: true }
+)
+
+const canvasRadius = useTransform(progress, [0, 1], [0, 10])
+const cutoutRadius = useTransform(progress, [0, 1], [0, 8])
+
+const canvasRadiusCss = useMotionTemplate`${canvasRadius}px`
+const cutoutRadiusCss = useMotionTemplate`${cutoutRadius}px`
+```
+
+然后把它们传给 CSS 变量：
+
+```tsx
+<motion.div
+  className={styles.activeTab}
+  drag="x"
+  dragConstraints={{ left: 0, right: maxDragDistance }}
+  dragElastic={0}
+  dragMomentum={false}
+  style={{
+    x: dragPosition,
+    '--tab-cutout-radius': cutoutRadiusCss,
+  }}
+/>
+
+<motion.div
+  className={styles.canvas}
+  style={{ '--canvas-radius': canvasRadiusCss }}
+/>
+```
+
+这条链路不需要依赖 React state 更新视觉样式。MotionValue 变化后，Motion 会直接同步 `transform` 和 CSS 变量；每一帧随位置更新的 state 只镜像无障碍读数与调试数字，`maxDragDistance` 则只在容器尺寸变化时更新。关闭调试视图不会影响形变本身。
+
+`dragElastic={0}` 会阻止标签页越过约束后继续被拉伸，`dragMomentum={false}` 则让它松手后停在当前位置。对于需要精确观察几何关系的拖拽，这比带惯性的滑动更容易控制。
+
+## 为什么线性映射已经足够
+
+这段形变使用线性进度就很好看，因为拖拽位置本身直接跟随指针。用户的手已经提供了速度变化，再叠一层明显的缓动，圆角反而可能落后于标签页。
+
+弹簧更适合松手后的归位或吸附。例如示例点击“复位”时，才使用 spring 把标签页送回左侧：
+
+```ts
+animate(dragPosition, 0, {
+  type: 'spring',
+  stiffness: 420,
+  damping: 34,
+})
+```
+
+可以把两类运动分开理解：
+
+- 拖拽期间，几何量和指针保持一一对应。
+- 松手之后，位置变化才交给弹簧描述重量和阻尼。
+
+## 完整组件还要处理什么
+
+原理只需要一个距离，但放进真实标签页组件时还要补几件事。
+
+### 分别计算左右两侧
+
+示例只演示活动标签页与画布左边界的关系。标签页支持排序时，左右两侧可能同时靠近边界、相邻标签或占位区域，需要分别计算 `leftProgress` 和 `rightProgress`，再驱动两边的切口。
+
+不要用同一个进度镜像全部圆角。左侧贴边不代表右侧也贴边，两边的几何状态可能不同。
+
+### 先确定稳定的参考点
+
+如果标签页只在固定轨道中横向拖动，Motion 的 `x` 就是相对起点的距离，不需要每帧调用 `getBoundingClientRect()`。
+
+示例还会用 `ResizeObserver` 监听标签轨道，在容器变窄时重新计算 `maxDragDistance`，让活动标签页始终停在下一个标签页之前。测量只发生在尺寸变化时，拖拽的每一帧仍然只处理数字。
+
+如果标签页会换组、跨容器或触发布局重排，也应该在拖拽开始和排序完成后重新测量参考边界，而不是在 `pointermove` 中反复读取布局。
+
+### 注意重绘范围
+
+`transform: translateX()` 通常可以在合成阶段完成，但 `border-radius` 和 `box-shadow` 仍然可能触发绘制。圆角只作用在标签页和画布左上角这块很小的区域，成本通常可控；不要把同一套动态阴影扩展到整页的大面积模糊层。
+
+### 保留键盘和减少动态效果
+
+拖拽不是唯一操作方式。示例把活动标签页暴露成水平 slider，并支持方向键、Home 和 End；真实标签系统还需要方向键切换标签、焦点管理和删除标签等完整语义。
+
+用户开启 `prefers-reduced-motion` 后，拖拽仍然直接跟手，但“复位”不再播放弹簧动画。这样不会移除操作能力，只减少非必要的自动运动。
+
+### 同色是无缝连接的前提
+
+活动标签、伪元素阴影和内容画布必须共享同一个背景色。只要三者有轻微色差，切口边缘就会露出接缝。半透明背景也要谨慎：它们叠加在不同底色上时，即使使用同一个颜色值，最终显示结果仍可能不同。
+
+## 小结
+
+智能圆角形变没有修改复杂路径，而是让两个普通圆角服从同一个几何关系：标签页贴边时收成直角，离开后再逐渐恢复完整曲率。
+
+实现时先求相对距离，把它限制并归一化为 `0` 到 `1`，再用这个进度驱动画布圆角和伪元素切口。Motion 负责拖拽位置与归位弹簧，CSS 负责最终形状，两边各做自己擅长的事情。
+
+## 参考资料
+
+- [Kevin Grajeda：实现拆解与调试视图](https://x.com/k_grajeda/status/2085426327755038987)
+- [Kevin Grajeda：Smart corner morph animation](https://x.com/k_grajeda/status/2085149632615592445)
+- [Motion：Drag animation](https://motion.dev/docs/react-drag)
+- [MDN：border-radius](https://developer.mozilla.org/docs/Web/CSS/border-radius)

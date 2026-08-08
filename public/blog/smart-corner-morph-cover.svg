@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="860" viewBox="0 0 1600 860" fill="none">
+  <defs>
+    <pattern id="dots" width="34" height="34" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.5" fill="#2B3129" fill-opacity="0.09"/>
+    </pattern>
+    <clipPath id="canvas-clip">
+      <path d="M298 308H1450V750H278V328C278 317 287 308 298 308Z"/>
+    </clipPath>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#11140F" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="860" rx="40" fill="#E9ECE5"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">
+    <text x="800" y="92" text-anchor="middle" fill="#262A24" font-size="30" font-weight="700" letter-spacing="3">SMART CORNER MORPH</text>
+    <text x="800" y="133" text-anchor="middle" fill="#72786E" font-size="16" letter-spacing="2">DISTANCE → PROGRESS → BORDER RADIUS</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="150" y="190" width="1300" height="560" rx="30" fill="#222321"/>
+    <rect x="150" y="190" width="128" height="560" rx="30" fill="#292B28"/>
+    <path d="M192 248H224C240 248 250 258 250 274V288H218C202 288 192 278 192 262V248Z" fill="#D5D8D0"/>
+    <text x="221" y="281" text-anchor="middle" fill="#292B28" font-family="ui-sans-serif, system-ui, sans-serif" font-size="33" font-weight="800">D</text>
+
+    <rect x="278" y="190" width="1172" height="118" fill="#222321"/>
+    <rect x="524" y="226" width="360" height="82" rx="22" fill="#F7F8F5"/>
+    <circle cx="574" cy="267" r="22" fill="#6FD8AA"/>
+    <circle cx="574" cy="267" r="10" fill="#C9FF66"/>
+    <text x="615" y="278" fill="#252824" font-family="ui-sans-serif, system-ui, sans-serif" font-size="31" font-weight="650">Draft 04</text>
+    <path d="M831 256L851 276M851 256L831 276" stroke="#9DA09A" stroke-width="3" stroke-linecap="round"/>
+
+    <circle cx="970" cy="267" r="20" fill="#7B96DA" fill-opacity="0.75"/>
+    <text x="1009" y="277" fill="#A8ABA3" font-family="ui-sans-serif, system-ui, sans-serif" font-size="28" font-weight="600">Research</text>
+
+    <path d="M298 308H1450V750H278V328C278 317 287 308 298 308Z" fill="#F7F8F5"/>
+    <path d="M504 308C515 308 524 299 524 288V308H504Z" fill="#F7F8F5"/>
+    <path d="M884 288C884 299 893 308 904 308H884V288Z" fill="#F7F8F5"/>
+    <rect x="278" y="308" width="1172" height="442" clip-path="url(#canvas-clip)" fill="url(#dots)"/>
+
+    <rect x="418" y="430" width="640" height="190" rx="18" fill="#FFFFFF" fill-opacity="0.76" stroke="#D8DDD5" stroke-width="2"/>
+    <path d="M456 475H950M456 512H858M456 549H730" stroke="#D4D9D1" stroke-width="12" stroke-linecap="round"/>
+    <rect x="1110" y="430" width="220" height="190" rx="18" fill="#FFFFFF" fill-opacity="0.76" stroke="#D8DDD5" stroke-width="2"/>
+    <circle cx="1220" cy="525" r="60" stroke="#CBD1C8" stroke-width="2"/>
+    <circle cx="1220" cy="525" r="24" fill="#C9FF66"/>
+  </g>
+
+  <circle cx="278" cy="308" r="27" stroke="#FF806F" stroke-width="4" stroke-dasharray="7 7"/>
+  <circle cx="524" cy="308" r="23" stroke="#28D9D1" stroke-width="4" stroke-dasharray="7 7"/>
+  <path d="M278 355H524" stroke="#A7E653" stroke-width="3"/>
+  <path d="M278 344V366M524 344V366" stroke="#A7E653" stroke-width="3"/>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-weight="700">
+    <rect x="284" y="348" width="176" height="46" rx="12" fill="#312E2B"/>
+    <text x="302" y="378" fill="#FFB9AF" font-size="16">CANVAS R 10.0</text>
+    <rect x="534" y="286" width="218" height="46" rx="12" fill="#312E2B"/>
+    <text x="552" y="316" fill="#A7F6F2" font-size="16">TAB CUTOUT R 8.0</text>
+    <rect x="612" y="668" width="376" height="56" rx="15" fill="#312E2B"/>
+    <text x="650" y="703" fill="#F2F4EF" font-size="18">MORPH 100% · DISTANCE 20PX</text>
+  </g>
+</svg>
