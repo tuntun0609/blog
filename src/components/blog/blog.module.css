@@ -84,7 +84,7 @@
 .listTitle {
   max-width: 44rem;
   margin: 1.1rem 0 0;
-  font-size: 4.2rem;
+  font-size: 3.8rem;
   font-weight: 760;
   line-height: 1.04;
 }
@@ -236,6 +236,7 @@
   margin: 0.65rem 0 0;
   overflow: hidden;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   font-size: 0.84rem;
   line-height: 1.7;
   color: var(--home-muted);
@@ -303,17 +304,12 @@
 }
 
 .articleHeader {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(13rem, 0.45fr);
-  gap: clamp(3rem, 9vw, 8rem);
-  align-items: end;
   padding-block: 5rem 3rem;
 }
 
 .articleTitle {
-  max-width: 50rem;
   margin: 1.1rem 0 0;
-  font-size: 3.9rem;
+  font-size: 3.25rem;
   font-weight: 760;
   line-height: 1.08;
 }
@@ -328,19 +324,19 @@
 
 .articleSidebar {
   min-width: 0;
+  margin-top: 2.5rem;
 }
 
 .articleMeta {
   display: flex;
-  flex-direction: column;
-  gap: 1.15rem;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: flex-start;
   padding: 0;
   margin: 0;
 }
 
 .articleMeta div {
-  padding-top: 0.85rem;
-  border-top: 1px solid var(--home-soft-line);
+  min-width: max-content;
 }
 
 .articleMeta dt {
@@ -348,27 +344,39 @@
 }
 
 .articleMeta dd {
+  position: relative;
   display: flex;
-  gap: 0.45rem;
   align-items: center;
-  margin: 0.45rem 0 0;
+  padding-left: 1.15rem;
+  margin: 0.35rem 0 0;
   font-size: 0.8rem;
   font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .articleMeta svg {
+  position: absolute;
+  top: 50%;
+  left: 0;
   width: 0.9rem;
   height: 0.9rem;
   color: var(--home-blue);
+  transform: translateY(-50%);
 }
 
 .articleActions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
-  padding-top: 1.15rem;
-  margin-top: 1.15rem;
-  border-top: 1px solid var(--home-soft-line);
+  margin-top: 1rem;
+}
+
+.articleActions button {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 2.25rem;
+  border-radius: 0.375rem;
 }
 
 .articleCover {
@@ -590,18 +598,21 @@
     --article-body-width: 42rem;
   }
 
-  .listIntro,
-  .articleHeader {
-    grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.55fr);
-    gap: 3rem;
+  .listIntro {
+    display: block;
   }
 
   .listTitle {
-    font-size: 3.45rem;
+    font-size: 3.2rem;
   }
 
   .articleTitle {
     font-size: 3.25rem;
+  }
+
+  .articleSidebar {
+    max-width: 34rem;
+    margin-top: 3rem;
   }
 
   .postRow {
@@ -640,7 +651,7 @@
 
   .listTitle {
     margin-top: 0.85rem;
-    font-size: 2.85rem;
+    font-size: 2.65rem;
   }
 
   .listLead {
@@ -686,6 +697,10 @@
     padding-block: 3.75rem 2.25rem;
   }
 
+  .articleSidebar {
+    margin-top: 2.25rem;
+  }
+
   .articleTitle {
     margin-top: 0.85rem;
     font-size: 2.55rem;
@@ -697,9 +712,7 @@
   }
 
   .articleMeta {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 1.25rem;
     margin-top: 2.25rem;
   }
 

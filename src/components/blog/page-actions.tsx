@@ -131,7 +131,7 @@ function CopyMarkdownButton({ markdownUrl }: CopyMarkdownButtonProps) {
       aria-label={label}
       disabled={status === 'loading'}
       onClick={copyMarkdown}
-      size="sm"
+      size="lg"
       title={label}
       type="button"
       variant="secondary"
@@ -283,7 +283,7 @@ export function ArticlePageActions(props: ArticlePageActionsProps) {
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="打开文章的其他阅读方式"
-          render={<Button size="sm" type="button" variant="secondary" />}
+          render={<Button size="lg" type="button" variant="secondary" />}
         >
           打开
           <ChevronDownIcon aria-hidden="true" data-icon="inline-end" />
