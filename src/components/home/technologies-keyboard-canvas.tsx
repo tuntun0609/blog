@@ -8,16 +8,13 @@ import {
 } from './technologies-keyboard-audio'
 import {
   createTechnologiesKeyboard,
-  KEYBOARD_USB_CABLE_ANCHOR,
   KEYCAP_TRAVEL,
-  type KeyboardCableOrigin,
   type KeyboardVisualPass,
   type TechnologySlot,
 } from './technologies-keyboard-model'
 
 interface TechnologiesKeyboardCanvasProps {
   readonly activeSlot: number | null
-  readonly onCableOriginChange: (origin: KeyboardCableOrigin) => void
   readonly onSlotActivate: (slotIndex: number) => void
   readonly presentationProgressRef: RefObject<number>
   readonly slots: readonly TechnologySlot[]
@@ -117,24 +114,18 @@ const getCameraPosition = (): THREE.Vector3 => {
 
 export function TechnologiesKeyboardCanvas({
   activeSlot,
-  onCableOriginChange,
   onSlotActivate,
   presentationProgressRef,
   slots,
 }: TechnologiesKeyboardCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const activeSlotRef = useRef(activeSlot)
-  const onCableOriginChangeRef = useRef(onCableOriginChange)
   const onSlotActivateRef = useRef(onSlotActivate)
   const [isUnavailable, setIsUnavailable] = useState(false)
 
   useEffect(() => {
     activeSlotRef.current = activeSlot
   }, [activeSlot])
-
-  useEffect(() => {
-    onCableOriginChangeRef.current = onCableOriginChange
-  }, [onCableOriginChange])
 
   useEffect(() => {
     onSlotActivateRef.current = onSlotActivate
@@ -173,9 +164,6 @@ export function TechnologiesKeyboardCanvas({
     const presentationCameraPosition = KEYBOARD_VIEW.frontCameraPosition
     const pointer = new THREE.Vector2(2, 2)
     const pointerTilt = new THREE.Vector2()
-    const cableAnchorWorldPosition = new THREE.Vector3()
-    const cableAnchorProjection = new THREE.Vector3()
-    const lastCableOrigin = new THREE.Vector2(Number.NaN, Number.NaN)
     const currentTilt = new THREE.Vector2(
       KEYBOARD_VIEW.userFacingTiltRadians,
       0
@@ -402,37 +390,6 @@ export function TechnologiesKeyboardCanvas({
       runtime.root.rotation.z = currentTilt.y
     }
 
-    const updateCableOrigin = (presentationProgress: number): void => {
-      if (presentationProgress <= 0.05) {
-        return
-      }
-
-      camera.updateMatrixWorld()
-      runtime.root.updateMatrixWorld(true)
-      cableAnchorWorldPosition
-        .set(
-          KEYBOARD_USB_CABLE_ANCHOR.x,
-          KEYBOARD_USB_CABLE_ANCHOR.y,
-          KEYBOARD_USB_CABLE_ANCHOR.z
-        )
-        .applyMatrix4(runtime.root.matrixWorld)
-      cableAnchorProjection.copy(cableAnchorWorldPosition).project(camera)
-
-      const xRatio = (cableAnchorProjection.x + 1) / 2
-      const yRatio = (1 - cableAnchorProjection.y) / 2
-      const originHasMoved =
-        !Number.isFinite(lastCableOrigin.x) ||
-        Math.abs(lastCableOrigin.x - xRatio) > 0.0001 ||
-        Math.abs(lastCableOrigin.y - yRatio) > 0.0001
-
-      if (!originHasMoved) {
-        return
-      }
-
-      lastCableOrigin.set(xRatio, yRatio)
-      onCableOriginChangeRef.current({ xRatio, yRatio })
-    }
-
     const renderFrame = (frameAt: number): void => {
       if (isDestroyed || !isVisible) {
         animationFrame = 0
@@ -452,7 +409,6 @@ export function TechnologiesKeyboardCanvas({
       updateKeyAnimations(response, activeSlotRef.current)
       updatePresentationCamera(presentationProgress)
       updateAssemblyTilt(response, reducedMotion, presentationProgress)
-      updateCableOrigin(presentationProgress)
       renderer.render(scene, camera)
 
       if (!hasRecordedRenderStats) {
@@ -498,22 +454,24 @@ export function TechnologiesKeyboardCanvas({
       setIsUnavailable(true)
     }
 
-    const resizeCanvas = (): void => {
+    const resizeObserver = new ResizeObserver(() => {
       updateCamera()
       renderer.render(scene, camera)
-    }
-    let resizeObserver: ResizeObserver | null = null
-    const updateVisibility = ([entry]: IntersectionObserverEntry[]): void => {
-      isVisible =
-        Boolean(entry?.isIntersecting) && document.visibilityState === 'visible'
+    })
+    const visibilityObserver = new IntersectionObserver(
+      ([entry]) => {
+        isVisible =
+          Boolean(entry?.isIntersecting) &&
+          document.visibilityState === 'visible'
 
-      if (isVisible) {
-        startRendering()
-      } else {
-        stopRendering()
-      }
-    }
-    let visibilityObserver: IntersectionObserver | null = null
+        if (isVisible) {
+          startRendering()
+        } else {
+          stopRendering()
+        }
+      },
+      { rootMargin: '160px', threshold: 0.01 }
+    )
 
     canvas.addEventListener('pointermove', handlePointerMove)
     canvas.addEventListener('pointerdown', handlePointerDown)
@@ -522,19 +480,8 @@ export function TechnologiesKeyboardCanvas({
     canvas.addEventListener('pointerleave', handlePointerLeave)
     canvas.addEventListener('webglcontextlost', handleContextLost)
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    if (typeof ResizeObserver === 'function') {
-      resizeObserver = new ResizeObserver(resizeCanvas)
-      resizeObserver.observe(canvas)
-    } else {
-      window.addEventListener('resize', resizeCanvas)
-    }
-    if (typeof IntersectionObserver === 'function') {
-      visibilityObserver = new IntersectionObserver(updateVisibility, {
-        rootMargin: '160px',
-        threshold: 0.01,
-      })
-      visibilityObserver.observe(canvas)
-    }
+    resizeObserver.observe(canvas)
+    visibilityObserver.observe(canvas)
     updateCamera()
     renderer.render(scene, camera)
     startRendering()
@@ -543,11 +490,8 @@ export function TechnologiesKeyboardCanvas({
       isDestroyed = true
       stopRendering()
       setHoveredSlot(null)
-      resizeObserver?.disconnect()
-      if (typeof ResizeObserver !== 'function') {
-        window.removeEventListener('resize', resizeCanvas)
-      }
-      visibilityObserver?.disconnect()
+      resizeObserver.disconnect()
+      visibilityObserver.disconnect()
       canvas.removeEventListener('pointermove', handlePointerMove)
       canvas.removeEventListener('pointerdown', handlePointerDown)
       canvas.removeEventListener('pointerup', handlePointerUp)

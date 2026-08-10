@@ -5,10 +5,7 @@ import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TECHNOLOGIES_PER_PAGE, technologySkills } from './technologies-config'
 import { unlockKeyboardAudio } from './technologies-keyboard-audio'
-import type {
-  KeyboardCableOrigin,
-  TechnologySlot,
-} from './technologies-keyboard-model'
+import type { TechnologySlot } from './technologies-keyboard-model'
 import styles from './technologies-keyboard.module.css'
 
 const TechnologiesKeyboardCanvas = dynamic(
@@ -35,16 +32,6 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 const HEADER_HEIGHT_REM = 4.35
 const KEYBOARD_LOWER_OFFSET_RATIO = 0.18
 const KEYBOARD_FINAL_SCALE = 1.25
-const USB_CABLE_FALLBACK_ORIGIN: KeyboardCableOrigin = {
-  xRatio: 0.5,
-  yRatio: 0.33,
-}
-const USB_CABLE_EXIT_LIFT_PX = 30
-const USB_CABLE_MAX_SIDE_REACH_PX = 192
-const USB_CABLE_MINIMUM_VISIBLE_PROGRESS = 0.002
-const USB_CABLE_PLUG_HIDE_DEPTH_PX = 24
-const USB_CABLE_SIDE_REACH_RATIO = 0.18
-const USB_CABLE_FADE_DISTANCE_PX = 24
 const DARK_MONITOR_FOREGROUND = '#F7F7F5'
 const DARK_MONITOR_TECHNOLOGY_IDS = new Set([
   'bun',
@@ -69,13 +56,6 @@ export function TechnologiesKeyboard() {
   const sectionRef = useRef<HTMLElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<HTMLDivElement>(null)
-  const techDisplayRef = useRef<HTMLDivElement>(null)
-  const usbCableRef = useRef<SVGSVGElement>(null)
-  const usbCablePlugRef = useRef<SVGGElement>(null)
-  const usbCableOriginRef = useRef<KeyboardCableOrigin>(
-    USB_CABLE_FALLBACK_ORIGIN
-  )
-  const scheduleCableGeometryUpdateRef = useRef<() => void>(() => undefined)
   const presentationProgressRef = useRef(0)
   const [activePage, setActivePage] = useState(0)
   const [activeSlot, setActiveSlot] = useState(0)
@@ -101,13 +81,6 @@ export function TechnologiesKeyboard() {
     activeSkill && DARK_MONITOR_TECHNOLOGY_IDS.has(activeSkill.id)
       ? DARK_MONITOR_FOREGROUND
       : (activeSkill?.keyColor ?? '#8BA8FF')
-  const handleCableOriginChange = useCallback(
-    (origin: KeyboardCableOrigin): void => {
-      usbCableOriginRef.current = origin
-      scheduleCableGeometryUpdateRef.current()
-    },
-    []
-  )
   useEffect(() => {
     const activateAudio = (): void => {
       unlockKeyboardAudio()
@@ -136,94 +109,13 @@ export function TechnologiesKeyboard() {
     const section = sectionRef.current
     const inner = innerRef.current
     const scene = sceneRef.current
-    const techDisplay = techDisplayRef.current
-    const usbCable = usbCableRef.current
-    const usbCablePlug = usbCablePlugRef.current
-
-    if (
-      !(section && inner && scene && techDisplay && usbCable && usbCablePlug)
-    ) {
+    if (!(section && inner && scene)) {
       return
     }
 
     const desktopLayout = window.matchMedia(DESKTOP_LAYOUT_QUERY)
     const reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY)
     let animationFrame = 0
-
-    const updateUsbCableGeometry = (cableProgress: number): void => {
-      const cableIsVisible = cableProgress > USB_CABLE_MINIMUM_VISIBLE_PROGRESS
-
-      usbCable.style.visibility = cableIsVisible ? 'visible' : 'hidden'
-
-      const innerBounds = inner.getBoundingClientRect()
-      const sceneBounds = scene.getBoundingClientRect()
-      const cableOrigin = usbCableOriginRef.current
-      const keyboardAnchorX =
-        sceneBounds.left -
-        innerBounds.left +
-        sceneBounds.width * cableOrigin.xRatio
-      const keyboardAnchorY =
-        sceneBounds.top -
-        innerBounds.top +
-        sceneBounds.height * cableOrigin.yRatio
-      const monitorCenterX = techDisplay.offsetLeft
-      const monitorBottomY =
-        techDisplay.offsetTop + techDisplay.offsetHeight * 0.5
-      const monitorEntryY = monitorBottomY - USB_CABLE_PLUG_HIDE_DEPTH_PX
-      const sideReach = Math.min(
-        innerBounds.width * USB_CABLE_SIDE_REACH_RATIO,
-        USB_CABLE_MAX_SIDE_REACH_PX
-      )
-      const cablePathData = [
-        `M ${keyboardAnchorX} ${keyboardAnchorY}`,
-        `C ${keyboardAnchorX} ${keyboardAnchorY - USB_CABLE_EXIT_LIFT_PX}`,
-        `${monitorCenterX + sideReach} ${monitorBottomY + USB_CABLE_EXIT_LIFT_PX}`,
-        `${monitorCenterX} ${monitorEntryY}`,
-      ].join(' ')
-      const cablePaths = usbCable.querySelectorAll<SVGPathElement>(
-        '[data-usb-cable-path]'
-      )
-
-      for (const cablePath of cablePaths) {
-        cablePath.setAttribute('d', cablePathData)
-      }
-
-      const drawingPath = cablePaths.item(0)
-
-      if (!(drawingPath && cableIsVisible)) {
-        usbCable.style.opacity = '0'
-        usbCablePlug.style.opacity = '0'
-        return
-      }
-
-      const cableLength = drawingPath.getTotalLength()
-      const revealedCableLength = cableLength * cableProgress
-      const cableOpacity = clampProgress(
-        revealedCableLength / USB_CABLE_FADE_DISTANCE_PX
-      )
-
-      for (const cablePath of cablePaths) {
-        cablePath.style.strokeDasharray = `${revealedCableLength} ${cableLength}`
-        cablePath.style.strokeDashoffset = '0'
-      }
-
-      const plugDistance = Math.max(
-        0,
-        Math.min(cableLength, cableLength * cableProgress)
-      )
-      const plugPosition = drawingPath.getPointAtLength(plugDistance)
-      const previousPosition = drawingPath.getPointAtLength(
-        Math.max(0, plugDistance - 2)
-      )
-      const plugAngleRadians = Math.atan2(
-        plugPosition.y - previousPosition.y,
-        plugPosition.x - previousPosition.x
-      )
-
-      usbCable.style.opacity = String(cableOpacity)
-      usbCablePlug.style.opacity = '1'
-      usbCablePlug.style.transform = `translate(${plugPosition.x}px, ${plugPosition.y}px) rotate(${plugAngleRadians}rad)`
-    }
 
     const resetScrollStyles = (): void => {
       presentationProgressRef.current = 0
@@ -232,10 +124,8 @@ export function TechnologiesKeyboard() {
       section.style.removeProperty('--keyboard-translate-x')
       section.style.removeProperty('--keyboard-translate-y')
       section.style.removeProperty('--keyboard-scale')
-      section.style.removeProperty('--usb-cable-progress')
       delete section.dataset.scrollStage
       delete section.dataset.keyboardFacing
-      updateUsbCableGeometry(0)
     }
 
     const updateScrollStyles = (): void => {
@@ -261,7 +151,6 @@ export function TechnologiesKeyboard() {
       )
       const copyProgress = getSegmentProgress(scrollProgress, 0.08, 0.52)
       const sceneProgress = getSegmentProgress(scrollProgress, 0.08, 0.82)
-      const cableProgress = getSegmentProgress(scrollProgress, 0.16, 0.84)
       const sceneCenter =
         innerBounds.left + scene.offsetLeft + scene.offsetWidth / 2
       const targetCenter = innerBounds.left + inner.clientWidth / 2
@@ -287,10 +176,8 @@ export function TechnologiesKeyboard() {
         `${targetTranslateY * sceneProgress}px`
       )
       section.style.setProperty('--keyboard-scale', String(keyboardScale))
-      section.style.setProperty('--usb-cable-progress', String(cableProgress))
       section.dataset.scrollStage = copyProgress > 0.96 ? 'keyboard' : 'details'
       section.dataset.keyboardFacing = sceneProgress > 0.96 ? 'true' : 'false'
-      updateUsbCableGeometry(cableProgress)
     }
 
     const scheduleScrollUpdate = (): void => {
@@ -299,53 +186,25 @@ export function TechnologiesKeyboard() {
       }
     }
 
-    let resizeObserver: ResizeObserver | null = null
-    scheduleCableGeometryUpdateRef.current = scheduleScrollUpdate
-    if (typeof ResizeObserver === 'function') {
-      resizeObserver = new ResizeObserver(scheduleScrollUpdate)
-      resizeObserver.observe(section)
-      resizeObserver.observe(inner)
-      resizeObserver.observe(scene)
-    }
+    const resizeObserver = new ResizeObserver(scheduleScrollUpdate)
+    resizeObserver.observe(section)
+    resizeObserver.observe(inner)
+    resizeObserver.observe(scene)
     window.addEventListener('resize', scheduleScrollUpdate)
     window.addEventListener('scroll', scheduleScrollUpdate, { passive: true })
-    const desktopLayoutSupportsEventListener =
-      typeof desktopLayout.addEventListener === 'function'
-    const reducedMotionSupportsEventListener =
-      typeof reducedMotion.addEventListener === 'function'
-
-    if (desktopLayoutSupportsEventListener) {
-      desktopLayout.addEventListener('change', scheduleScrollUpdate)
-    } else {
-      desktopLayout.addListener(scheduleScrollUpdate)
-    }
-
-    if (reducedMotionSupportsEventListener) {
-      reducedMotion.addEventListener('change', scheduleScrollUpdate)
-    } else {
-      reducedMotion.addListener(scheduleScrollUpdate)
-    }
+    desktopLayout.addEventListener('change', scheduleScrollUpdate)
+    reducedMotion.addEventListener('change', scheduleScrollUpdate)
     updateScrollStyles()
 
     return () => {
       if (animationFrame !== 0) {
         window.cancelAnimationFrame(animationFrame)
       }
-      resizeObserver?.disconnect()
+      resizeObserver.disconnect()
       window.removeEventListener('resize', scheduleScrollUpdate)
       window.removeEventListener('scroll', scheduleScrollUpdate)
-      if (desktopLayoutSupportsEventListener) {
-        desktopLayout.removeEventListener('change', scheduleScrollUpdate)
-      } else {
-        desktopLayout.removeListener(scheduleScrollUpdate)
-      }
-
-      if (reducedMotionSupportsEventListener) {
-        reducedMotion.removeEventListener('change', scheduleScrollUpdate)
-      } else {
-        reducedMotion.removeListener(scheduleScrollUpdate)
-      }
-      scheduleCableGeometryUpdateRef.current = () => undefined
+      desktopLayout.removeEventListener('change', scheduleScrollUpdate)
+      reducedMotion.removeEventListener('change', scheduleScrollUpdate)
       resetScrollStyles()
     }
   }, [])
@@ -391,7 +250,6 @@ export function TechnologiesKeyboard() {
             aria-atomic="true"
             aria-live="polite"
             className={styles.techDisplay}
-            ref={techDisplayRef}
             style={{ color: displayAccent }}
           >
             <div className={styles.techMonitor}>
@@ -478,64 +336,6 @@ export function TechnologiesKeyboard() {
           </div>
         ) : null}
 
-        <svg aria-hidden="true" className={styles.usbCable} ref={usbCableRef}>
-          <defs>
-            <linearGradient
-              id="keyboard-usb-cable-sheath"
-              x1="0"
-              x2="0"
-              y1="0"
-              y2="1"
-            >
-              <stop offset="0" stopColor="#4c5056" />
-              <stop offset="0.48" stopColor="#25282c" />
-              <stop offset="1" stopColor="#111316" />
-            </linearGradient>
-            <linearGradient
-              id="keyboard-usb-connector-metal"
-              x1="0"
-              x2="1"
-              y1="0"
-              y2="0"
-            >
-              <stop offset="0" stopColor="#72777d" />
-              <stop offset="0.5" stopColor="#d7dadd" />
-              <stop offset="1" stopColor="#73787e" />
-            </linearGradient>
-          </defs>
-          <path
-            className={`${styles.usbCablePath} ${styles.usbCableShadow}`}
-            data-usb-cable-path
-          />
-          <path
-            className={`${styles.usbCablePath} ${styles.usbCableSheath}`}
-            data-usb-cable-path
-          />
-          <path
-            className={`${styles.usbCablePath} ${styles.usbCableHighlight}`}
-            data-usb-cable-path
-          />
-          <g className={styles.usbCablePlug} ref={usbCablePlugRef}>
-            <rect
-              className={styles.usbConnectorBoot}
-              height="12"
-              rx="6"
-              width="22"
-              x="0"
-              y="-6"
-            />
-            <rect
-              className={styles.usbConnectorMetal}
-              height="8"
-              rx="2.5"
-              width="10"
-              x="14"
-              y="-4"
-            />
-            <path className={styles.usbConnectorSeam} d="M 17 -2.25 V 2.25" />
-          </g>
-        </svg>
-
         <div className={styles.copy}>
           <p className={styles.kicker}>TECHNOLOGIES / 24-KEY MACRO PAD</p>
           <h2 id="technologies-title">Learn more. Understand more.</h2>
@@ -571,7 +371,6 @@ export function TechnologiesKeyboard() {
         <div className={styles.scene} ref={sceneRef}>
           <TechnologiesKeyboardCanvas
             activeSlot={activeSlot}
-            onCableOriginChange={handleCableOriginChange}
             onSlotActivate={handleSlotActivate}
             presentationProgressRef={presentationProgressRef}
             slots={slots}

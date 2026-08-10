@@ -67,10 +67,6 @@ export default async function PostPage({ params }: PostPageProps) {
   const nextPost = posts[currentPostIndex + 1]
   const readTime = readingTime(await post.data.getText('processed'))
   const readTimeInMinutes = Math.ceil(readTime.minutes)
-  const pageUrl = new URL(
-    post.url,
-    process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-  ).toString()
 
   return (
     <div className={styles.postPage}>
@@ -118,7 +114,6 @@ export default async function PostPage({ params }: PostPageProps) {
               <ArticlePageActions
                 githubUrl={getPostGitHubUrl(post)}
                 markdownUrl={`${post.url}.md`}
-                pageUrl={pageUrl}
               />
             </div>
           </div>

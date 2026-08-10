@@ -4,7 +4,6 @@
   --keyboard-translate-x: 0px;
   --keyboard-translate-y: 0px;
   --keyboard-scale: 1;
-  --usb-cable-progress: 0;
   position: relative;
 }
 
@@ -48,67 +47,6 @@
     opacity 180ms var(--ease-out),
     transform 220ms var(--ease-out),
     visibility 0s linear 220ms;
-}
-
-.usbCable {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  visibility: hidden;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-  opacity: 0;
-  will-change: opacity;
-}
-
-.usbCablePath {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-.usbCableShadow {
-  stroke: rgb(0 0 0 / 24%);
-  stroke-width: 11;
-  transform: translateY(3px);
-}
-
-.usbCableSheath {
-  stroke: url("#keyboard-usb-cable-sheath");
-  stroke-width: 7;
-}
-
-.usbCableHighlight {
-  stroke: rgb(255 255 255 / 18%);
-  stroke-width: 1.2;
-  transform: translateY(-1.4px);
-}
-
-.usbCablePlug {
-  opacity: 0;
-  will-change: opacity, transform;
-}
-
-.usbConnectorBoot {
-  fill: #181a1d;
-  stroke: #34383d;
-  stroke-width: 1;
-}
-
-.usbConnectorMetal {
-  fill: url("#keyboard-usb-connector-metal");
-  stroke: #4f545a;
-  stroke-width: 0.8;
-}
-
-.usbConnectorSeam {
-  fill: none;
-  stroke: rgb(34 37 40 / 70%);
-  stroke-width: 1;
-  stroke-linecap: round;
 }
 
 .techMonitor {

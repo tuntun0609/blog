@@ -23,11 +23,6 @@ export interface TechnologySlot {
   readonly slotIndex: number
 }
 
-export interface KeyboardCableOrigin {
-  readonly xRatio: number
-  readonly yRatio: number
-}
-
 interface KeyboardKeyRuntime {
   readonly baseY: number
   readonly iconMaterial: THREE.MeshBasicMaterial | null
@@ -81,12 +76,6 @@ const KEYCAP_TOP_SURFACE_SEGMENTS = 12
 const CHASSIS_HEIGHT = 0.8
 /** 键盘外壳沿前后方向的总深度。 */
 const CHASSIS_DEPTH = 6.4
-/** USB 线固定在后侧中央底盘边缘，对应 JS 与 TS 键帽之间。 */
-export const KEYBOARD_USB_CABLE_ANCHOR = {
-  x: 0,
-  y: CHASSIS_HEIGHT / 2 + 0.04,
-  z: -CHASSIS_DEPTH / 2 + 0.08,
-} as const
 /** 内凹键床顶面高度，略高于外壳顶面以避免深度冲突。 */
 const KEYBED_SURFACE_Y = CHASSIS_HEIGHT / 2 + 0.006
 /** 键帽底部的静止高度，为完整按压行程预留空间。 */

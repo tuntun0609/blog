@@ -9,7 +9,7 @@ import {
   LoaderCircleIcon,
   RotateCcwIcon,
 } from 'lucide-react'
-import type { ComponentProps, ComponentType } from 'react'
+import type { ComponentProps, ComponentType, MouseEvent } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { GitHubIcon } from '@/components/github-icon'
 import { Button } from '@/components/ui/button'
@@ -49,6 +49,7 @@ const statusContent = {
 type MenuIcon = ComponentType<ComponentProps<'svg'>>
 
 interface OpenItem {
+  getHref?: (pageUrl: string) => string
   href: string
   icon: MenuIcon
   label: string
@@ -57,7 +58,6 @@ interface OpenItem {
 interface ArticlePageActionsProps {
   githubUrl: string
   markdownUrl: string
-  pageUrl: string
 }
 
 interface CopyMarkdownButtonProps {
@@ -231,9 +231,9 @@ function CursorIcon(props: ComponentProps<'svg'>) {
 function getOpenItems({
   githubUrl,
   markdownUrl,
-  pageUrl,
 }: ArticlePageActionsProps): OpenItem[] {
-  const question = `请阅读 ${pageUrl}，我想就这篇文章提问。`
+  const getQuestion = (pageUrl: string) =>
+    `请阅读 ${pageUrl}，我想就这篇文章提问。`
 
   return [
     {
@@ -247,35 +247,68 @@ function getOpenItems({
       label: '以 Markdown 查看',
     },
     {
-      href: `https://scira.ai/?${new URLSearchParams({ q: question })}`,
+      getHref: (pageUrl) =>
+        `https://scira.ai/?${new URLSearchParams({
+          q: getQuestion(pageUrl),
+        })}`,
+      href: 'https://scira.ai/',
       icon: SciraIcon,
       label: '在 Scira AI 中打开',
     },
     {
-      href: `https://chatgpt.com/?${new URLSearchParams({
-        hints: 'search',
-        prompt: question,
-      })}`,
+      getHref: (pageUrl) =>
+        `https://chatgpt.com/?${new URLSearchParams({
+          hints: 'search',
+          prompt: getQuestion(pageUrl),
+        })}`,
+      href: 'https://chatgpt.com/',
       icon: OpenAIIcon,
       label: '在 ChatGPT 中打开',
     },
     {
-      href: `https://claude.ai/new?${new URLSearchParams({ q: question })}`,
+      getHref: (pageUrl) =>
+        `https://claude.ai/new?${new URLSearchParams({
+          q: getQuestion(pageUrl),
+        })}`,
+      href: 'https://claude.ai/new',
       icon: AnthropicIcon,
       label: '在 Claude 中打开',
     },
     {
-      href: `https://cursor.com/link/prompt?${new URLSearchParams({
-        text: question,
-      })}`,
+      getHref: (pageUrl) =>
+        `https://cursor.com/link/prompt?${new URLSearchParams({
+          text: getQuestion(pageUrl),
+        })}`,
+      href: 'https://cursor.com/link/prompt',
       icon: CursorIcon,
       label: '在 Cursor 中打开',
     },
   ]
 }
 
+function getCurrentPageUrl(): string {
+  const pageUrl = new URL(window.location.href)
+  pageUrl.hash = ''
+  return pageUrl.toString()
+}
+
 export function ArticlePageActions(props: ArticlePageActionsProps) {
   const openItems = getOpenItems(props)
+  const handleOpenItemClick = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>) => {
+      if (event.defaultPrevented) {
+        return
+      }
+
+      const itemIndex = Number(event.currentTarget.dataset.openItemIndex)
+      const getHref = openItems[itemIndex]?.getHref
+
+      if (getHref) {
+        event.currentTarget.href = getHref(getCurrentPageUrl())
+      }
+    },
+    [openItems]
+  )
 
   return (
     <>
@@ -295,12 +328,18 @@ export function ArticlePageActions(props: ArticlePageActionsProps) {
           sideOffset={8}
         >
           <DropdownMenuGroup>
-            {openItems.map(({ href, icon: ItemIcon, label }) => (
+            {openItems.map(({ href, icon: ItemIcon, label }, index) => (
               <DropdownMenuItem
                 className="min-h-10"
                 key={href}
                 render={
-                  <a href={href} rel="noreferrer noopener" target="_blank" />
+                  <a
+                    data-open-item-index={index}
+                    href={href}
+                    onClick={handleOpenItemClick}
+                    rel="noreferrer noopener"
+                    target="_blank"
+                  />
                 }
               >
                 <ItemIcon aria-hidden="true" />

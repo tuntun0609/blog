@@ -15,7 +15,6 @@ interface ToolItem {
   description: string
   external?: boolean
   href?: string
-  loading?: 'eager' | 'lazy'
   name: string
 }
 
@@ -28,49 +27,23 @@ interface ToolSection {
 
 const toolSections: ToolSection[] = [
   {
-    description: '压缩、转码和提取封面，让常见的视频处理更直接。',
+    description: '在浏览器中完成常见的视频格式转换。',
     id: 'video-tools',
     label: '视频工具',
     tools: [
-      {
-        cover: '/tools/video-compress.svg',
-        description: '在清晰度与文件体积之间取得平衡。',
-        loading: 'eager',
-        name: '视频压缩',
-      },
       {
         cover: '/tools/video-convert.svg',
         description: '直接在浏览器中转换常见视频格式。',
         href: '/tools/video-convert',
         name: '视频转码',
       },
-      {
-        cover: '/tools/video-cover.svg',
-        description: '从视频中快速截取清晰的封面画面。',
-        name: '封面提取',
-      },
     ],
   },
   {
-    description: '缩小体积、转换格式、调整尺寸，也可以验证图片来源。',
+    description: '验证图片来源，前往真实可用的第三方工具。',
     id: 'image-tools',
     label: '图片工具',
     tools: [
-      {
-        cover: '/tools/image-compress.svg',
-        description: '减小图片体积，便于分享与发布。',
-        name: '图片压缩',
-      },
-      {
-        cover: '/tools/image-convert.svg',
-        description: '在常用图片格式之间轻松转换。',
-        name: '格式转换',
-      },
-      {
-        cover: '/tools/image-resize.svg',
-        description: '按像素或比例调整图片尺寸。',
-        name: '尺寸调整',
-      },
       {
         cover: '/tools/openai-verify.svg',
         description: '前往 OpenAI 的 Verify 页面。',
