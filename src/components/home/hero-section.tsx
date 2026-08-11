@@ -71,7 +71,6 @@ export function HeroSection() {
       </div>
 
       <div className={styles.heroCopy}>
-        <p className={styles.eyebrow}>WEB FRONT-END DEVELOPER</p>
         <h1 className={styles.heroTitle} id="hero-title">
           <HeroTitleReveal />
         </h1>

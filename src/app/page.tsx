@@ -8,6 +8,7 @@ import { HeroSection } from '@/components/home/hero-section'
 import { HomeMotion } from '@/components/home/home-motion'
 import { ProjectsShowcase } from '@/components/home/projects-showcase'
 import { TechnologiesKeyboard } from '@/components/home/technologies-keyboard'
+import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { formatPostDate, getRecentPosts } from '@/lib/blog'
@@ -162,13 +163,11 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className={styles.footer}>
-        <p>Tuntun · Web Front-End Developer</p>
-        <div>
-          <span>Designed &amp; built with Next.js</span>
-          <a href="#main-content">回到顶部</a>
-        </div>
-      </footer>
+      <SiteFooter
+        linkHref="#main-content"
+        linkLabel="回到顶部"
+        message="Designed & built with Next.js"
+      />
     </div>
   )
 }

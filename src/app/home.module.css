@@ -576,33 +576,6 @@
   height: 1rem;
 }
 
-.footer {
-  display: flex;
-  justify-content: space-between;
-  width: min(calc(100% - 2.5rem), 68rem);
-  padding-block: 1.4rem 2.2rem;
-  margin-inline: auto;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 0.65rem;
-  color: var(--home-muted);
-}
-
-.footer p,
-.footer div {
-  margin: 0;
-}
-
-.footer div {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-}
-
-.footer a:hover,
-.footer a:focus-visible {
-  color: var(--home-ink);
-}
-
 .page [data-reveal] {
   --reveal-delay: 0ms;
   opacity: 1;
@@ -691,8 +664,7 @@
   .projectsSection,
   .notesSection,
   .githubSection,
-  .contactSection,
-  .footer {
+  .contactSection {
     width: min(calc(100% - 2rem), 68rem);
   }
 
@@ -780,17 +752,6 @@
   .contactLink {
     margin-top: 3rem;
     font-size: 0.74rem;
-  }
-
-  .footer {
-    display: block;
-    padding-bottom: 1.5rem;
-    line-height: 1.7;
-  }
-
-  .footer div {
-    justify-content: space-between;
-    margin-top: 0.75rem;
   }
 }
 
