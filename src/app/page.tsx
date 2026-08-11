@@ -122,10 +122,6 @@ export default function HomePage() {
               <h2 id="github-title">在 GitHub 上保持公开构建。</h2>
             </div>
             <div className={styles.githubCopy}>
-              <p>
-                项目、实验和这个博客本身都公开在
-                GitHub。持续提交，也持续把过程留下来。
-              </p>
               <a
                 className={styles.githubCta}
                 href="https://github.com/tuntun0609"

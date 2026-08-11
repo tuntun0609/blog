@@ -440,7 +440,7 @@
   -webkit-box-orient: vertical;
   margin: 0;
   overflow: hidden;
-  -webkit-line-clamp: 2;
+  line-clamp: 2;
   font-size: 1.08rem;
   font-weight: 620;
   line-height: 1.35;
@@ -452,7 +452,7 @@
   -webkit-box-orient: vertical;
   margin: 0.65rem 0 0;
   overflow: hidden;
-  -webkit-line-clamp: 2;
+  line-clamp: 2;
   font-size: 0.78rem;
   line-height: 1.6;
   color: var(--home-muted);
@@ -512,6 +512,12 @@
   font-size: 0.9rem;
   line-height: 1.8;
   color: var(--home-muted);
+}
+
+.githubCopy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .githubCta {
@@ -619,8 +625,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .allNotesLink:hover svg,
-  .githubCta:hover svg {
+  .allNotesLink:hover svg {
     transform: translate(2px, -2px);
   }
 
