@@ -8,6 +8,7 @@ import {
 } from './technologies-keyboard-audio'
 import {
   createTechnologiesKeyboard,
+  KEYBOARD_CONNECTOR_POINT,
   KEYCAP_TRAVEL,
   type KeyboardVisualPass,
   type TechnologySlot,
@@ -15,6 +16,8 @@ import {
 
 interface TechnologiesKeyboardCanvasProps {
   readonly activeSlot: number | null
+  readonly connectorAnchorRef: RefObject<HTMLSpanElement | null>
+  readonly onConnectorPositionChange: () => void
   readonly onSlotActivate: (slotIndex: number) => void
   readonly presentationProgressRef: RefObject<number>
   readonly slots: readonly TechnologySlot[]
@@ -114,12 +117,15 @@ const getCameraPosition = (): THREE.Vector3 => {
 
 export function TechnologiesKeyboardCanvas({
   activeSlot,
+  connectorAnchorRef,
+  onConnectorPositionChange,
   onSlotActivate,
   presentationProgressRef,
   slots,
 }: TechnologiesKeyboardCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const activeSlotRef = useRef(activeSlot)
+  const onConnectorPositionChangeRef = useRef(onConnectorPositionChange)
   const onSlotActivateRef = useRef(onSlotActivate)
   const [isUnavailable, setIsUnavailable] = useState(false)
 
@@ -132,9 +138,14 @@ export function TechnologiesKeyboardCanvas({
   }, [onSlotActivate])
 
   useEffect(() => {
-    const canvas = canvasRef.current
+    onConnectorPositionChangeRef.current = onConnectorPositionChange
+  }, [onConnectorPositionChange])
 
-    if (!canvas) {
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const connectorAnchor = connectorAnchorRef.current
+
+    if (!(canvas && connectorAnchor)) {
       return
     }
 
@@ -176,6 +187,12 @@ export function TechnologiesKeyboardCanvas({
       slots,
       visualPass: getVisualPass(),
     })
+    const connectorLocalPosition = new THREE.Vector3(
+      KEYBOARD_CONNECTOR_POINT.x,
+      KEYBOARD_CONNECTOR_POINT.y,
+      KEYBOARD_CONNECTOR_POINT.z
+    )
+    const connectorScreenPosition = new THREE.Vector3()
     runtime.root.rotation.x = KEYBOARD_VIEW.userFacingTiltRadians
     const environmentLight = new THREE.HemisphereLight(
       '#F4F6FA',
@@ -228,6 +245,8 @@ export function TechnologiesKeyboardCanvas({
     let lastFrameAt = window.performance.now()
     let hasRecordedRenderStats = false
     let cameraDistanceMultiplier = 1
+    let lastConnectorX = Number.NaN
+    let lastConnectorY = Number.NaN
 
     const updatePresentationCamera = (presentationProgress: number): void => {
       camera.position
@@ -238,6 +257,39 @@ export function TechnologiesKeyboardCanvas({
         )
         .multiplyScalar(cameraDistanceMultiplier)
       camera.lookAt(KEYBOARD_VIEW.cameraTarget)
+    }
+
+    const updateConnectorAnchor = (): void => {
+      runtime.root.updateWorldMatrix(true, false)
+      camera.updateMatrixWorld()
+      connectorScreenPosition.copy(connectorLocalPosition)
+      runtime.root.localToWorld(connectorScreenPosition)
+      connectorScreenPosition.project(camera)
+
+      const connectorX =
+        (connectorScreenPosition.x * 0.5 + 0.5) * canvas.clientWidth
+      const connectorY =
+        (-connectorScreenPosition.y * 0.5 + 0.5) * canvas.clientHeight
+      const connectorMoved =
+        !(Number.isFinite(lastConnectorX) && Number.isFinite(lastConnectorY)) ||
+        Math.abs(connectorX - lastConnectorX) > 0.25 ||
+        Math.abs(connectorY - lastConnectorY) > 0.25
+
+      if (!connectorMoved) {
+        return
+      }
+
+      lastConnectorX = connectorX
+      lastConnectorY = connectorY
+      connectorAnchor.style.setProperty(
+        '--keyboard-connector-x',
+        `${connectorX}px`
+      )
+      connectorAnchor.style.setProperty(
+        '--keyboard-connector-y',
+        `${connectorY}px`
+      )
+      onConnectorPositionChangeRef.current()
     }
 
     const updateCamera = (): void => {
@@ -253,6 +305,7 @@ export function TechnologiesKeyboardCanvas({
         Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO)
       )
       renderer.setSize(width, height, false)
+      updateConnectorAnchor()
     }
 
     const updatePointer = (event: PointerEvent): void => {
@@ -409,6 +462,7 @@ export function TechnologiesKeyboardCanvas({
       updateKeyAnimations(response, activeSlotRef.current)
       updatePresentationCamera(presentationProgress)
       updateAssemblyTilt(response, reducedMotion, presentationProgress)
+      updateConnectorAnchor()
       renderer.render(scene, camera)
 
       if (!hasRecordedRenderStats) {
@@ -492,6 +546,8 @@ export function TechnologiesKeyboardCanvas({
       setHoveredSlot(null)
       resizeObserver.disconnect()
       visibilityObserver.disconnect()
+      connectorAnchor.style.removeProperty('--keyboard-connector-x')
+      connectorAnchor.style.removeProperty('--keyboard-connector-y')
       canvas.removeEventListener('pointermove', handlePointerMove)
       canvas.removeEventListener('pointerdown', handlePointerDown)
       canvas.removeEventListener('pointerup', handlePointerUp)

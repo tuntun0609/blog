@@ -3,7 +3,11 @@
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { TECHNOLOGIES_PER_PAGE, technologySkills } from './technologies-config'
+import {
+  TECHNOLOGIES_PER_PAGE,
+  type TechnologySkill,
+  technologySkills,
+} from './technologies-config'
 import { unlockKeyboardAudio } from './technologies-keyboard-audio'
 import type { TechnologySlot } from './technologies-keyboard-model'
 import styles from './technologies-keyboard.module.css'
@@ -32,6 +36,17 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 const HEADER_HEIGHT_REM = 4.35
 const KEYBOARD_LOWER_OFFSET_RATIO = 0.18
 const KEYBOARD_FINAL_SCALE = 1.25
+const KEYBOARD_MOVE_START = 0.04
+const KEYBOARD_MOVE_END = 0.3
+const COPY_HIDE_END = 0.24
+const MONITOR_REVEAL_START = 0.42
+const MONITOR_REVEAL_END = 0.57
+const USB_CABLE_START = 0.61
+const USB_CABLE_END = 0.79
+const SIGNAL_START = 0.84
+const KEYBOARD_CABLE_INSET_PX = 10
+const MINIMUM_CABLE_BEND_PX = 18
+const MAXIMUM_CABLE_BEND_PX = 42
 const DARK_MONITOR_FOREGROUND = '#F7F7F5'
 const DARK_MONITOR_TECHNOLOGY_IDS = new Set([
   'bun',
@@ -52,10 +67,73 @@ const getSegmentProgress = (
   return normalizedProgress * normalizedProgress * (3 - 2 * normalizedProgress)
 }
 
+type ScrollStage = 'connecting' | 'details' | 'keyboard' | 'monitor' | 'powered'
+
+interface TechScreenContentProps {
+  readonly ariaHidden?: true
+  readonly className: string
+  readonly skill: TechnologySkill
+}
+
+function TechScreenContent({
+  ariaHidden,
+  className,
+  skill,
+}: TechScreenContentProps) {
+  return (
+    <div
+      aria-hidden={ariaHidden}
+      className={`${styles.techContent} ${className}`}
+    >
+      <p className={styles.techMonitorLabel}>TECHNOLOGIES / 24-KEY MACRO PAD</p>
+      <div className={styles.techProjection} key={skill.id}>
+        <div className={styles.techReadout}>
+          <svg
+            aria-hidden="true"
+            className={styles.techLogo}
+            viewBox="0 0 24 24"
+          >
+            <path d={skill.iconPath} />
+          </svg>
+          <div className={styles.techText}>
+            <p className={styles.techName}>{skill.name}</p>
+            <p className={styles.techDescription}>{skill.description}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const getScrollStage = (progress: number): ScrollStage => {
+  if (progress < COPY_HIDE_END) {
+    return 'details'
+  }
+
+  if (progress < MONITOR_REVEAL_START) {
+    return 'keyboard'
+  }
+
+  if (progress < USB_CABLE_START) {
+    return 'monitor'
+  }
+
+  if (progress < SIGNAL_START) {
+    return 'connecting'
+  }
+
+  return 'powered'
+}
+
 export function TechnologiesKeyboard() {
   const sectionRef = useRef<HTMLElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<HTMLDivElement>(null)
+  const cableSvgRef = useRef<SVGSVGElement>(null)
+  const cableCoreRef = useRef<SVGPathElement>(null)
+  const monitorRef = useRef<HTMLDivElement>(null)
+  const keyboardConnectorRef = useRef<HTMLSpanElement>(null)
+  const scheduleScrollUpdateRef = useRef<() => void>(() => undefined)
   const presentationProgressRef = useRef(0)
   const [activePage, setActivePage] = useState(0)
   const [activeSlot, setActiveSlot] = useState(0)
@@ -81,6 +159,10 @@ export function TechnologiesKeyboard() {
     activeSkill && DARK_MONITOR_TECHNOLOGY_IDS.has(activeSkill.id)
       ? DARK_MONITOR_FOREGROUND
       : (activeSkill?.keyColor ?? '#8BA8FF')
+  const handleConnectorPositionChange = useCallback((): void => {
+    scheduleScrollUpdateRef.current()
+  }, [])
+
   useEffect(() => {
     const activateAudio = (): void => {
       unlockKeyboardAudio()
@@ -109,7 +191,21 @@ export function TechnologiesKeyboard() {
     const section = sectionRef.current
     const inner = innerRef.current
     const scene = sceneRef.current
-    if (!(section && inner && scene)) {
+    const cableSvg = cableSvgRef.current
+    const cableCore = cableCoreRef.current
+    const monitor = monitorRef.current
+    const keyboardConnector = keyboardConnectorRef.current
+    if (
+      !(
+        section &&
+        inner &&
+        scene &&
+        cableSvg &&
+        cableCore &&
+        monitor &&
+        keyboardConnector
+      )
+    ) {
       return
     }
 
@@ -124,8 +220,39 @@ export function TechnologiesKeyboard() {
       section.style.removeProperty('--keyboard-translate-x')
       section.style.removeProperty('--keyboard-translate-y')
       section.style.removeProperty('--keyboard-scale')
+      section.style.removeProperty('--monitor-opacity')
+      section.style.removeProperty('--monitor-translate-y')
+      section.style.removeProperty('--usb-cable-progress')
       delete section.dataset.scrollStage
-      delete section.dataset.keyboardFacing
+      delete section.dataset.monitorVisible
+      delete section.dataset.signalStage
+    }
+
+    const updateCableGeometry = (innerBounds: DOMRect): void => {
+      const monitorBounds = monitor.getBoundingClientRect()
+      const connectorBounds = keyboardConnector.getBoundingClientRect()
+      const startX =
+        monitorBounds.left + monitorBounds.width / 2 - innerBounds.left
+      const startY = monitorBounds.bottom - innerBounds.top
+      const endX =
+        connectorBounds.left + connectorBounds.width / 2 - innerBounds.left
+      const endY =
+        connectorBounds.top +
+        connectorBounds.height / 2 -
+        innerBounds.top +
+        KEYBOARD_CABLE_INSET_PX
+      const verticalDistance = Math.max(1, endY - startY)
+      const cableBend = Math.min(
+        MAXIMUM_CABLE_BEND_PX,
+        Math.max(MINIMUM_CABLE_BEND_PX, verticalDistance * 0.24)
+      )
+      const cablePath = `M ${endX} ${endY} C ${endX} ${endY - verticalDistance * 0.28}, ${startX - cableBend} ${startY + verticalDistance * 0.38}, ${startX} ${startY}`
+
+      cableSvg.setAttribute(
+        'viewBox',
+        `0 0 ${innerBounds.width} ${innerBounds.height}`
+      )
+      cableCore.setAttribute('d', cablePath)
     }
 
     const updateScrollStyles = (): void => {
@@ -149,8 +276,26 @@ export function TechnologiesKeyboard() {
       const scrollProgress = clampProgress(
         (stickyTop - sectionBounds.top) / scrollDistance
       )
-      const copyProgress = getSegmentProgress(scrollProgress, 0.08, 0.52)
-      const sceneProgress = getSegmentProgress(scrollProgress, 0.08, 0.82)
+      const copyProgress = getSegmentProgress(
+        scrollProgress,
+        KEYBOARD_MOVE_START,
+        COPY_HIDE_END
+      )
+      const sceneProgress = getSegmentProgress(
+        scrollProgress,
+        KEYBOARD_MOVE_START,
+        KEYBOARD_MOVE_END
+      )
+      const monitorProgress = getSegmentProgress(
+        scrollProgress,
+        MONITOR_REVEAL_START,
+        MONITOR_REVEAL_END
+      )
+      const cableProgress = getSegmentProgress(
+        scrollProgress,
+        USB_CABLE_START,
+        USB_CABLE_END
+      )
       const sceneCenter =
         innerBounds.left + scene.offsetLeft + scene.offsetWidth / 2
       const targetCenter = innerBounds.left + inner.clientWidth / 2
@@ -176,8 +321,17 @@ export function TechnologiesKeyboard() {
         `${targetTranslateY * sceneProgress}px`
       )
       section.style.setProperty('--keyboard-scale', String(keyboardScale))
-      section.dataset.scrollStage = copyProgress > 0.96 ? 'keyboard' : 'details'
-      section.dataset.keyboardFacing = sceneProgress > 0.96 ? 'true' : 'false'
+      section.style.setProperty('--monitor-opacity', String(monitorProgress))
+      section.style.setProperty(
+        '--monitor-translate-y',
+        `${(1 - monitorProgress) * -26}px`
+      )
+      section.style.setProperty('--usb-cable-progress', String(cableProgress))
+      section.dataset.scrollStage = getScrollStage(scrollProgress)
+      section.dataset.monitorVisible = monitorProgress > 0 ? 'true' : 'false'
+      section.dataset.signalStage =
+        scrollProgress >= SIGNAL_START ? 'glitch' : 'off'
+      updateCableGeometry(innerBounds)
     }
 
     const scheduleScrollUpdate = (): void => {
@@ -185,6 +339,8 @@ export function TechnologiesKeyboard() {
         animationFrame = window.requestAnimationFrame(updateScrollStyles)
       }
     }
+
+    scheduleScrollUpdateRef.current = scheduleScrollUpdate
 
     const resizeObserver = new ResizeObserver(scheduleScrollUpdate)
     resizeObserver.observe(section)
@@ -205,6 +361,7 @@ export function TechnologiesKeyboard() {
       window.removeEventListener('scroll', scheduleScrollUpdate)
       desktopLayout.removeEventListener('change', scheduleScrollUpdate)
       reducedMotion.removeEventListener('change', scheduleScrollUpdate)
+      scheduleScrollUpdateRef.current = () => undefined
       resetScrollStyles()
     }
   }, [])
@@ -245,6 +402,20 @@ export function TechnologiesKeyboard() {
       ref={sectionRef}
     >
       <div className={styles.inner} data-reveal ref={innerRef}>
+        <svg
+          aria-hidden="true"
+          className={styles.usbCable}
+          preserveAspectRatio="none"
+          ref={cableSvgRef}
+          viewBox="0 0 1 1"
+        >
+          <path
+            className={styles.usbCableCore}
+            pathLength="1"
+            ref={cableCoreRef}
+          />
+        </svg>
+
         {activeSkill ? (
           <div
             aria-atomic="true"
@@ -252,7 +423,7 @@ export function TechnologiesKeyboard() {
             className={styles.techDisplay}
             style={{ color: displayAccent }}
           >
-            <div className={styles.techMonitor}>
+            <div className={styles.techMonitor} ref={monitorRef}>
               <svg
                 aria-hidden="true"
                 className={styles.techMonitorFrame}
@@ -311,26 +482,20 @@ export function TechnologiesKeyboard() {
               </svg>
 
               <div className={styles.techMonitorScreen}>
-                <p className={styles.techMonitorLabel}>
-                  TECHNOLOGIES / 24-KEY MACRO PAD
-                </p>
-                <div className={styles.techProjection} key={activeSkill.id}>
-                  <div className={styles.techReadout}>
-                    <svg
-                      aria-hidden="true"
-                      className={styles.techLogo}
-                      viewBox="0 0 24 24"
-                    >
-                      <path d={activeSkill.iconPath} />
-                    </svg>
-                    <div className={styles.techText}>
-                      <p className={styles.techName}>{activeSkill.name}</p>
-                      <p className={styles.techDescription}>
-                        {activeSkill.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <TechScreenContent
+                  className={styles.techContentPrimary}
+                  skill={activeSkill}
+                />
+                <TechScreenContent
+                  ariaHidden
+                  className={`${styles.techSignalGhost} ${styles.techSignalGhostWarm}`}
+                  skill={activeSkill}
+                />
+                <TechScreenContent
+                  ariaHidden
+                  className={`${styles.techSignalGhost} ${styles.techSignalGhostCool}`}
+                  skill={activeSkill}
+                />
               </div>
             </div>
           </div>
@@ -369,8 +534,15 @@ export function TechnologiesKeyboard() {
         </div>
 
         <div className={styles.scene} ref={sceneRef}>
+          <span
+            aria-hidden="true"
+            className={styles.keyboardConnectorAnchor}
+            ref={keyboardConnectorRef}
+          />
           <TechnologiesKeyboardCanvas
             activeSlot={activeSlot}
+            connectorAnchorRef={keyboardConnectorRef}
+            onConnectorPositionChange={handleConnectorPositionChange}
             onSlotActivate={handleSlotActivate}
             presentationProgressRef={presentationProgressRef}
             slots={slots}

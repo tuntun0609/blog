@@ -80,6 +80,12 @@ const CHASSIS_DEPTH = 6.4
 const KEYBED_SURFACE_Y = CHASSIS_HEIGHT / 2 + 0.006
 /** 键帽底部的静止高度，为完整按压行程预留空间。 */
 const KEY_BASE_Y = KEYBED_SURFACE_Y + KEYCAP_DECK_CLEARANCE
+/** USB 线在键盘后排中央的物理连接点，供 DOM 叠加层进行 3D 投影。 */
+export const KEYBOARD_CONNECTOR_POINT = {
+  x: 0,
+  y: KEY_BASE_Y + KEY_HEIGHT + 0.02,
+  z: (-(KEY_ROWS - 1) / 2) * KEY_PITCH + KEYCAP_LAYOUT_OFFSET_Z,
+} as const
 /** 绘制技术图标时使用的离屏画布分辨率。 */
 const ICON_TEXTURE_SIZE = 256
 /** 结构检视阶段统一使用的中性色。 */
