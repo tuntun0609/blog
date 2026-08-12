@@ -260,7 +260,6 @@ export function FpsMonitorDemo() {
         <section aria-labelledby={titleId} className={styles.monitor}>
           <div className={styles.monitorToolbar}>
             <div className={styles.liveStatus} data-state={sampleState.value}>
-              <span aria-hidden="true" className={styles.statusDot} />
               <span>{sampleState.label}</span>
             </div>
             <div aria-live="polite" className={styles.stressResult}>

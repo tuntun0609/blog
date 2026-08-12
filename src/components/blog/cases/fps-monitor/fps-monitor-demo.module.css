@@ -63,14 +63,6 @@
   color: var(--monitor-blue);
 }
 
-.statusDot {
-  width: 0.45rem;
-  height: 0.45rem;
-  background: currentColor;
-  border-radius: 50%;
-  box-shadow: 0 0 0 0.25rem color-mix(in srgb, currentColor 13%, transparent);
-}
-
 .stressResult {
   min-width: 0;
   overflow: hidden;
