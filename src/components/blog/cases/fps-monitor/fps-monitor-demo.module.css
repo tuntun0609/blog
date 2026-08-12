@@ -12,16 +12,22 @@
 }
 
 .monitor {
-  --monitor-bg: #131714;
-  --monitor-panel: #1b211d;
-  --monitor-panel-strong: #222a24;
-  --monitor-ink: #f2f5ef;
-  --monitor-muted: #9ca79e;
-  --monitor-line: #354039;
-  --monitor-green: #a7ef71;
-  --monitor-green-soft: rgb(167 239 113 / 14%);
-  --monitor-blue: #84adff;
-  --monitor-coral: #ff8b74;
+  --monitor-bg: var(--background);
+  --monitor-panel: color-mix(in oklab, var(--primary) 5%, var(--background));
+  --monitor-panel-strong: color-mix(
+    in oklab,
+    var(--primary) 11%,
+    var(--background)
+  );
+  --monitor-ink: var(--foreground);
+  --monitor-muted: var(--muted-foreground);
+  --monitor-line: var(--border);
+  --monitor-green: var(--primary);
+  --monitor-green-soft: color-mix(in oklab, var(--primary) 14%, transparent);
+  --monitor-blue: var(--primary);
+  --monitor-coral: var(--destructive);
+  --monitor-reference: color-mix(in oklab, var(--foreground) 42%, transparent);
+  --monitor-chart-area: color-mix(in oklab, var(--primary) 12%, transparent);
   overflow: hidden;
   color: var(--monitor-ink);
   background: var(--monitor-bg);
@@ -73,52 +79,11 @@
 }
 
 .motionLane {
-  display: grid;
-  grid-template-columns: 9.5rem minmax(0, 1fr);
-  gap: 1.25rem;
-  align-items: center;
+  display: block;
   min-height: 8.5rem;
   padding: 1.25rem clamp(1rem, 4vw, 2rem);
   background: var(--monitor-panel);
   border-bottom: 1px solid var(--monitor-line);
-}
-
-.orbitStage {
-  position: relative;
-  display: grid;
-  place-items: center;
-  height: 5.5rem;
-}
-
-.orbitTrack {
-  width: 8.5rem;
-  height: 3rem;
-  border: 1px dashed #5f6d63;
-  border-radius: 50%;
-  transform: rotate(-8deg);
-}
-
-.runner {
-  position: absolute;
-  width: 1.55rem;
-  height: 1.55rem;
-  background: var(--monitor-green);
-  border: 0.3rem solid #314a2e;
-  border-radius: 50%;
-  box-shadow: 0 0 0 0.2rem var(--monitor-green-soft);
-  will-change: transform;
-}
-
-.runner::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0.28rem;
-  height: 0.28rem;
-  content: "";
-  background: #f4ffe9;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
 }
 
 .motionTitle {
@@ -180,14 +145,14 @@
 }
 
 .referenceLine {
-  stroke: #667169;
+  stroke: var(--monitor-reference);
   stroke-width: 1;
   stroke-dasharray: 6 7;
   vector-effect: non-scaling-stroke;
 }
 
 .chartArea {
-  fill: rgb(132 173 255 / 11%);
+  fill: var(--monitor-chart-area);
 }
 
 .chartLine {
@@ -216,7 +181,7 @@
 
 .chartLegend span {
   width: 1.35rem;
-  border-top: 1px dashed #667169;
+  border-top: 1px dashed var(--monitor-reference);
 }
 
 .metrics {

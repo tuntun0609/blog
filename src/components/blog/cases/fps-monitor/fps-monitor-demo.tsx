@@ -1,14 +1,7 @@
 'use client'
 
 import { ActivityIcon, ZapIcon } from 'lucide-react'
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -26,14 +19,10 @@ const LONG_TASK_DURATION = 250
 const LONG_TASK_PAINT_DELAY = 80
 const CHART_WIDTH = 600
 const CHART_HEIGHT = 160
+const CHART_TOP_PADDING = 18
 const DEFAULT_CHART_CEILING = 60
 const CHART_CEILING_STEP = 30
 const DROP_THRESHOLD = 0.72
-const ORBIT_DURATION = 1800
-const ORBIT_X_RADIUS = 54
-const ORBIT_Y_RADIUS = 14
-const FULL_ROTATION = Math.PI * 2
-
 interface FpsMetrics {
   fps: number | null
   frameTime: number | null
@@ -82,8 +71,8 @@ const getChartData = (history: number[]): ChartData => {
   const historyOffset = HISTORY_LENGTH - history.length
   const points = history.map((sample, index) => {
     const x = (historyOffset + index) * horizontalStep
-    const y =
-      CHART_HEIGHT - (Math.min(sample, ceiling) / ceiling) * CHART_HEIGHT
+    const plotHeight = CHART_HEIGHT - CHART_TOP_PADDING
+    const y = CHART_HEIGHT - (Math.min(sample, ceiling) / ceiling) * plotHeight
 
     return { x, y }
   })
@@ -101,13 +90,12 @@ const getChartData = (history: number[]): ChartData => {
     linePoints,
     referenceLineY:
       CHART_HEIGHT -
-      (Math.min(DEFAULT_CHART_CEILING, ceiling) / ceiling) * CHART_HEIGHT,
+      (Math.min(DEFAULT_CHART_CEILING, ceiling) / ceiling) *
+        (CHART_HEIGHT - CHART_TOP_PADDING),
   }
 }
 
-const useFpsMetrics = (
-  runnerRef: RefObject<HTMLSpanElement | null>
-): FpsMetrics => {
+const useFpsMetrics = (): FpsMetrics => {
   const [metrics, setMetrics] = useState<FpsMetrics>({
     fps: null,
     frameTime: null,
@@ -119,25 +107,12 @@ const useFpsMetrics = (
     let frameCount = 0
     let sampleStart = 0
     let isRunning = false
-    const prefersReducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)'
-    ).matches
-
     const measure = (now: number): void => {
       if (!isRunning) {
         return
       }
 
       frameCount += 1
-
-      if (!prefersReducedMotion && runnerRef.current) {
-        const orbitProgress = (now % ORBIT_DURATION) / ORBIT_DURATION
-        const angle = orbitProgress * FULL_ROTATION
-        const x = Math.cos(angle) * ORBIT_X_RADIUS
-        const y = Math.sin(angle) * ORBIT_Y_RADIUS
-
-        runnerRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
-      }
 
       const elapsed = now - sampleStart
 
@@ -189,7 +164,7 @@ const useFpsMetrics = (
       stop()
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [runnerRef])
+  }, [])
 
   return metrics
 }
@@ -197,12 +172,11 @@ const useFpsMetrics = (
 export function FpsMonitorDemo() {
   const titleId = useId()
   const descriptionId = useId()
-  const runnerRef = useRef<HTMLSpanElement>(null)
   const stressTimerRef = useRef<number | null>(null)
   const [isStressTestRunning, setIsStressTestRunning] = useState(false)
   const [stressTestResult, setStressTestResult] =
     useState<StressTestResult | null>(null)
-  const metrics = useFpsMetrics(runnerRef)
+  const metrics = useFpsMetrics()
   const chartData = getChartData(metrics.history)
   const lowestFps =
     metrics.history.length > 0 ? Math.min(...metrics.history) : null
@@ -305,10 +279,6 @@ export function FpsMonitorDemo() {
           </div>
 
           <div className={styles.motionLane}>
-            <div aria-hidden="true" className={styles.orbitStage}>
-              <span className={styles.orbitTrack} />
-              <span className={styles.runner} ref={runnerRef} />
-            </div>
             <div>
               <div className={styles.motionTitle}>浏览器绘制循环</div>
               <p>阻塞主线程时，运动与采样会同时停顿。</p>
