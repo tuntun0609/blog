@@ -1,0 +1,278 @@
+---
+title: "网页端如何制作一个检测帧率的组件"
+description: "使用 requestAnimationFrame 统计页面帧率，并封装一个可以直接使用的 React FPS 检测组件。"
+date: "2026-08-12"
+category: "前端工程"
+cover: "/blog/fps-monitor-cover.webp"
+published: true
+path: "browser-fps-monitor"
+tags: ["React", "JavaScript", "性能优化", "前端工程"]
+summary: "从 requestAnimationFrame 的回调次数开始，实现一个带采样窗口和后台暂停功能的 React 帧率检测组件。"
+---
+
+import { FpsMonitorDemo } from "@/components/blog/cases/fps-monitor/fps-monitor-demo"
+
+## 介绍
+
+在开发动画、拖拽或 Canvas 效果时，我们经常需要知道当前页面是否流畅。浏览器开发者工具可以查看帧率，但如果希望在页面上持续显示，就需要自己实现一个 FPS 检测组件。
+
+FPS 是 Frames Per Second 的缩写，表示每秒显示的帧数。常见的 60Hz 屏幕在页面足够流畅时，通常会测得 60 FPS 左右；如果主线程执行了长任务，帧率就会下降。
+
+本文会先实现帧率统计逻辑，再把它封装成一个 React 组件。
+
+<FpsMonitorDemo />
+
+## 帧率怎么计算
+
+浏览器在准备绘制下一帧之前，会调用通过 `requestAnimationFrame` 注册的回调函数。
+
+```ts
+requestAnimationFrame((time) => {
+  // time 是当前回调的时间戳
+})
+```
+
+回调每执行一次，可以近似认为页面获得了一次绘制机会。所以只要在一段时间内统计回调次数，就可以计算出当前帧率：
+
+```plaintext
+FPS = 帧数 × 1000 / 经过的毫秒数
+```
+
+例如 500ms 内调用了 30 次，那么帧率就是：
+
+```plaintext
+30 × 1000 / 500 = 60 FPS
+```
+
+这里不使用 `setInterval` 计时，因为它只能反映定时器的执行情况，不会与浏览器的绘制节奏同步。
+
+## 实现 useFps
+
+首先新建一个 `useFps` Hook，用 `frameCount` 记录采样期间执行了多少次回调，用 `sampleStart` 记录本次采样开始的时间。
+
+```tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+
+const SAMPLE_DURATION = 500
+
+export const useFps = (): number | null => {
+  const [fps, setFps] = useState<number | null>(null)
+
+  useEffect(() => {
+    let frameId = 0
+    let frameCount = 0
+    let sampleStart = performance.now()
+
+    const measure = (now: number) => {
+      frameCount += 1
+
+      const elapsed = now - sampleStart
+
+      if (elapsed >= SAMPLE_DURATION) {
+        setFps(Math.round((frameCount * 1000) / elapsed))
+        frameCount = 0
+        sampleStart = now
+      }
+
+      frameId = requestAnimationFrame(measure)
+    }
+
+    frameId = requestAnimationFrame(measure)
+
+    return () => cancelAnimationFrame(frameId)
+  }, [])
+
+  return fps
+}
+```
+
+`requestAnimationFrame` 的回调会接收一个高精度时间戳。它和 `performance.now()` 使用相同的时间起点，可以直接相减得到经过的时间。
+
+当采样时间超过 500ms 后，通过前面的公式计算 FPS，然后清空计数并开始下一轮采样。
+
+如果每帧都调用 `setFps`，在 60Hz 屏幕上最多会每秒触发 60 次 React 更新。这些额外渲染反而会影响正在检测的页面，所以只在一轮采样结束时更新状态。
+
+## 处理页面切到后台的情况
+
+当页面切到后台时，大多数浏览器会暂停 `requestAnimationFrame`。如果不做处理，回到页面后，第一次计算会把停留在后台的时间也算进去，得到一个接近 0 的帧率。
+
+可以监听 `visibilitychange` 事件，隐藏时停止检测，恢复显示时重新开始一轮采样。
+
+```tsx
+useEffect(() => {
+  let frameId = 0
+  let frameCount = 0
+  let sampleStart = 0
+
+  const measure = (now: number) => {
+    frameCount += 1
+
+    const elapsed = now - sampleStart
+
+    if (elapsed >= SAMPLE_DURATION) {
+      setFps(Math.round((frameCount * 1000) / elapsed))
+      frameCount = 0
+      sampleStart = now
+    }
+
+    frameId = requestAnimationFrame(measure)
+  }
+
+  const start = () => {
+    frameCount = 0
+    sampleStart = performance.now()
+    setFps(null)
+    frameId = requestAnimationFrame(measure)
+  }
+
+  const stop = () => {
+    cancelAnimationFrame(frameId)
+  }
+
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      stop()
+      return
+    }
+
+    start()
+  }
+
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+
+  if (!document.hidden) {
+    start()
+  }
+
+  return () => {
+    stop()
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }
+}, [])
+```
+
+`useEffect` 的清理函数中也要取消已经注册的回调并移除事件监听，否则组件卸载后检测仍然会继续运行。
+
+## 封装 FpsMonitor 组件
+
+最后把 Hook 和显示部分组合起来：
+
+```tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+
+const SAMPLE_DURATION = 500
+
+const useFps = (): number | null => {
+  const [fps, setFps] = useState<number | null>(null)
+
+  useEffect(() => {
+    let frameId = 0
+    let frameCount = 0
+    let sampleStart = 0
+
+    const measure = (now: number) => {
+      frameCount += 1
+
+      const elapsed = now - sampleStart
+
+      if (elapsed >= SAMPLE_DURATION) {
+        setFps(Math.round((frameCount * 1000) / elapsed))
+        frameCount = 0
+        sampleStart = now
+      }
+
+      frameId = requestAnimationFrame(measure)
+    }
+
+    const start = () => {
+      frameCount = 0
+      sampleStart = performance.now()
+      setFps(null)
+      frameId = requestAnimationFrame(measure)
+    }
+
+    const stop = () => cancelAnimationFrame(frameId)
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stop()
+        return
+      }
+
+      start()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    if (!document.hidden) {
+      start()
+    }
+
+    return () => {
+      stop()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
+
+  return fps
+}
+
+export const FpsMonitor = () => {
+  const fps = useFps()
+
+  return (
+    <div className="fixed right-4 bottom-4 flex items-center gap-2 rounded-full bg-zinc-950 px-3 py-2 font-mono text-sm text-white shadow-lg">
+      <span className="sr-only">当前帧率：</span>
+      <span
+        aria-hidden="true"
+        className="size-2 rounded-full bg-emerald-400"
+      />
+      <span aria-hidden="true" className="text-zinc-400">
+        FPS
+      </span>
+      <span className="min-w-6 text-right font-medium">
+        {fps === null ? '检测中' : fps}
+      </span>
+    </div>
+  )
+}
+```
+
+因为组件使用了 `useEffect`、`performance` 和 `requestAnimationFrame`，在 Next.js App Router 中需要在文件顶部添加 `'use client'`。
+
+这里使用了只对读屏软件可见的文字补充数值含义，但没有增加 `aria-live`。因为 FPS 每 500ms 更新一次，持续向读屏软件播报数字会影响用户。
+
+## 使用
+
+将组件放在需要检测的页面中即可：
+
+```tsx
+import { FpsMonitor } from '@/components/fps-monitor'
+
+export default function Page() {
+  return (
+    <main>
+      <FpsMonitor />
+      {/* 页面内容 */}
+    </main>
+  )
+}
+```
+
+采样时间越短，数字变化越快，但抖动也会更明显；采样时间越长，数值更稳定，但不容易及时发现短暂卡顿。500ms 在反馈速度和数值稳定之间比较平衡，也可以根据需求改成 1000ms。
+
+## 注意
+
+`requestAnimationFrame` 统计的是页面获得的动画帧回调次数，它是判断页面流畅度的实用指标，但并不等于硬件实际输出的每一帧。如果需要定位具体的长任务、布局或绘制问题，还是需要结合 Chrome DevTools 的 Performance 面板分析。
+
+帧率上限也不一定是 60。在 120Hz 或 144Hz 屏幕上，如果浏览器和页面都能跟上屏幕刷新率，组件会显示更高的 FPS。
+
+## 总结
+
+帧率检测的核心逻辑很简单：用 `requestAnimationFrame` 跟随浏览器的绘制节奏，再统计一段时间内的回调次数。
+
+实际封装成组件时，还需要控制 React 状态的更新频率，并处理页面进入后台和组件卸载的情况。这样就可以用很小的开销，在页面上实时观察动画和交互的流畅度。

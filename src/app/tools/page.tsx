@@ -40,10 +40,16 @@ const toolSections: ToolSection[] = [
     ],
   },
   {
-    description: '验证图片来源，前往真实可用的第三方工具。',
+    description: '在浏览器中完成常见图片处理，也可以验证图片来源。',
     id: 'image-tools',
     label: '图片工具',
     tools: [
+      {
+        cover: '/tools/image-crop.svg',
+        description: '在浏览器本地裁剪、旋转并导出图片。',
+        href: '/tools/image-crop',
+        name: '图片裁剪',
+      },
       {
         cover: '/tools/openai-verify.svg',
         description: '前往 OpenAI 的 Verify 页面。',
