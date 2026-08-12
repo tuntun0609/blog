@@ -1,0 +1,603 @@
+.tool {
+  --viewer-line: color-mix(in oklab, var(--foreground) 12%, transparent);
+  --viewer-line-strong: color-mix(in oklab, var(--foreground) 20%, transparent);
+  --viewer-muted: color-mix(in oklab, var(--foreground) 64%, var(--background));
+  --viewer-surface: color-mix(in oklab, var(--card) 96%, var(--primary) 4%);
+  --viewer-panel: color-mix(
+    in oklab,
+    var(--background) 97%,
+    var(--foreground) 3%
+  );
+
+  min-height: calc(100svh - var(--site-header-height));
+  padding: 1rem;
+  color: var(--foreground);
+  background:
+    radial-gradient(
+      circle at 50% -10%,
+      color-mix(in oklab, var(--primary) 8%, transparent),
+      transparent 32rem
+    ),
+    var(--background);
+}
+
+.workspace {
+  width: min(100%, 92rem);
+  margin-inline: auto;
+}
+
+.busyDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  background: var(--primary);
+  border-radius: 50%;
+}
+
+.workbench {
+  position: relative;
+  overflow: clip;
+  background: var(--viewer-surface);
+  border: 1px solid var(--viewer-line-strong);
+  border-radius: 1rem;
+  box-shadow: 0 24px 64px
+    color-mix(in oklab, var(--foreground) 10%, transparent);
+}
+
+.workbench[data-drag-active="true"] {
+  border-color: color-mix(in oklab, var(--primary) 58%, var(--viewer-line));
+}
+
+.toolbar,
+.searchRow,
+.statusBar {
+  display: flex;
+  align-items: center;
+}
+
+.toolbar {
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  min-height: 3.5rem;
+  padding: 0.55rem 0.7rem;
+  background: color-mix(in oklab, var(--background) 82%, transparent);
+  border-bottom: 1px solid var(--viewer-line);
+}
+
+.toolbarGroup {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  padding-inline-end: 0.7rem;
+  border-inline-end: 1px solid var(--viewer-line);
+}
+
+.toolbarGroup:last-child {
+  padding-inline-end: 0;
+  margin-inline-start: auto;
+  border-inline-end: 0;
+}
+
+.searchRow {
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  background: color-mix(in oklab, var(--background) 68%, transparent);
+  border-bottom: 1px solid var(--viewer-line);
+}
+
+.searchInput {
+  width: min(100%, 33rem);
+  background: var(--background);
+  border-color: var(--viewer-line);
+  border-radius: 0.65rem;
+}
+
+.searchCount {
+  font:
+    0.68rem var(--font-geist-mono),
+    monospace;
+  color: var(--viewer-muted);
+}
+
+.pathControl {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  min-width: 0;
+  margin-inline-start: auto;
+}
+
+.pathControl code {
+  max-width: min(38vw, 34rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.72rem;
+  color: var(--viewer-muted);
+  white-space: nowrap;
+}
+
+.warning,
+.errorBar {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  min-height: 2.65rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  border-bottom: 1px solid var(--viewer-line);
+}
+
+.warning {
+  color: color-mix(in oklab, var(--foreground) 84%, #9a6500);
+  background: color-mix(in oklab, #f0b429 10%, var(--background));
+}
+
+.errorBar {
+  color: var(--destructive);
+  background: color-mix(in oklab, var(--destructive) 7%, var(--background));
+}
+
+.warning svg,
+.errorBar svg {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+}
+
+.errorBar span {
+  flex: 1;
+  min-width: 0;
+}
+
+.editorGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: clamp(35rem, 68svh, 54rem);
+}
+
+.editorPanel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+  min-height: 0;
+  background: var(--viewer-panel);
+}
+
+.editorPanel + .editorPanel {
+  border-inline-start: 1px solid var(--viewer-line-strong);
+}
+
+.panelHeader {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2.8rem;
+  padding: 0.55rem 0.75rem;
+  background: color-mix(in oklab, var(--background) 88%, transparent);
+  border-bottom: 1px solid var(--viewer-line);
+}
+
+.panelTitle,
+.treeActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.panelTitle svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary);
+}
+
+.panelTitle h2 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 720;
+}
+
+.editorViewport {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.editorViewport > div:first-child {
+  width: 100%;
+  height: 100%;
+}
+
+.editorViewport > div:first-child {
+  --jse-font-family: var(--font-sans), sans-serif;
+  --jse-font-family-mono: var(--font-geist-mono), monospace;
+  --jse-font-size: 13px;
+  --jse-background-color: var(--background);
+  --jse-text-color: var(--foreground);
+  --jse-theme-color: var(--primary);
+  --jse-theme-color-highlight: color-mix(in oklab, var(--primary) 82%, white);
+  --jse-main-border: 0;
+  --jse-panel-background: color-mix(
+    in oklab,
+    var(--background) 94%,
+    var(--foreground) 6%
+  );
+  --jse-panel-background-border: 1px solid var(--viewer-line);
+  --jse-panel-border: 1px solid var(--viewer-line);
+  --jse-panel-color: var(--foreground);
+  --jse-panel-color-readonly: var(--viewer-muted);
+  --jse-navigation-bar-background: var(--muted);
+  --jse-navigation-bar-background-highlight: var(--accent);
+  --jse-key-color: color-mix(in oklab, var(--primary) 78%, var(--foreground));
+  --jse-value-color: var(--foreground);
+  --jse-value-color-number: color-mix(in oklab, #aa6500 76%, var(--foreground));
+  --jse-value-color-boolean: color-mix(
+    in oklab,
+    #2563eb 72%,
+    var(--foreground)
+  );
+  --jse-value-color-null: var(--muted-foreground);
+  --jse-value-color-string: color-mix(in oklab, #0c7a49 78%, var(--foreground));
+  --jse-value-color-url: color-mix(
+    in oklab,
+    var(--primary) 72%,
+    var(--foreground)
+  );
+  --jse-delimiter-color: var(--muted-foreground);
+  --jse-selection-background-color: color-mix(
+    in oklab,
+    var(--primary) 15%,
+    var(--background)
+  );
+  --jse-selection-background-inactive-color: color-mix(
+    in oklab,
+    var(--foreground) 7%,
+    var(--background)
+  );
+  --jse-hover-background-color: color-mix(
+    in oklab,
+    var(--primary) 7%,
+    var(--background)
+  );
+  --jse-active-line-background-color: color-mix(
+    in oklab,
+    var(--primary) 6%,
+    transparent
+  );
+  --jse-search-match-background-color: color-mix(
+    in oklab,
+    #f0b429 28%,
+    var(--background)
+  );
+  --jse-search-match-color: color-mix(in oklab, #f0b429 44%, var(--background));
+  --jse-search-match-outline: 1px solid
+    color-mix(in oklab, #f0b429 68%, var(--foreground));
+  --jse-search-match-active-color: color-mix(
+    in oklab,
+    #f0b429 65%,
+    var(--background)
+  );
+  --jse-input-background: var(--background);
+  --jse-input-border: 1px solid var(--viewer-line-strong);
+  min-height: 100%;
+
+  font-family: var(--font-sans), sans-serif;
+}
+
+.editorViewport > div:first-child > div {
+  min-height: 100%;
+}
+
+.editorViewport > div:first-child > div > div {
+  height: 100%;
+}
+
+/* Repairs must go through the workbench diff confirmation instead of the
+   editor's direct mutation shortcut. */
+.editorViewport [class~="jse-message"] [class~="jse-actions"] {
+  display: none;
+}
+
+.lockOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--viewer-muted);
+  text-align: center;
+  background: color-mix(in oklab, var(--background) 86%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.lockOverlay svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-bottom: 0.35rem;
+  color: var(--destructive);
+}
+
+.lockOverlay strong {
+  font-size: 0.85rem;
+  color: var(--foreground);
+}
+
+.lockOverlay span {
+  max-width: 32ch;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.statusBar {
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  justify-content: space-between;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.68rem;
+  color: var(--viewer-muted);
+  background: color-mix(in oklab, var(--background) 80%, transparent);
+  border-top: 1px solid var(--viewer-line);
+}
+
+.statusPrimary,
+.statusSecondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.8rem;
+  align-items: center;
+}
+
+.statusPrimary {
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.busyDot {
+  animation: busyPulse 1s ease-in-out infinite alternate;
+}
+
+.dropOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--background) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.dropOverlay svg {
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary);
+}
+
+.dropOverlay strong {
+  font-size: 1rem;
+}
+
+.dropOverlay span {
+  font-size: 0.8rem;
+  color: var(--viewer-muted);
+}
+
+.editorSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+  padding: 1rem;
+  background: var(--background);
+}
+
+.skeletonHeading {
+  width: 42%;
+  height: 1.25rem;
+}
+
+.skeletonLine {
+  width: 82%;
+  height: 0.85rem;
+}
+
+.skeletonShortLine {
+  width: 58%;
+  height: 0.85rem;
+}
+
+.repairSheet {
+  width: min(92vw, 72rem);
+  max-width: none;
+}
+
+.repairHeader {
+  border-bottom: 1px solid var(--border);
+}
+
+.repairDiff {
+  min-height: 0;
+  padding: 0 1.5rem;
+  overflow: auto;
+}
+
+.repairFooter {
+  flex-direction: row;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+}
+
+.diffShell {
+  position: relative;
+  min-height: 16rem;
+}
+
+.diffRenderer {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.diffHost {
+  display: block;
+  min-width: 0;
+}
+
+.diffSkeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.diffRenderer:not(:empty) + .diffSkeleton {
+  display: none;
+}
+
+@keyframes busyPulse {
+  from {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 900px) {
+  .tool {
+    padding-top: 2rem;
+  }
+
+  .editorGrid {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .editorPanel {
+    min-height: 34rem;
+  }
+
+  .editorPanel + .editorPanel {
+    border-inline-start: 0;
+    border-top: 1px solid var(--viewer-line-strong);
+  }
+
+  .pathControl code {
+    max-width: 28vw;
+  }
+}
+
+@media (max-width: 680px) {
+  .tool {
+    padding: 1.5rem 0 3rem;
+  }
+
+  .workspace {
+    width: 100%;
+  }
+
+  .workbench {
+    border-inline: 0;
+    border-radius: 0;
+  }
+
+  .toolbar {
+    flex-wrap: nowrap;
+    gap: 0.45rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .toolbarGroup,
+  .toolbarGroup:last-child {
+    flex: 0 0 auto;
+    padding-inline-end: 0.45rem;
+    margin-inline-start: 0;
+  }
+
+  .searchRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchInput {
+    width: 100%;
+  }
+
+  .pathControl {
+    justify-content: space-between;
+    margin-inline-start: 0;
+  }
+
+  .pathControl code {
+    max-width: calc(100vw - 5rem);
+  }
+
+  .warning,
+  .errorBar {
+    align-items: flex-start;
+  }
+
+  .errorBar {
+    flex-wrap: wrap;
+  }
+
+  .errorBar span {
+    width: calc(100% - 1.75rem);
+  }
+
+  .errorBar button {
+    margin-inline-start: 1.65rem;
+  }
+
+  .editorPanel {
+    min-height: 31rem;
+  }
+
+  .statusBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .statusSecondary {
+    align-items: flex-start;
+  }
+
+  .repairSheet {
+    width: 100%;
+    max-height: 92svh;
+    border-radius: 1rem 1rem 0 0;
+  }
+
+  .repairDiff {
+    padding-inline: 0.75rem;
+  }
+
+  .repairFooter {
+    flex-direction: row;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .busyDot {
+    animation: none;
+  }
+}

@@ -65,6 +65,12 @@ const toolSections: ToolSection[] = [
     label: '文本工具',
     tools: [
       {
+        cover: '/tools/json-viewer.svg',
+        description: '双栏查看与编辑 JSON，支持美化、压缩和修复。',
+        href: '/tools/json-viewer',
+        name: 'JSON Viewer',
+      },
+      {
         cover: '/tools/json-convert.svg',
         description: '转义或还原 JSON 字符串，支持实时预览。',
         href: '/tools/json-convert',

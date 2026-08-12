@@ -34,6 +34,11 @@ const staticPages: MetadataRoute.Sitemap = [
   {
     changeFrequency: 'monthly',
     priority: 0.6,
+    url: new URL('/tools/json-viewer', siteUrl).toString(),
+  },
+  {
+    changeFrequency: 'monthly',
+    priority: 0.6,
     url: new URL('/tools/text-diff', siteUrl).toString(),
   },
 ]
