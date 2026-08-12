@@ -3,7 +3,7 @@ title: Plasmo使用shadcn/ui
 description: "从零开始在 Plasmo 浏览器插件中接入 Tailwind CSS 与 shadcn/ui。"
 date: 2024-08-30
 category: "浏览器插件"
-cover: "/blog/plasmo-with-shadcn-ui/popup-shadcnui.png"
+cover: "/blog/images/popup-shadcnui.png"
 published: true
 tags: ['plasmo', 'react', '浏览器插件', '编程小技巧', 'tailwindcss']
 path: 'plasmo-with-shadcn-ui'
@@ -27,7 +27,7 @@ pnpm create plasmo --with-src
 创建后的文件目录如下：
 
 <div className="w-[40%] mx-auto">
-![init-dir](/blog/plasmo-with-shadcn-ui/init-dir.png)
+![init-dir](/blog/images/init-dir.png)
 </div>
 
 删除无用的文件，background、newtab不需要。newtab、options和popup本质上都是插件页，引入tailwindcss的方式是一样的，但是options和popup这两个页面比较常用，所以都保留。
@@ -321,7 +321,7 @@ export default IndexPopup
 发现正常展示
 
 <div className="w-[40%] mx-auto">
-![popup-shadcnui](/blog/plasmo-with-shadcn-ui/popup-shadcnui.png)
+![popup-shadcnui](/blog/images/popup-shadcnui.png)
 </div>
 
 但如果直接在CSUI中引入使用的话，会发现展示并不正常
