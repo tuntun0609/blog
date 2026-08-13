@@ -271,11 +271,11 @@
   font-family: var(--font-sans), sans-serif;
 }
 
-.editorViewport > div:first-child > div {
+.editorViewport > div:first-child > [class~="jse-main"] {
   min-height: 100%;
 }
 
-.editorViewport > div:first-child > div > div {
+.editorViewport > div:first-child > [class~="jse-main"] > div {
   height: 100%;
 }
 
