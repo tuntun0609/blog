@@ -45,6 +45,12 @@ const toolSections: ToolSection[] = [
     label: '图片工具',
     tools: [
       {
+        cover: '/tools/background-removal.svg',
+        description: '在浏览器本地识别主体并导出透明 PNG。',
+        href: '/tools/background-removal',
+        name: '图片背景去除',
+      },
+      {
         cover: '/tools/image-crop.svg',
         description: '在浏览器本地裁剪、旋转并导出图片。',
         href: '/tools/image-crop',

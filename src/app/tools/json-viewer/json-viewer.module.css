@@ -115,8 +115,7 @@
   white-space: nowrap;
 }
 
-.warning,
-.errorBar {
+.warning {
   display: flex;
   gap: 0.65rem;
   align-items: center;
@@ -124,29 +123,15 @@
   padding: 0.55rem 0.8rem;
   font-size: 0.76rem;
   line-height: 1.45;
+  color: color-mix(in oklab, var(--foreground) 84%, #9a6500);
+  background: color-mix(in oklab, #f0b429 10%, var(--background));
   border-bottom: 1px solid var(--viewer-line);
 }
 
-.warning {
-  color: color-mix(in oklab, var(--foreground) 84%, #9a6500);
-  background: color-mix(in oklab, #f0b429 10%, var(--background));
-}
-
-.errorBar {
-  color: var(--destructive);
-  background: color-mix(in oklab, var(--destructive) 7%, var(--background));
-}
-
-.warning svg,
-.errorBar svg {
+.warning svg {
   flex: 0 0 auto;
   width: 1rem;
   height: 1rem;
-}
-
-.errorBar span {
-  flex: 1;
-  min-width: 0;
 }
 
 .editorGrid {
@@ -292,12 +277,6 @@
 
 .editorViewport > div:first-child > div > div {
   height: 100%;
-}
-
-/* Repairs must go through the workbench diff confirmation instead of the
-   editor's direct mutation shortcut. */
-.editorViewport [class~="jse-message"] [class~="jse-actions"] {
-  display: none;
 }
 
 .lockOverlay {
@@ -551,21 +530,8 @@
     max-width: calc(100vw - 5rem);
   }
 
-  .warning,
-  .errorBar {
+  .warning {
     align-items: flex-start;
-  }
-
-  .errorBar {
-    flex-wrap: wrap;
-  }
-
-  .errorBar span {
-    width: calc(100% - 1.75rem);
-  }
-
-  .errorBar button {
-    margin-inline-start: 1.65rem;
   }
 
   .editorPanel {

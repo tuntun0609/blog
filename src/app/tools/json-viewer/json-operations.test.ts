@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { jsonrepair } from 'jsonrepair'
 import {
   formatJsonText,
   getLineAndColumn,
@@ -44,23 +43,6 @@ describe('JSON operations', () => {
       column: 1,
       line: 3,
     })
-  })
-
-  test.each([
-    ["{name: 'Ada'}", '{\n  "name": "Ada"\n}'],
-    ['{"ok":true,}', '{\n  "ok": true\n}'],
-    ['```json\n{"ok":true}\n```', '{\n  "ok": true\n}'],
-    ['{"items":[1,2', '{\n  "items": [\n    1,\n    2\n  ]\n}'],
-    [
-      '{"id":1}\n{"id":2}',
-      '[\n  {\n    "id": 1\n  },\n  {\n    "id": 2\n  }\n]',
-    ],
-  ])('repairs common malformed JSON: %s', (input, expected) => {
-    expect(formatJsonText(jsonrepair(input))).toBe(expected)
-  })
-
-  test('throws when repair cannot infer a valid document', () => {
-    expect(() => jsonrepair('}{}}{{')).toThrow()
   })
 
   test('searches keys and scalar values with stable paths', () => {

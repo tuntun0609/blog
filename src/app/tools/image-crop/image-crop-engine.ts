@@ -1,4 +1,5 @@
 import type { CropperSelection } from 'cropperjs'
+import { prepareBrowserImage } from '@/lib/browser-image'
 import type {
   CropRectangle,
   Dimensions,
@@ -6,27 +7,7 @@ import type {
 } from './image-crop-model'
 import { getOutputMimeType, mapCropToCanvasSource } from './image-crop-model'
 
-export const ACCEPTED_IMAGE_TYPES =
-  'image/jpeg,image/png,image/webp,image/avif,image/gif,image/bmp,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp'
-
-const ACCEPTED_MIME_TYPES = new Set([
-  'image/avif',
-  'image/bmp',
-  'image/gif',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/x-ms-bmp',
-])
-
-const ACCEPTED_EXTENSIONS = /\.(?:avif|bmp|gif|jpe?g|png|webp)$/i
-const GIF_EXTENSION = /\.gif$/i
-const WEBP_EXTENSION = /\.webp$/i
-const WEBP_ANIMATION_FLAG = 0x02
-const WEBP_EXTENDED_HEADER = 'VP8X'
-const WEBP_RIFF_HEADER_SIZE = 12
-const WEBP_RIFF_SIGNATURE = 'RIFF'
-const WEBP_SIGNATURE = 'WEBP'
+export { ACCEPTED_IMAGE_TYPES } from '@/lib/browser-image'
 
 export interface PreparedImage {
   dimensions: Dimensions
@@ -58,113 +39,8 @@ const canvasToBlob = (
     )
   })
 
-const loadImage = async (source: Blob): Promise<HTMLImageElement> => {
-  const url = URL.createObjectURL(source)
-  const image = new Image()
-  image.decoding = 'async'
-  image.src = url
-
-  try {
-    await image.decode()
-  } catch {
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve()
-      image.onerror = () =>
-        reject(new Error('图片已损坏或浏览器不支持该格式。'))
-    })
-  } finally {
-    URL.revokeObjectURL(url)
-  }
-
-  if (!(image.naturalWidth > 0 && image.naturalHeight > 0)) {
-    throw new Error('图片没有可读取的画面尺寸。')
-  }
-
-  return image
-}
-
-const readAscii = (bytes: Uint8Array, start: number, end: number): string =>
-  String.fromCharCode(...bytes.subarray(start, end))
-
-export const isAnimatedWebP = async (file: File): Promise<boolean> => {
-  const isWebP =
-    file.type.toLowerCase() === 'image/webp' || WEBP_EXTENSION.test(file.name)
-  if (!isWebP || file.size < WEBP_RIFF_HEADER_SIZE + 9) {
-    return false
-  }
-
-  const header = new Uint8Array(
-    await file.slice(0, WEBP_RIFF_HEADER_SIZE + 9).arrayBuffer()
-  )
-  const hasWebPSignature =
-    readAscii(header, 0, 4) === WEBP_RIFF_SIGNATURE &&
-    readAscii(header, 8, 12) === WEBP_SIGNATURE
-  if (!hasWebPSignature) {
-    return false
-  }
-
-  const isExtendedWebP =
-    readAscii(header, WEBP_RIFF_HEADER_SIZE, WEBP_RIFF_HEADER_SIZE + 4) ===
-    WEBP_EXTENDED_HEADER
-  const hasAnimationFlag =
-    Math.floor(header[20] / WEBP_ANIMATION_FLAG) % 2 === 1
-  return isExtendedWebP && hasAnimationFlag
-}
-
-const freezeFirstFrame = async (
-  file: File,
-  image: HTMLImageElement
-): Promise<Blob> => {
-  const canvas = document.createElement('canvas')
-  canvas.width = image.naturalWidth
-  canvas.height = image.naturalHeight
-  const context = canvas.getContext('2d')
-  if (!context) {
-    throw new Error('浏览器无法创建图片画布。')
-  }
-
-  if ('createImageBitmap' in window) {
-    try {
-      const bitmap = await createImageBitmap(file)
-      context.drawImage(bitmap, 0, 0)
-      bitmap.close()
-      return await canvasToBlob(canvas, 'image/png')
-    } catch {
-      context.drawImage(image, 0, 0)
-      return await canvasToBlob(canvas, 'image/png')
-    }
-  }
-
-  context.drawImage(image, 0, 0)
-  return await canvasToBlob(canvas, 'image/png')
-}
-
-export const isAcceptedImageFile = (file: File): boolean =>
-  ACCEPTED_MIME_TYPES.has(file.type.toLowerCase()) ||
-  ACCEPTED_EXTENSIONS.test(file.name)
-
-export const prepareImageFile = async (file: File): Promise<PreparedImage> => {
-  if (!isAcceptedImageFile(file)) {
-    throw new Error('请选择 JPEG、PNG、WebP、AVIF、GIF 或 BMP 图片。')
-  }
-
-  const image = await loadImage(file)
-  const isGif =
-    file.type.toLowerCase() === 'image/gif' || GIF_EXTENSION.test(file.name)
-  const frozenAnimation = isGif || (await isAnimatedWebP(file))
-  const sourceBlob = frozenAnimation
-    ? await freezeFirstFrame(file, image)
-    : file
-
-  return {
-    dimensions: {
-      height: image.naturalHeight,
-      width: image.naturalWidth,
-    },
-    frozenAnimation,
-    sourceBlob,
-  }
-}
+export const prepareImageFile = async (file: File): Promise<PreparedImage> =>
+  await prepareBrowserImage(file)
 
 const createOutputCanvas = ({
   height,

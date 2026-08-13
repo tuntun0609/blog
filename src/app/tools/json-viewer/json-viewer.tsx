@@ -4,8 +4,6 @@ import {
   AlertTriangleIcon,
   BracesIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   ChevronUpIcon,
   ClipboardIcon,
   Code2Icon,
@@ -13,12 +11,13 @@ import {
   EraserIcon,
   FileJsonIcon,
   FolderOpenIcon,
+  ListChevronsDownUpIcon,
+  ListChevronsUpDownIcon,
   Redo2Icon,
   RotateCcwIcon,
   SearchIcon,
   SparklesIcon,
   Undo2Icon,
-  WrenchIcon,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useTheme } from 'next-themes'
@@ -45,14 +44,6 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Tooltip,
@@ -60,7 +51,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useIsMobile } from '@/hooks/use-mobile'
 import { copyTextWithFallback } from './json-clipboard'
 import { clearJsonDraft, persistJsonDraft, readJsonDraft } from './json-draft'
 import type { JsonEditorPaneHandle } from './json-editor-pane'
@@ -88,11 +78,6 @@ const JsonEditorPane = dynamic(
   () => import('./json-editor-pane').then((module) => module.JsonEditorPane),
   { loading: () => <EditorSkeleton />, ssr: false }
 )
-const RepairDiff = dynamic(
-  () => import('./repair-diff').then((module) => module.RepairDiff),
-  { loading: () => <EditorSkeleton />, ssr: false }
-)
-
 const SAMPLE_TEXT = `{
   "requestId": 9123372036854000123,
   "service": "catalog-api",
@@ -120,7 +105,7 @@ const COPY_RESET_MS = 1600
 const ACCEPTED_EXTENSIONS = ['.json', '.jsonl', '.txt'] as const
 const FILE_EXTENSION_PATTERN = /\.[^.]+$/u
 
-type OperationType = 'beautify' | 'minify' | 'repair' | 'search'
+type OperationType = 'beautify' | 'minify' | 'search'
 type DraftStatus = 'idle' | 'restored' | 'saved' | 'skipped' | 'unavailable'
 
 interface PendingWorkerRequest {
@@ -263,9 +248,7 @@ interface ViewerToolbarProps {
   onImport: () => void
   onMinify: () => void
   onRedo: () => void
-  onRepair: () => void
   onUndo: () => void
-  parseError: JsonOperationError | null
 }
 
 function ViewerToolbar({
@@ -283,9 +266,7 @@ function ViewerToolbar({
   onImport,
   onMinify,
   onRedo,
-  onRepair,
   onUndo,
-  parseError,
 }: ViewerToolbarProps) {
   const isProcessing = busyOperation !== null
 
@@ -362,16 +343,6 @@ function ViewerToolbar({
         >
           <Code2Icon data-icon="inline-start" />
           压缩
-        </ToolbarButton>
-        <ToolbarButton
-          disabled={!hasContent || isProcessing}
-          label="预览并确认 JSON 修复"
-          onClick={onRepair}
-          size="sm"
-          variant={parseError ? 'secondary' : 'ghost'}
-        >
-          <WrenchIcon data-icon="inline-start" />
-          修复
         </ToolbarButton>
       </div>
 
@@ -499,48 +470,26 @@ function SearchControls({
 }
 
 interface DocumentNoticesProps {
-  busyOperation: OperationType | null
   documentBytes: number
   isLargeDocument: boolean
-  onRepair: () => void
-  parseError: JsonOperationError | null
 }
 
 function DocumentNotices({
-  busyOperation,
   documentBytes,
   isLargeDocument,
-  onRepair,
-  parseError,
 }: DocumentNoticesProps) {
-  return (
-    <>
-      {isLargeDocument ? (
-        <div className={styles.warning} role="status">
-          <AlertTriangleIcon aria-hidden="true" />
-          <span>
-            当前文档为 {formatBytes(documentBytes)}
-            。双面板会继续运行，但解析、搜索和节点展开可能需要更久；草稿不会写入浏览器存储。
-          </span>
-        </div>
-      ) : null}
+  if (!isLargeDocument) {
+    return null
+  }
 
-      {parseError ? (
-        <div className={styles.errorBar} role="alert">
-          <AlertTriangleIcon aria-hidden="true" />
-          <span>{getErrorDescription(parseError)}</span>
-          <Button
-            disabled={busyOperation !== null}
-            onClick={onRepair}
-            size="xs"
-            variant="secondary"
-          >
-            <WrenchIcon data-icon="inline-start" />
-            预览修复
-          </Button>
-        </div>
-      ) : null}
-    </>
+  return (
+    <div className={styles.warning} role="status">
+      <AlertTriangleIcon aria-hidden="true" />
+      <span>
+        当前文档为 {formatBytes(documentBytes)}
+        。双面板会继续运行，但解析、搜索和节点展开可能需要更久；草稿不会写入浏览器存储。
+      </span>
+    </div>
   )
 }
 
@@ -607,19 +556,21 @@ function EditorGrid({
               aria-label="折叠全部节点"
               disabled={!hasContent}
               onClick={onCollapseTree}
-              size="icon-xs"
+              size="xs"
               variant="ghost"
             >
-              <ChevronLeftIcon />
+              <ListChevronsDownUpIcon data-icon="inline-start" />
+              全部折叠
             </Button>
             <Button
               aria-label="展开全部节点"
               disabled={!hasContent}
               onClick={onExpandTree}
-              size="icon-xs"
+              size="xs"
               variant="ghost"
             >
-              <ChevronRightIcon />
+              <ListChevronsUpDownIcon data-icon="inline-start" />
+              全部展开
             </Button>
             <Badge variant={parseError ? 'outline' : 'secondary'}>
               {parseError ? '已锁定' : '可编辑'}
@@ -641,7 +592,7 @@ function EditorGrid({
             <div className={styles.lockOverlay}>
               <FileJsonIcon aria-hidden="true" />
               <strong>树形视图保留上次有效结果</strong>
-              <span>修正源码或确认修复后即可继续编辑。</span>
+              <span>修正源码后即可继续编辑。</span>
             </div>
           ) : null}
         </div>
@@ -684,62 +635,6 @@ function ViewerStatusBar({
   )
 }
 
-interface RepairPreviewSheetProps {
-  isMobile: boolean
-  modified: string | null
-  onApply: () => void
-  onClose: () => void
-  onOpenChange: (open: boolean) => void
-  original: string
-  themeType: 'dark' | 'light'
-}
-
-function RepairPreviewSheet({
-  isMobile,
-  modified,
-  onApply,
-  onClose,
-  onOpenChange,
-  original,
-  themeType,
-}: RepairPreviewSheetProps) {
-  return (
-    <Sheet onOpenChange={onOpenChange} open={modified !== null}>
-      <SheetContent
-        className={styles.repairSheet}
-        showCloseButton
-        side={isMobile ? 'bottom' : 'right'}
-      >
-        <SheetHeader className={styles.repairHeader}>
-          <SheetTitle>确认 JSON 修复</SheetTitle>
-          <SheetDescription>
-            检查每一处变化。只有点击“采用修复”后，当前源码才会被替换。
-          </SheetDescription>
-        </SheetHeader>
-        <div className={styles.repairDiff}>
-          {modified === null ? null : (
-            <RepairDiff
-              modified={modified}
-              original={original}
-              themeType={themeType}
-              viewMode={isMobile ? 'stacked' : 'split'}
-            />
-          )}
-        </div>
-        <SheetFooter className={styles.repairFooter}>
-          <Button onClick={onClose} variant="outline">
-            取消
-          </Button>
-          <Button onClick={onApply}>
-            <WrenchIcon data-icon="inline-start" />
-            采用修复
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  )
-}
-
 export function JsonViewer() {
   const [history, dispatchHistory] = useReducer(
     jsonHistoryReducer,
@@ -752,7 +647,6 @@ export function JsonViewer() {
   const [fileName, setFileName] = useState('未命名.json')
   const [draftStatus, setDraftStatus] = useState<DraftStatus>('idle')
   const [busyOperation, setBusyOperation] = useState<OperationType | null>(null)
-  const [repairPreview, setRepairPreview] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [searchIndex, setSearchIndex] = useState(0)
@@ -769,7 +663,6 @@ export function JsonViewer() {
   const requestIdRef = useRef(0)
   const copiedResetRef = useRef<number | null>(null)
   const textRef = useRef(history.text)
-  const isMobile = useIsMobile()
   const { resolvedTheme } = useTheme()
   const themeType = resolvedTheme === 'dark' ? 'dark' : 'light'
   const documentBytes = useMemo(() => getUtf8Size(history.text), [history.text])
@@ -968,51 +861,6 @@ export function JsonViewer() {
     },
     [commitText, hasContent, runWorker]
   )
-
-  const openRepairPreview = useCallback(async () => {
-    if (!hasContent) {
-      return
-    }
-    if (!parseError) {
-      setStatusMessage('当前 JSON 语法有效，不需要修复。')
-      return
-    }
-    setBusyOperation('repair')
-    setStatusMessage('正在生成修复建议…')
-    try {
-      const response = await runWorker({
-        text: textRef.current,
-        type: 'repair',
-      })
-      if (!response.ok) {
-        throw createWorkerError(response.error)
-      }
-      if (response.type !== 'repair') {
-        throw new Error('后台处理返回了不匹配的结果。')
-      }
-      if (response.text === textRef.current) {
-        setStatusMessage('当前 JSON 不需要修复。')
-        return
-      }
-      setRepairPreview(response.text)
-      setStatusMessage('修复建议已准备，确认后才会替换原文。')
-    } catch (error) {
-      setStatusMessage(
-        error instanceof Error ? error.message : '无法修复当前内容。'
-      )
-    } finally {
-      setBusyOperation(null)
-    }
-  }, [hasContent, parseError, runWorker])
-
-  const applyRepair = useCallback(() => {
-    if (repairPreview === null) {
-      return
-    }
-    commitText(repairPreview)
-    setRepairPreview(null)
-    setStatusMessage('已采用修复结果，可使用撤销恢复原文。')
-  }, [commitText, repairPreview])
 
   const runSearch = useCallback(async () => {
     const query = searchQuery.trim()
@@ -1242,14 +1090,6 @@ export function JsonViewer() {
   const expandTree = useCallback(() => {
     treeEditorRef.current?.expandAll()
   }, [])
-  const closeRepairPreview = useCallback(() => {
-    setRepairPreview(null)
-  }, [])
-  const handleRepairSheetChange = useCallback((open: boolean) => {
-    if (!open) {
-      setRepairPreview(null)
-    }
-  }, [])
   const validityLabel = getValidityLabel(parseError, hasContent)
 
   useEffect(() => {
@@ -1315,9 +1155,7 @@ export function JsonViewer() {
               onImport={openFilePicker}
               onMinify={minifyDocument}
               onRedo={redo}
-              onRepair={openRepairPreview}
               onUndo={undo}
-              parseError={parseError}
             />
 
             <SearchControls
@@ -1337,11 +1175,8 @@ export function JsonViewer() {
             />
 
             <DocumentNotices
-              busyOperation={busyOperation}
               documentBytes={documentBytes}
               isLargeDocument={isLargeDocument}
-              onRepair={openRepairPreview}
-              parseError={parseError}
             />
 
             <EditorGrid
@@ -1382,16 +1217,6 @@ export function JsonViewer() {
           {statusMessage}
           {copied ? ` ${copied === 'document' ? '文档' : '路径'}已复制。` : ''}
         </span>
-
-        <RepairPreviewSheet
-          isMobile={isMobile}
-          modified={repairPreview}
-          onApply={applyRepair}
-          onClose={closeRepairPreview}
-          onOpenChange={handleRepairSheetChange}
-          original={history.text}
-          themeType={themeType}
-        />
       </section>
     </TooltipProvider>
   )

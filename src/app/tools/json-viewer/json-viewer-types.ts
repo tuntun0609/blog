@@ -29,7 +29,7 @@ export type JsonWorkerRequest =
   | {
       id: number
       text: string
-      type: 'beautify' | 'minify' | 'repair'
+      type: 'beautify' | 'minify'
     }
   | {
       id: number
@@ -43,7 +43,7 @@ export type JsonWorkerSuccess =
       id: number
       ok: true
       text: string
-      type: 'beautify' | 'minify' | 'repair'
+      type: 'beautify' | 'minify'
     }
   | {
       id: number

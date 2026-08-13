@@ -1,6 +1,5 @@
 /// <reference lib="webworker" />
 
-import { jsonrepair } from 'jsonrepair'
 import {
   formatJsonText,
   normalizeJsonError,
@@ -25,26 +24,6 @@ const handleRequest = (request: JsonWorkerRequest): JsonWorkerResponse => {
         id: request.id,
         ok: true,
         text: formatJsonText(request.text, 0),
-        type: request.type,
-      }
-    }
-
-    if (request.type === 'repair') {
-      const repaired = jsonrepair(request.text)
-      const parsed = parseJsonText(repaired)
-      if (!parsed.ok) {
-        return {
-          error: parsed.error,
-          id: request.id,
-          ok: false,
-          type: request.type,
-        }
-      }
-
-      return {
-        id: request.id,
-        ok: true,
-        text: formatJsonText(repaired),
         type: request.type,
       }
     }
