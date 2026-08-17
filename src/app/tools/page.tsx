@@ -57,6 +57,12 @@ const toolSections: ToolSection[] = [
         name: '图片裁剪',
       },
       {
+        cover: '/tools/color-palette.svg',
+        description: '从本地图片提取主题色，并复制 HEX 或 CSS 变量。',
+        href: '/tools/color-palette',
+        name: '图片主题色提取',
+      },
+      {
         cover: '/tools/openai-verify.svg',
         description: '前往 OpenAI 的 Verify 页面。',
         external: true,

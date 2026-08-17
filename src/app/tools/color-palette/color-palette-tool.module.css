@@ -1,0 +1,654 @@
+.tool {
+  --palette-canvas: color-mix(
+    in oklab,
+    var(--palette-primary) 4%,
+    var(--background)
+  );
+  --palette-surface: var(--background);
+  --palette-line: color-mix(in oklab, var(--foreground) 12%, transparent);
+  --palette-line-strong: color-mix(
+    in oklab,
+    var(--foreground) 24%,
+    transparent
+  );
+  --palette-muted: color-mix(in oklab, var(--foreground) 64%, transparent);
+
+  display: flex;
+  flex-direction: column;
+  height: calc(100svh - var(--site-header-height));
+  overflow: hidden;
+  color: var(--foreground);
+  background:
+    radial-gradient(
+      circle at 12% 10%,
+      color-mix(in oklab, var(--palette-primary) 10%, transparent),
+      transparent 32rem
+    ),
+    radial-gradient(
+      circle at 92% 88%,
+      color-mix(in oklab, var(--palette-secondary) 8%, transparent),
+      transparent 34rem
+    ),
+    var(--palette-canvas);
+  transition: background-color var(--duration-reveal) var(--ease-out);
+}
+
+.fileInput,
+.srStatus {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0 0 0 0);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0 0 0 0);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(100% - 2rem, 44rem);
+  height: 100%;
+  min-height: 0;
+  padding-block: 2rem;
+  margin-inline: auto;
+  overflow-y: auto;
+}
+
+.workspaceHeader h1 {
+  margin: 0;
+  font-size: clamp(2.1rem, 5vw, 3.4rem);
+  font-weight: 740;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.workspaceHeader p {
+  max-width: 38rem;
+  margin: 1rem auto 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--palette-muted);
+  text-wrap: balance;
+}
+
+.dropButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-2xl);
+}
+
+.dropButton:disabled {
+  cursor: wait;
+}
+
+.dropButton:focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--ring) 50%, transparent);
+  outline-offset: 4px;
+}
+
+.dropZone {
+  min-height: 19rem;
+  padding: 2.75rem 1.5rem;
+  background: color-mix(in oklab, var(--palette-surface) 96%, transparent);
+  border: 1px dashed var(--palette-line-strong);
+  border-radius: var(--radius-2xl);
+  transition:
+    border-color var(--duration-ui) var(--ease-out),
+    background-color var(--duration-ui) var(--ease-out),
+    transform var(--duration-ui) var(--ease-out);
+}
+
+.dropButton:hover .dropZone,
+.dropButton:focus-visible .dropZone,
+.tool[data-dragging] .dropZone {
+  background: color-mix(
+    in oklab,
+    var(--palette-primary) 4%,
+    var(--palette-surface)
+  );
+  border-color: var(--palette-primary);
+}
+
+.dropButton:active .dropZone {
+  transform: scale(0.992);
+}
+
+.pickFileLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding-inline: 1.15rem;
+  font-weight: 650;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-radius: var(--radius-2xl);
+}
+
+.dropZone [data-slot="empty-content"] > span:last-child {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.spinner {
+  animation: spin 900ms linear infinite;
+}
+
+.emptyError,
+.errorMessage {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--destructive);
+  background: color-mix(in oklab, var(--destructive) 7%, var(--background));
+  border: 1px solid color-mix(in oklab, var(--destructive) 22%, transparent);
+  border-radius: var(--radius-xl);
+}
+
+.emptyError {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0 0;
+  text-align: center;
+}
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  width: min(100% - 3rem, 82rem);
+  height: 100%;
+  min-height: 0;
+  padding-block: 0.75rem 1rem;
+  margin-inline: auto;
+}
+
+.workspaceHeader {
+  display: flex;
+  gap: 0.75rem;
+  align-items: end;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.workspaceActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.workspaceActions [data-slot="button"] {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+}
+
+.editor {
+  display: grid;
+  flex: 1;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 25rem);
+  min-height: 0;
+  overflow: auto;
+  background: var(--palette-surface);
+  border: 1px solid var(--palette-line);
+  border-radius: var(--radius-2xl);
+}
+
+.previewPanel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 1rem;
+  background: color-mix(in oklab, var(--palette-primary) 3%, var(--background));
+  border-inline-end: 1px solid var(--palette-line);
+}
+
+.previewToolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.previewToolbar strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.previewToolbar span {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  color: var(--palette-muted);
+}
+
+.imageStage {
+  position: relative;
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 0;
+  padding: 1.25rem;
+  overflow: hidden;
+  background: var(--palette-surface);
+  border-radius: var(--radius-xl);
+  isolation: isolate;
+}
+
+.previewImage {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 66svh;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+}
+
+.processingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #fff;
+  text-align: center;
+  background: rgb(13 14 18 / 82%);
+}
+
+.processingOverlay > svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  animation: spin 900ms linear infinite;
+}
+
+.processingOverlay strong {
+  font-size: 1rem;
+}
+
+.processingOverlay span {
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 70%);
+}
+
+.sourceNote {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--palette-muted);
+}
+
+.sourceNote svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.palettePanel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.palettePanelBody {
+  min-height: 0;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.palettePanelFooter {
+  flex: 0 0 auto;
+  padding: 1rem 1.25rem 1.25rem;
+  background: var(--palette-surface);
+  border-top: 1px solid var(--palette-line);
+}
+
+.resultHeader {
+  display: flex;
+  gap: 1rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.resultHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.resultHeader p {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: var(--palette-muted);
+}
+
+.resultHeader > span {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-radius: 999px;
+}
+
+.paletteRibbon,
+.palettePlaceholder {
+  height: 5.5rem;
+  margin-top: 1.25rem;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+}
+
+.paletteRibbon {
+  display: flex;
+  background: var(--muted);
+  animation: revealPalette var(--duration-reveal) var(--ease-out) both;
+}
+
+.paletteRibbon span {
+  flex-basis: 0;
+  min-width: 0.65rem;
+}
+
+.palettePlaceholder {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  background: var(--muted);
+}
+
+.palettePlaceholder svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.countField {
+  padding-block: 1.4rem;
+  border-bottom: 1px solid var(--palette-line);
+}
+
+.colorSlider > div {
+  min-height: 2.75rem;
+}
+
+.fieldHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fieldHeader output {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--palette-muted);
+}
+
+.errorMessage {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  margin-top: 1rem;
+}
+
+.paletteGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.colorCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 7.4rem;
+  padding: 0.8rem;
+  font: inherit;
+  text-align: left;
+  cursor: copy;
+  border: 0;
+  border-radius: var(--radius-xl);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.colorCard:hover {
+  box-shadow: 0 8px 18px rgb(0 0 0 / 14%);
+  transform: translateY(-2px);
+}
+
+.colorCard:active {
+  transform: scale(0.985);
+}
+
+.colorCard:focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--ring) 60%, transparent);
+  outline-offset: 3px;
+}
+
+.colorCardTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  font-weight: 650;
+  opacity: 0.76;
+}
+
+.colorCardTopline svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.colorCard strong {
+  margin-top: auto;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.98rem;
+  letter-spacing: -0.02em;
+}
+
+.colorShare {
+  margin-top: 0.25rem;
+  font-size: 0.66rem;
+  opacity: 0.72;
+}
+
+.copyAllButton {
+  width: 100%;
+}
+
+.dropOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  pointer-events: none;
+  background: color-mix(in oklab, var(--background) 82%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.dropOverlay > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 34rem);
+  min-height: 17rem;
+  color: var(--foreground);
+  text-align: center;
+  background: color-mix(in oklab, var(--palette-primary) 6%, var(--background));
+  border: 1px dashed var(--palette-primary);
+  border-radius: var(--radius-2xl);
+}
+
+.dropOverlay svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--palette-primary);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes revealPalette {
+  from {
+    opacity: 0.35;
+    clip-path: inset(0 100% 0 0 round var(--radius-xl));
+  }
+
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0 round var(--radius-xl));
+  }
+}
+
+@media (max-width: 960px) {
+  .workspace {
+    width: min(100% - 2rem, 82rem);
+  }
+
+  .editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .previewPanel {
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--palette-line);
+  }
+
+  .imageStage {
+    min-height: 30rem;
+  }
+
+  .palettePanelBody {
+    padding: 1.5rem;
+  }
+
+  .palettePanelFooter {
+    padding: 1rem 1.5rem 1.5rem;
+  }
+
+  .paletteGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .emptyState {
+    padding-block: 3rem 4rem;
+  }
+
+  .dropZone {
+    min-height: 17rem;
+    padding-inline: 1rem;
+  }
+
+  .workspace {
+    padding-block: 0.75rem 1.25rem;
+  }
+
+  .workspaceHeader {
+    align-items: start;
+  }
+
+  .workspaceActions > :first-child {
+    width: 2.5rem;
+    padding-inline: 0;
+    overflow: hidden;
+    font-size: 0;
+  }
+
+  .workspaceActions > :first-child svg {
+    margin: 0;
+  }
+
+  .previewToolbar {
+    align-items: start;
+  }
+
+  .previewToolbar span {
+    display: none;
+  }
+
+  .imageStage {
+    min-height: 22rem;
+    padding: 0.75rem;
+  }
+
+  .palettePanelBody {
+    padding: 1.15rem;
+  }
+
+  .palettePanelFooter {
+    padding: 1rem 1.15rem 1.15rem;
+  }
+
+  .paletteGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paletteRibbon,
+  .processingOverlay > svg,
+  .spinner {
+    animation: none;
+  }
+
+  .colorCard,
+  .dropZone {
+    transition: none;
+  }
+}
