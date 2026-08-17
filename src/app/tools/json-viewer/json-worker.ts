@@ -1,11 +1,6 @@
 /// <reference lib="webworker" />
 
-import {
-  formatJsonText,
-  normalizeJsonError,
-  parseJsonText,
-  searchJson,
-} from './json-operations'
+import { formatJsonText, normalizeJsonError } from './json-operations'
 import type { JsonWorkerRequest, JsonWorkerResponse } from './json-viewer-types'
 
 const handleRequest = (request: JsonWorkerRequest): JsonWorkerResponse => {
@@ -28,31 +23,10 @@ const handleRequest = (request: JsonWorkerRequest): JsonWorkerResponse => {
       }
     }
 
-    if (!('query' in request)) {
-      return {
-        error: { message: '无法识别 JSON 操作。' },
-        id: request.id,
-        ok: false,
-        type: request.type,
-      }
-    }
-
-    const parsed = parseJsonText(request.text)
-    if (!parsed.ok) {
-      return {
-        error: parsed.error,
-        id: request.id,
-        ok: false,
-        type: request.type,
-      }
-    }
-
-    const search = searchJson(parsed.json, request.query)
     return {
+      error: { message: '无法识别 JSON 操作。' },
       id: request.id,
-      ok: true,
-      results: search.results,
-      truncated: search.truncated,
+      ok: false,
       type: request.type,
     }
   } catch (error) {

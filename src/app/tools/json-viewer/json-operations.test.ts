@@ -3,8 +3,6 @@ import {
   formatJsonText,
   getLineAndColumn,
   parseJsonText,
-  searchJson,
-  stringifyJsonPath,
 } from './json-operations'
 
 describe('JSON operations', () => {
@@ -45,35 +43,6 @@ describe('JSON operations', () => {
     })
   })
 
-  test('searches keys and scalar values with stable paths', () => {
-    const parsed = parseJsonText(
-      '{"users":[{"display name":"Ada"},{"display name":"Lin"}]}'
-    )
-    expect(parsed.ok).toBe(true)
-    if (!parsed.ok) {
-      return
-    }
-
-    const { results, truncated } = searchJson(parsed.json, 'ada')
-    expect(truncated).toBe(false)
-    expect(results).toEqual([
-      {
-        field: 'value',
-        path: ['users', 0, 'display name'],
-        preview: 'Ada',
-      },
-    ])
-    expect(stringifyJsonPath(results[0].path)).toBe(
-      '$.users[0]["display name"]'
-    )
-  })
-
-  test('caps search result counts', () => {
-    const { results, truncated } = searchJson(['a', 'a', 'a'], 'a', 2)
-    expect(results).toHaveLength(2)
-    expect(truncated).toBe(true)
-  })
-
   test('processes a document larger than ten MiB without losing panels data', () => {
     const payload = '数'.repeat(4 * 1024 * 1024)
     const input = `{"payload":"${payload}"}`
@@ -83,11 +52,5 @@ describe('JSON operations', () => {
     expect(new Blob([input]).size).toBeGreaterThan(10 * 1024 * 1024)
     expect(parsed.ok).toBe(true)
     expect(formatJsonText(formatted, 0)).toBe(input)
-    if (parsed.ok) {
-      expect(searchJson(parsed.json, '数数数', 1)).toEqual({
-        results: [{ field: 'value', path: ['payload'], preview: payload }],
-        truncated: false,
-      })
-    }
   })
 })

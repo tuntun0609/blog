@@ -1,5 +1,3 @@
-export type JsonPath = Array<number | string>
-
 export interface JsonOperationError {
   column?: number
   line?: number
@@ -19,39 +17,18 @@ export interface JsonParseFailure {
 
 export type JsonParseResult = JsonParseFailure | JsonParseSuccess
 
-export interface SearchResult {
-  field: 'key' | 'value'
-  path: JsonPath
-  preview: string
+export interface JsonWorkerRequest {
+  id: number
+  text: string
+  type: 'beautify' | 'minify'
 }
 
-export type JsonWorkerRequest =
-  | {
-      id: number
-      text: string
-      type: 'beautify' | 'minify'
-    }
-  | {
-      id: number
-      query: string
-      text: string
-      type: 'search'
-    }
-
-export type JsonWorkerSuccess =
-  | {
-      id: number
-      ok: true
-      text: string
-      type: 'beautify' | 'minify'
-    }
-  | {
-      id: number
-      ok: true
-      results: SearchResult[]
-      truncated: boolean
-      type: 'search'
-    }
+export interface JsonWorkerSuccess {
+  id: number
+  ok: true
+  text: string
+  type: 'beautify' | 'minify'
+}
 
 export interface JsonWorkerFailure {
   error: JsonOperationError

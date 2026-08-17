@@ -9,15 +9,19 @@
   color: var(--home-muted);
 }
 
-.footer p,
-.footer div {
+.footer p {
   margin: 0;
 }
 
-.footer div {
+.identity,
+.meta {
   display: flex;
   gap: 1.5rem;
   align-items: center;
+}
+
+.copyright {
+  white-space: nowrap;
 }
 
 .footer a {
@@ -38,7 +42,12 @@
     line-height: 1.7;
   }
 
-  .footer div {
+  .identity {
+    flex-wrap: wrap;
+    gap: 0.4rem 0.9rem;
+  }
+
+  .meta {
     justify-content: space-between;
     margin-top: 0.75rem;
   }

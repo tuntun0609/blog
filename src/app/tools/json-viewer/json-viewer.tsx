@@ -3,8 +3,6 @@
 import {
   AlertTriangleIcon,
   BracesIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
   ClipboardIcon,
   Code2Icon,
   DownloadIcon,
@@ -15,7 +13,6 @@ import {
   ListChevronsUpDownIcon,
   Redo2Icon,
   RotateCcwIcon,
-  SearchIcon,
   SparklesIcon,
   Undo2Icon,
 } from 'lucide-react'
@@ -23,7 +20,6 @@ import dynamic from 'next/dynamic'
 import { useTheme } from 'next-themes'
 import {
   type ChangeEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -31,19 +27,9 @@ import {
   useRef,
   useState,
 } from 'react'
-import type {
-  Content,
-  JSONEditorSelection,
-  OnChangeStatus,
-} from 'vanilla-jsoneditor'
+import type { Content, OnChangeStatus } from 'vanilla-jsoneditor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from '@/components/ui/input-group'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Tooltip,
@@ -60,17 +46,11 @@ import {
   type JsonChangeOrigin,
   jsonHistoryReducer,
 } from './json-history'
-import {
-  formatJsonValue,
-  parseJsonText,
-  stringifyJsonPath,
-} from './json-operations'
+import { formatJsonValue, parseJsonText } from './json-operations'
 import type {
   JsonOperationError,
-  JsonPath,
   JsonWorkerRequest,
   JsonWorkerResponse,
-  SearchResult,
 } from './json-viewer-types'
 import styles from './json-viewer.module.css'
 
@@ -105,7 +85,7 @@ const COPY_RESET_MS = 1600
 const ACCEPTED_EXTENSIONS = ['.json', '.jsonl', '.txt'] as const
 const FILE_EXTENSION_PATTERN = /\.[^.]+$/u
 
-type OperationType = 'beautify' | 'minify' | 'search'
+type OperationType = 'beautify' | 'minify'
 type DraftStatus = 'idle' | 'restored' | 'saved' | 'skipped' | 'unavailable'
 
 interface PendingWorkerRequest {
@@ -131,21 +111,6 @@ const formatBytes = (bytes: number): string => {
 
 const contentToText = (content: Content): string =>
   'text' in content ? content.text : formatJsonValue(content.json)
-
-const getSelectionPath = (
-  selection: JSONEditorSelection | undefined
-): JsonPath | null => {
-  if (!selection || selection.type === 'text') {
-    return null
-  }
-  if ('path' in selection) {
-    return selection.path
-  }
-  if ('focusPath' in selection) {
-    return selection.focusPath
-  }
-  return null
-}
 
 const getErrorDescription = (error: JsonOperationError): string => {
   if (error.line !== undefined && error.column !== undefined) {
@@ -382,93 +347,6 @@ function ViewerToolbar({
   )
 }
 
-interface SearchControlsProps {
-  currentPathLabel: string
-  hasContent: boolean
-  hasSelectedPath: boolean
-  onCopyPath: () => void
-  onNext: () => void
-  onPrevious: () => void
-  onQueryChange: (event: ChangeEvent<HTMLInputElement>) => void
-  onQueryKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => void
-  parseError: JsonOperationError | null
-  query: string
-  resultCount: number
-  resultIndex: number
-  truncated: boolean
-}
-
-function SearchControls({
-  currentPathLabel,
-  hasContent,
-  hasSelectedPath,
-  onCopyPath,
-  onNext,
-  onPrevious,
-  onQueryChange,
-  onQueryKeyDown,
-  parseError,
-  query,
-  resultCount,
-  resultIndex,
-  truncated,
-}: SearchControlsProps) {
-  return (
-    <div className={styles.searchRow}>
-      <InputGroup className={styles.searchInput}>
-        <InputGroupAddon>
-          <SearchIcon aria-hidden="true" />
-        </InputGroupAddon>
-        <InputGroupInput
-          aria-label="搜索 JSON 键和值"
-          disabled={!hasContent || Boolean(parseError)}
-          onChange={onQueryChange}
-          onKeyDown={onQueryKeyDown}
-          placeholder="搜索键和值，按 Enter"
-          value={query}
-        />
-        <InputGroupAddon align="inline-end">
-          {resultCount > 0 ? (
-            <span className={styles.searchCount}>
-              {resultIndex + 1}/{resultCount}
-              {truncated ? '+' : ''}
-            </span>
-          ) : null}
-          <InputGroupButton
-            aria-label="上一个搜索结果"
-            disabled={resultCount === 0}
-            onClick={onPrevious}
-            size="icon-xs"
-          >
-            <ChevronUpIcon />
-          </InputGroupButton>
-          <InputGroupButton
-            aria-label="下一个搜索结果"
-            disabled={resultCount === 0}
-            onClick={onNext}
-            size="icon-xs"
-          >
-            <ChevronDownIcon />
-          </InputGroupButton>
-        </InputGroupAddon>
-      </InputGroup>
-
-      <div className={styles.pathControl}>
-        <code>{currentPathLabel}</code>
-        <Button
-          aria-label="复制当前 JSON Path"
-          disabled={!hasSelectedPath}
-          onClick={onCopyPath}
-          size="icon-xs"
-          variant="ghost"
-        >
-          <ClipboardIcon />
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 interface DocumentNoticesProps {
   documentBytes: number
   isLargeDocument: boolean
@@ -487,7 +365,7 @@ function DocumentNotices({
       <AlertTriangleIcon aria-hidden="true" />
       <span>
         当前文档为 {formatBytes(documentBytes)}
-        。双面板会继续运行，但解析、搜索和节点展开可能需要更久；草稿不会写入浏览器存储。
+        。双面板会继续运行，但解析和节点展开可能需要更久；草稿不会写入浏览器存储。
       </span>
     </div>
   )
@@ -499,7 +377,6 @@ interface EditorGridProps {
   onExpandTree: () => void
   onSourceChange: (content: Content) => void
   onTreeChange: (content: Content, status: OnChangeStatus) => void
-  onTreeSelect: (selection: JSONEditorSelection | undefined) => void
   parseError: JsonOperationError | null
   sourceContent: Content
   themeType: 'dark' | 'light'
@@ -514,7 +391,6 @@ function EditorGrid({
   onExpandTree,
   onSourceChange,
   onTreeChange,
-  onTreeSelect,
   parseError,
   sourceContent,
   themeType,
@@ -583,7 +459,6 @@ function EditorGrid({
             content={treeContent}
             mode="tree"
             onChange={onTreeChange}
-            onSelect={onTreeSelect}
             readOnly={Boolean(parseError)}
             ref={treeEditorRef}
             theme={themeType}
@@ -647,13 +522,8 @@ export function JsonViewer() {
   const [fileName, setFileName] = useState('未命名.json')
   const [draftStatus, setDraftStatus] = useState<DraftStatus>('idle')
   const [busyOperation, setBusyOperation] = useState<OperationType | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
-  const [searchIndex, setSearchIndex] = useState(0)
-  const [searchTruncated, setSearchTruncated] = useState(false)
-  const [selectedPath, setSelectedPath] = useState<JsonPath | null>(null)
   const [statusMessage, setStatusMessage] = useState('编辑器正在准备。')
-  const [copied, setCopied] = useState<'document' | 'path' | null>(null)
+  const [copied, setCopied] = useState<'document' | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const workbenchRef = useRef<HTMLDivElement>(null)
@@ -675,7 +545,6 @@ export function JsonViewer() {
     () => ({ json: lastValidJson }),
     [lastValidJson]
   )
-  const searchResult = searchResults[searchIndex]
   const canUndo = history.past.length > 0
   const canRedo = history.future.length > 0
   const hasContent = history.text.length > 0
@@ -758,11 +627,6 @@ export function JsonViewer() {
       return
     }
 
-    setSearchResults([])
-    setSearchIndex(0)
-    setSearchTruncated(false)
-    setSelectedPath(null)
-
     const parsed = parseJsonText(history.text)
     if (parsed.ok) {
       setLastValidJson(parsed.json)
@@ -823,13 +687,6 @@ export function JsonViewer() {
     [commitText, parseError]
   )
 
-  const handleTreeSelect = useCallback(
-    (selection: JSONEditorSelection | undefined) => {
-      setSelectedPath(getSelectionPath(selection))
-    },
-    []
-  )
-
   const applyWorkerTextOperation = useCallback(
     async (type: 'beautify' | 'minify') => {
       if (!hasContent) {
@@ -862,70 +719,9 @@ export function JsonViewer() {
     [commitText, hasContent, runWorker]
   )
 
-  const runSearch = useCallback(async () => {
-    const query = searchQuery.trim()
-    if (!(query && hasContent && !parseError)) {
-      setSearchResults([])
-      setSearchIndex(0)
-      return
-    }
-    setBusyOperation('search')
-    setStatusMessage('正在搜索键和值…')
-    try {
-      const response = await runWorker({
-        query,
-        text: textRef.current,
-        type: 'search',
-      })
-      if (!response.ok) {
-        throw createWorkerError(response.error)
-      }
-      if (response.type !== 'search') {
-        throw new Error('后台处理返回了不匹配的结果。')
-      }
-      setSearchResults(response.results)
-      setSearchIndex(0)
-      setSearchTruncated(response.truncated)
-      setStatusMessage(
-        response.results.length > 0
-          ? `找到 ${response.results.length}${response.truncated ? '+' : ''} 个匹配项。`
-          : '没有找到匹配项。'
-      )
-      const [firstResult] = response.results
-      if (firstResult) {
-        await treeEditorRef.current?.focusPath(
-          firstResult.path,
-          firstResult.field
-        )
-      }
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : '搜索失败。')
-    } finally {
-      setBusyOperation(null)
-    }
-  }, [hasContent, parseError, runWorker, searchQuery])
-
-  const moveSearchResult = useCallback(
-    async (direction: -1 | 1) => {
-      if (searchResults.length === 0) {
-        return
-      }
-      const nextIndex =
-        (searchIndex + direction + searchResults.length) % searchResults.length
-      setSearchIndex(nextIndex)
-      const nextResult = searchResults[nextIndex]
-      await treeEditorRef.current?.focusPath(nextResult.path, nextResult.field)
-      setStatusMessage(`已定位第 ${nextIndex + 1} 个匹配项。`)
-    },
-    [searchIndex, searchResults]
-  )
-
   const clearDocument = useCallback(() => {
     commitText('')
     setFileName('未命名.json')
-    setSearchQuery('')
-    setSearchResults([])
-    setSelectedPath(null)
     if (clearJsonDraft(sessionStorage, SESSION_KEY) === 'unavailable') {
       setDraftStatus('unavailable')
     }
@@ -984,27 +780,22 @@ export function JsonViewer() {
     setStatusMessage('JSON 文件已下载。')
   }, [fileName, history.text])
 
-  const copyText = useCallback(
-    async (value: string, target: 'document' | 'path') => {
-      try {
-        await copyToClipboard(value)
-        setCopied(target)
-        setStatusMessage(
-          target === 'document' ? '已复制完整 JSON。' : '已复制 JSON Path。'
-        )
-        if (copiedResetRef.current !== null) {
-          window.clearTimeout(copiedResetRef.current)
-        }
-        copiedResetRef.current = window.setTimeout(() => {
-          setCopied(null)
-          copiedResetRef.current = null
-        }, COPY_RESET_MS)
-      } catch {
-        setStatusMessage('复制失败，请检查浏览器剪贴板权限。')
+  const copyText = useCallback(async (value: string) => {
+    try {
+      await copyToClipboard(value)
+      setCopied('document')
+      setStatusMessage('已复制完整 JSON。')
+      if (copiedResetRef.current !== null) {
+        window.clearTimeout(copiedResetRef.current)
       }
-    },
-    []
-  )
+      copiedResetRef.current = window.setTimeout(() => {
+        setCopied(null)
+        copiedResetRef.current = null
+      }, COPY_RESET_MS)
+    } catch {
+      setStatusMessage('复制失败，请检查浏览器剪贴板权限。')
+    }
+  }, [])
 
   const handleWorkspaceKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -1054,36 +845,8 @@ export function JsonViewer() {
     applyWorkerTextOperation('minify').catch(() => undefined)
   }, [applyWorkerTextOperation])
   const copyDocument = useCallback(() => {
-    copyText(history.text, 'document').catch(() => undefined)
+    copyText(history.text).catch(() => undefined)
   }, [copyText, history.text])
-  const handleSearchQueryChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      setSearchQuery(event.target.value)
-    },
-    []
-  )
-  const handleSearchKeyDown = useCallback(
-    (event: ReactKeyboardEvent<HTMLInputElement>) => {
-      if (event.key === 'Enter') {
-        event.preventDefault()
-        runSearch().catch(() => undefined)
-      }
-    },
-    [runSearch]
-  )
-  const showPreviousSearchResult = useCallback(() => {
-    moveSearchResult(-1).catch(() => undefined)
-  }, [moveSearchResult])
-  const showNextSearchResult = useCallback(() => {
-    moveSearchResult(1).catch(() => undefined)
-  }, [moveSearchResult])
-  const currentPath = searchResult?.path ?? selectedPath
-  const currentPathLabel = currentPath ? stringifyJsonPath(currentPath) : '$'
-  const copyCurrentPath = useCallback(() => {
-    if (currentPath) {
-      copyText(stringifyJsonPath(currentPath), 'path').catch(() => undefined)
-    }
-  }, [copyText, currentPath])
   const collapseTree = useCallback(() => {
     treeEditorRef.current?.collapseAll()
   }, [])
@@ -1158,22 +921,6 @@ export function JsonViewer() {
               onUndo={undo}
             />
 
-            <SearchControls
-              currentPathLabel={currentPathLabel}
-              hasContent={hasContent}
-              hasSelectedPath={Boolean(searchResult || selectedPath)}
-              onCopyPath={copyCurrentPath}
-              onNext={showNextSearchResult}
-              onPrevious={showPreviousSearchResult}
-              onQueryChange={handleSearchQueryChange}
-              onQueryKeyDown={handleSearchKeyDown}
-              parseError={parseError}
-              query={searchQuery}
-              resultCount={searchResults.length}
-              resultIndex={searchIndex}
-              truncated={searchTruncated}
-            />
-
             <DocumentNotices
               documentBytes={documentBytes}
               isLargeDocument={isLargeDocument}
@@ -1185,7 +932,6 @@ export function JsonViewer() {
               onExpandTree={expandTree}
               onSourceChange={handleSourceChange}
               onTreeChange={handleTreeChange}
-              onTreeSelect={handleTreeSelect}
               parseError={parseError}
               sourceContent={sourceContent}
               themeType={themeType}
@@ -1215,7 +961,7 @@ export function JsonViewer() {
 
         <span aria-atomic="true" aria-live="polite" className="sr-only">
           {statusMessage}
-          {copied ? ` ${copied === 'document' ? '文档' : '路径'}已复制。` : ''}
+          {copied ? ' 文档已复制。' : ''}
         </span>
       </section>
     </TooltipProvider>

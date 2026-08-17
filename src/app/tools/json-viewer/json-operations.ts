@@ -1,20 +1,13 @@
-import { isLosslessNumber, parse, stringify } from 'lossless-json'
+import { parse, stringify } from 'lossless-json'
 import type { JSONParser } from 'vanilla-jsoneditor'
-import type {
-  JsonOperationError,
-  JsonParseResult,
-  JsonPath,
-  SearchResult,
-} from './json-viewer-types'
+import type { JsonOperationError, JsonParseResult } from './json-viewer-types'
 
 export const JSON_INDENTATION = 2
-export const SEARCH_RESULT_LIMIT = 1000
 
 const POSITION_PATTERNS = [
   /(?:position|at)\s+(\d+)/iu,
   /char(?:acter)?\s+(\d+)/iu,
 ] as const
-const IDENTIFIER_PATTERN = /^[A-Z_$][\w$]*$/iu
 
 const normalizePosition = (value: number, text: string): number =>
   Math.min(Math.max(value, 0), text.length)
@@ -102,130 +95,3 @@ export const formatJsonValue = (
   value: unknown,
   indentation: number | string = JSON_INDENTATION
 ): string => stringify(value, null, indentation) ?? ''
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-
-const getScalarPreview = (value: unknown): string => {
-  if (typeof value === 'string') {
-    return value
-  }
-  if (
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    typeof value === 'bigint' ||
-    value === null ||
-    isLosslessNumber(value)
-  ) {
-    return String(value)
-  }
-  return ''
-}
-
-export const stringifyJsonPath = (path: JsonPath): string => {
-  if (path.length === 0) {
-    return '$'
-  }
-
-  return path.reduce<string>((result, segment) => {
-    if (typeof segment === 'number') {
-      return `${result}[${segment}]`
-    }
-
-    if (IDENTIFIER_PATTERN.test(segment)) {
-      return `${result}.${segment}`
-    }
-
-    return `${result}[${JSON.stringify(segment)}]`
-  }, '$')
-}
-
-const addSearchResult = (
-  results: SearchResult[],
-  result: SearchResult,
-  limit: number
-): boolean => {
-  if (results.length >= limit) {
-    return false
-  }
-  results.push(result)
-  return true
-}
-
-const addChildEntries = (
-  stack: Array<{ path: JsonPath; value: unknown }>,
-  item: { path: JsonPath; value: unknown },
-  normalizedQuery: string,
-  results: SearchResult[],
-  limit: number
-): boolean => {
-  if (Array.isArray(item.value)) {
-    for (let index = item.value.length - 1; index >= 0; index -= 1) {
-      stack.push({ path: [...item.path, index], value: item.value[index] })
-    }
-    return true
-  }
-
-  if (!isRecord(item.value) || isLosslessNumber(item.value)) {
-    return true
-  }
-
-  const entries = Object.entries(item.value)
-  for (let index = entries.length - 1; index >= 0; index -= 1) {
-    const [key, value] = entries[index]
-    const path = [...item.path, key]
-    if (
-      key.toLocaleLowerCase().includes(normalizedQuery) &&
-      !addSearchResult(results, { field: 'key', path, preview: key }, limit)
-    ) {
-      return false
-    }
-    stack.push({ path, value })
-  }
-  return true
-}
-
-export const searchJson = (
-  json: unknown,
-  query: string,
-  limit = SEARCH_RESULT_LIMIT
-): { results: SearchResult[]; truncated: boolean } => {
-  const normalizedQuery = query.trim().toLocaleLowerCase()
-  if (!normalizedQuery) {
-    return { results: [], truncated: false }
-  }
-
-  const results: SearchResult[] = []
-  let truncated = false
-  const stack: Array<{ path: JsonPath; value: unknown }> = [
-    { path: [], value: json },
-  ]
-
-  while (stack.length > 0) {
-    const item = stack.pop()
-    if (!item) {
-      break
-    }
-
-    const scalarPreview = getScalarPreview(item.value)
-    if (
-      scalarPreview.length > 0 &&
-      scalarPreview.toLocaleLowerCase().includes(normalizedQuery) &&
-      !addSearchResult(
-        results,
-        { field: 'value', path: item.path, preview: scalarPreview },
-        limit
-      )
-    ) {
-      truncated = true
-      break
-    }
-
-    if (!addChildEntries(stack, item, normalizedQuery, results, limit)) {
-      truncated = true
-      break
-    }
-  }
-
-  return { results, truncated }
-}

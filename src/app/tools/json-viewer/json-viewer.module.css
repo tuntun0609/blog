@@ -10,7 +10,7 @@
   );
 
   min-height: calc(100svh - var(--site-header-height));
-  padding: 1rem;
+  padding: 1rem 1rem 0rem;
   color: var(--foreground);
   background:
     radial-gradient(
@@ -48,7 +48,6 @@
 }
 
 .toolbar,
-.searchRow,
 .statusBar {
   display: flex;
   align-items: center;
@@ -77,44 +76,6 @@
   border-inline-end: 0;
 }
 
-.searchRow {
-  gap: 0.75rem;
-  padding: 0.55rem 0.7rem;
-  background: color-mix(in oklab, var(--background) 68%, transparent);
-  border-bottom: 1px solid var(--viewer-line);
-}
-
-.searchInput {
-  width: min(100%, 33rem);
-  background: var(--background);
-  border-color: var(--viewer-line);
-  border-radius: 0.65rem;
-}
-
-.searchCount {
-  font:
-    0.68rem var(--font-geist-mono),
-    monospace;
-  color: var(--viewer-muted);
-}
-
-.pathControl {
-  display: flex;
-  gap: 0.35rem;
-  align-items: center;
-  min-width: 0;
-  margin-inline-start: auto;
-}
-
-.pathControl code {
-  max-width: min(38vw, 34rem);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.72rem;
-  color: var(--viewer-muted);
-  white-space: nowrap;
-}
-
 .warning {
   display: flex;
   gap: 0.65rem;
@@ -137,7 +98,8 @@
 .editorGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  min-height: clamp(35rem, 68svh, 54rem);
+  height: clamp(35rem, 68svh, 54rem);
+  min-height: 0;
 }
 
 .editorPanel {
@@ -193,6 +155,7 @@
 .editorViewport > div:first-child {
   width: 100%;
   height: 100%;
+  min-height: 0;
 }
 
 .editorViewport > div:first-child {
@@ -266,13 +229,13 @@
   );
   --jse-input-background: var(--background);
   --jse-input-border: 1px solid var(--viewer-line-strong);
-  min-height: 100%;
+  min-height: 0;
 
   font-family: var(--font-sans), sans-serif;
 }
 
 .editorViewport > div:first-child > [class~="jse-main"] {
-  min-height: 100%;
+  min-height: 0;
 }
 
 .editorViewport > div:first-child > [class~="jse-main"] > div {
@@ -458,25 +421,23 @@
 
 @media (max-width: 900px) {
   .tool {
-    padding-top: 2rem;
+    padding: 2rem 1rem 3rem;
   }
 
   .editorGrid {
     grid-template-columns: 1fr;
+    height: auto;
     min-height: 0;
   }
 
   .editorPanel {
-    min-height: 34rem;
+    height: clamp(34rem, 68svh, 54rem);
+    min-height: 0;
   }
 
   .editorPanel + .editorPanel {
     border-inline-start: 0;
     border-top: 1px solid var(--viewer-line-strong);
-  }
-
-  .pathControl code {
-    max-width: 28vw;
   }
 }
 
@@ -510,24 +471,6 @@
     flex: 0 0 auto;
     padding-inline-end: 0.45rem;
     margin-inline-start: 0;
-  }
-
-  .searchRow {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .searchInput {
-    width: 100%;
-  }
-
-  .pathControl {
-    justify-content: space-between;
-    margin-inline-start: 0;
-  }
-
-  .pathControl code {
-    max-width: calc(100vw - 5rem);
   }
 
   .warning {
