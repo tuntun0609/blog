@@ -288,28 +288,30 @@ function PreviewStage({
   const showCanvas = preview.phase === 'ready'
   return (
     <div className={styles.previewStage}>
-      <canvas
-        aria-label="水平校准后的文档预览"
-        className={styles.previewCanvas}
-        data-visible={showCanvas || undefined}
-        ref={canvasRef}
-        role="img"
-      />
-      {showCanvas ? null : (
-        <div className={styles.previewPlaceholder}>
-          {preview.phase === 'error' ? (
-            <ScanLineIcon aria-hidden="true" />
-          ) : (
-            <LoaderCircleIcon aria-hidden="true" className={styles.spinner} />
-          )}
-          <strong>
-            {preview.phase === 'error' ? '暂时无法生成预览' : '正在校准预览'}
-          </strong>
-          <span>
-            {preview.message ?? '移动四个角点时，结果会在这里实时更新。'}
-          </span>
-        </div>
-      )}
+      <div className={styles.previewViewport}>
+        <canvas
+          aria-label="水平校准后的文档预览"
+          className={styles.previewCanvas}
+          data-visible={showCanvas || undefined}
+          ref={canvasRef}
+          role="img"
+        />
+        {showCanvas ? null : (
+          <div className={styles.previewPlaceholder}>
+            {preview.phase === 'error' ? (
+              <ScanLineIcon aria-hidden="true" />
+            ) : (
+              <LoaderCircleIcon aria-hidden="true" className={styles.spinner} />
+            )}
+            <strong>
+              {preview.phase === 'error' ? '暂时无法生成预览' : '正在校准预览'}
+            </strong>
+            <span>
+              {preview.message ?? '移动四个角点时，结果会在这里实时更新。'}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
