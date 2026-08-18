@@ -57,6 +57,12 @@ const toolSections: ToolSection[] = [
         name: '图片裁剪',
       },
       {
+        cover: '/tools/document-calibration.svg',
+        description: '拖动四个角点，将斜拍文档校正为水平图片。',
+        href: '/tools/document-calibration',
+        name: '文档校准',
+      },
+      {
         cover: '/tools/color-palette.svg',
         description: '从本地图片提取主题色，并复制 HEX 或 CSS 变量。',
         href: '/tools/color-palette',

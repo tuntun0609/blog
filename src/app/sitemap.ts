@@ -34,6 +34,11 @@ const staticPages: MetadataRoute.Sitemap = [
   {
     changeFrequency: 'monthly',
     priority: 0.6,
+    url: new URL('/tools/document-calibration', siteUrl).toString(),
+  },
+  {
+    changeFrequency: 'monthly',
+    priority: 0.6,
     url: new URL('/tools/background-removal', siteUrl).toString(),
   },
   {

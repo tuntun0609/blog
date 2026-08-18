@@ -700,6 +700,7 @@ export function ColorPaletteTool() {
       className={styles.tool}
       data-dragging={isDragging ? '' : undefined}
       data-has-palette={palette.length > 0 ? '' : undefined}
+      data-has-source={source ? '' : undefined}
       style={toolStyle}
     >
       <h1 className={styles.visuallyHidden}>图片主题色提取</h1>

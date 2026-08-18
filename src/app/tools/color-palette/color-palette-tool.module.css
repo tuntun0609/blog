@@ -18,6 +18,11 @@
   height: calc(100svh - var(--site-header-height));
   overflow: hidden;
   color: var(--foreground);
+  background: var(--palette-canvas);
+  transition: background-color var(--duration-reveal) var(--ease-out);
+}
+
+.tool[data-has-source] {
   background:
     radial-gradient(
       circle at 12% 10%,
@@ -30,7 +35,6 @@
       transparent 34rem
     ),
     var(--palette-canvas);
-  transition: background-color var(--duration-reveal) var(--ease-out);
 }
 
 .fileInput,
