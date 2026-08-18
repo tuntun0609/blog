@@ -14,14 +14,6 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        destination: '/vendor/scanic/scanic-mlDetector.js',
-        source: '/_next/static/chunks/scanic-mlDetector.js',
-      },
-      {
-        destination: '/vendor/scanic/scanic-ort.wasm.min.js',
-        source: '/_next/static/chunks/scanic-ort.wasm.min.js',
-      },
-      {
         destination: '/llms.mdx/blog/:path*',
         source: '/blog/:path*.md',
       },

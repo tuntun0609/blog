@@ -19,8 +19,12 @@ interface PreparedPreviewSource {
   scale: number
 }
 
+const SCANIC_MODULE_URL =
+  'https://cdn.jsdelivr.net/npm/scanic@1.6.0/dist/scanic.js'
 const SCANIC_ML_ASSET_BASE_URL =
   'https://cdn.jsdelivr.net/npm/scanic-ml@0.2.0/dist/'
+
+type ScanicModule = typeof import('scanic')
 
 interface ExportCalibrationOptions {
   corners: CalibrationCorners
@@ -37,10 +41,12 @@ export interface ExportedCalibration {
   limited: boolean
 }
 
-let scanicModulePromise: Promise<typeof import('scanic')> | null = null
+let scanicModulePromise: Promise<ScanicModule> | null = null
 
-const loadScanic = async (): Promise<typeof import('scanic')> => {
-  scanicModulePromise ??= import('scanic')
+const loadScanic = async (): Promise<ScanicModule> => {
+  scanicModulePromise ??= import(
+    /* webpackIgnore: true */ SCANIC_MODULE_URL
+  ) as Promise<ScanicModule>
   return await scanicModulePromise
 }
 
