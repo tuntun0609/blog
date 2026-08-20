@@ -21,10 +21,16 @@ type CategoryId = 'all' | ToolSection['id']
 interface ToolCardProps {
   categoryId: ToolSection['id']
   categoryLabel: string
+  isHidden: boolean
   tool: ToolItem
 }
 
-const ToolCard = ({ categoryId, categoryLabel, tool }: ToolCardProps) => {
+const ToolCard = ({
+  categoryId,
+  categoryLabel,
+  isHidden,
+  tool,
+}: ToolCardProps) => {
   const isAvailable = Boolean(tool.href)
   const isExternal = tool.external === true
   let footerLabel = '即将推出'
@@ -86,7 +92,11 @@ const ToolCard = ({ categoryId, categoryLabel, tool }: ToolCardProps) => {
   )
 
   if (!tool.href) {
-    return <div className={styles.toolCardItem}>{card}</div>
+    return (
+      <div className={styles.toolCardItem} hidden={isHidden}>
+        {card}
+      </div>
+    )
   }
 
   if (isExternal) {
@@ -94,6 +104,7 @@ const ToolCard = ({ categoryId, categoryLabel, tool }: ToolCardProps) => {
       <a
         aria-label={`打开${tool.name}（外部工具）`}
         className={styles.toolCardLink}
+        hidden={isHidden}
         href={tool.href}
         rel="noopener"
         target="_blank"
@@ -107,6 +118,7 @@ const ToolCard = ({ categoryId, categoryLabel, tool }: ToolCardProps) => {
     <Link
       aria-label={`打开${tool.name}`}
       className={styles.toolCardLink}
+      hidden={isHidden}
       href={tool.href}
     >
       {card}
@@ -132,17 +144,17 @@ export function ToolsFilter({ sections }: { sections: ToolSection[] }) {
   const activeSection = sections.find(
     (section) => section.id === activeCategory
   )
-  const visibleTools = sections.flatMap((section) => {
-    if (activeCategory !== 'all' && activeCategory !== section.id) {
-      return []
-    }
-
-    return section.tools.map((tool) => ({
+  const allTools = sections.flatMap((section) =>
+    section.tools.map((tool) => ({
       categoryId: section.id,
       categoryLabel: section.badgeLabel,
       tool,
     }))
-  })
+  )
+  const visibleToolCount =
+    activeCategory === 'all'
+      ? allTools.length
+      : (activeSection?.tools.length ?? 0)
   const directoryTitle = activeSection?.label ?? '全部工具'
 
   return (
@@ -150,7 +162,7 @@ export function ToolsFilter({ sections }: { sections: ToolSection[] }) {
       <div className={styles.directoryHeader}>
         <div className={styles.directoryCopy}>
           <h2 id="tools-directory-title">{directoryTitle}</h2>
-          <p aria-live="polite">{visibleTools.length} 个工具</p>
+          <p aria-live="polite">{visibleToolCount} 个工具</p>
         </div>
 
         <nav aria-label="工具分类" className={styles.categoryNav}>
@@ -170,11 +182,12 @@ export function ToolsFilter({ sections }: { sections: ToolSection[] }) {
         </nav>
       </div>
 
-      <div className={styles.cardGrid} key={activeCategory}>
-        {visibleTools.map(({ categoryId, categoryLabel, tool }) => (
+      <div className={styles.cardGrid}>
+        {allTools.map(({ categoryId, categoryLabel, tool }) => (
           <ToolCard
             categoryId={categoryId}
             categoryLabel={categoryLabel}
+            isHidden={activeCategory !== 'all' && activeCategory !== categoryId}
             key={`${categoryId}-${tool.name}`}
             tool={tool}
           />

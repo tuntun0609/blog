@@ -310,6 +310,11 @@
   border-radius: 1rem;
 }
 
+.toolCardItem[hidden],
+.toolCardLink[hidden] {
+  display: none;
+}
+
 .toolCardLink:focus-visible {
   outline: 3px solid color-mix(in oklab, var(--ring) 48%, transparent);
   outline-offset: 4px;
