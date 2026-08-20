@@ -18,9 +18,9 @@ const MeshGradient = dynamic(
   { ssr: false }
 )
 
-const DARK_COLORS = ['#09090B', '#25124F', '#6D28D9', '#1D4ED8']
-const LIGHT_COLORS = ['#F8F7FF', '#D9D0FF', '#8B5CF6', '#60A5FA']
-const MAX_PARALLAX_RATIO = 0.0125
+const DARK_COLORS = ['#121116', '#29222F', '#514261', '#7A665D']
+const LIGHT_COLORS = ['#F4EFE7', '#E8DFF0', '#B7A1CC', '#D6C5B0']
+const MAX_PARALLAX_RATIO = 0.0045
 const MAX_PIXEL_COUNT = 2_073_600
 const PARALLAX_SPRING = {
   damping: 24,
@@ -126,14 +126,14 @@ export function ToolsHeroField() {
           <MeshGradient
             className={styles.heroField}
             colors={colors}
-            distortion={0.9}
+            distortion={0.34}
             fit="cover"
-            grainMixer={0.06}
-            grainOverlay={0.04}
+            grainMixer={0.025}
+            grainOverlay={0.015}
             maxPixelCount={MAX_PIXEL_COUNT}
             minPixelRatio={1}
-            speed={0.18}
-            swirl={0.55}
+            speed={0.065}
+            swirl={0.18}
           />
         </motion.div>
       ) : null}

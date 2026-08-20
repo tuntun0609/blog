@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
+import type { ToolSection } from './tools.types'
 import { ToolsFilter } from './tools-filter'
 import { ToolsHeroField } from './tools-hero-field'
 import styles from './tools.module.css'
@@ -10,25 +12,9 @@ export const metadata: Metadata = {
   title: '工具箱',
 }
 
-interface ToolItem {
-  cover: string
-  description: string
-  external?: boolean
-  href?: string
-  loading?: 'eager' | 'lazy'
-  name: string
-}
-
-interface ToolSection {
-  description: string
-  id: string
-  label: string
-  tools: ToolItem[]
-}
-
 const toolSections: ToolSection[] = [
   {
-    description: '在浏览器中完成常见的视频格式转换。',
+    badgeLabel: '视频',
     id: 'video-tools',
     label: '视频工具',
     tools: [
@@ -42,7 +28,7 @@ const toolSections: ToolSection[] = [
     ],
   },
   {
-    description: '在浏览器中完成常见图片处理，也可以验证图片来源。',
+    badgeLabel: '图片',
     id: 'image-tools',
     label: '图片工具',
     tools: [
@@ -80,7 +66,7 @@ const toolSections: ToolSection[] = [
     ],
   },
   {
-    description: '转换字符串，也可以精确比较两个文字版本之间的变化。',
+    badgeLabel: '文本',
     id: 'text-tools',
     label: '文本工具',
     tools: [
@@ -116,23 +102,63 @@ export default function ToolsPage() {
       <SiteHeader activeSection="tools" />
 
       <main className={styles.page} id="main-content">
-        <div aria-hidden="true" className={styles.pageIntro}>
-          <ToolsHeroField />
-          <div className={styles.heroVeil} />
-        </div>
+        <section className={styles.hero}>
+          <div className={styles.heroInner}>
+            <header className={styles.heroCopy}>
+              <h1 className={styles.pageTitle}>
+                <span>一些顺手的</span>
+                <span>工具</span>
+              </h1>
+              <p className={styles.pageIntroDescription}>
+                收集好用的工具，也把自己的想法做成工具。
+              </p>
+            </header>
 
-        <div className={styles.toolsLayout}>
-          <header className={styles.heroCopy}>
-            <h1 className={styles.pageTitle}>人类的本质就是造轮子</h1>
-            <p className={styles.pageIntroDescription}>
-              收集全网工具，也收集自制工具。希望能帮助到你
-            </p>
-          </header>
-
-          <div className={styles.toolsContent}>
-            <ToolsFilter sections={toolSections} />
+            <div aria-hidden="true" className={styles.heroArtwork}>
+              <ToolsHeroField />
+              <div className={styles.heroVeil} />
+              <div className={styles.heroCollage}>
+                <div className={`${styles.heroSheet} ${styles.heroSheetVideo}`}>
+                  <Image
+                    alt=""
+                    height={941}
+                    loading="eager"
+                    sizes="(max-width: 760px) 15rem, 24rem"
+                    src="/tools/video-convert-illustration.png"
+                    width={1672}
+                  />
+                </div>
+                <div className={`${styles.heroSheet} ${styles.heroSheetImage}`}>
+                  <Image
+                    alt=""
+                    height={941}
+                    loading="eager"
+                    sizes="(max-width: 760px) 12rem, 19rem"
+                    src="/tools/color-palette-illustration.png"
+                    width={1672}
+                  />
+                </div>
+                <div className={`${styles.heroSheet} ${styles.heroSheetText}`}>
+                  <Image
+                    alt=""
+                    height={941}
+                    loading="eager"
+                    sizes="(max-width: 760px) 9rem, 14rem"
+                    src="/tools/json-viewer-illustration.png"
+                    width={1672}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
+
+        <section
+          aria-labelledby="tools-directory-title"
+          className={styles.toolsContent}
+        >
+          <ToolsFilter sections={toolSections} />
+        </section>
       </main>
 
       <SiteFooter
