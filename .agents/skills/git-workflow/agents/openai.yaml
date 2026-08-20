@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git 工作流"
+  short_description: "处理分支、提交信息及后续扩展的本地 Git 工作流规范"
+  default_prompt: "使用 $git-workflow 按项目规范处理当前 Git 工作流。"

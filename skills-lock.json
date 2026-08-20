@@ -37,6 +37,12 @@
       "skillPath": "skills/find-animation-opportunities/SKILL.md",
       "computedHash": "8fb8492eb8fbed1313cb430b5831d925d9b8964ca24f3c41a6244cbd1fd98732"
     },
+    "git-workflow": {
+      "source": "tuntun0609/skills",
+      "sourceType": "github",
+      "skillPath": "skills/git-workflow/SKILL.md",
+      "computedHash": "8a2970064da200766e84e1f30a117d226b18a761b863eb205e552ff33d5d0563"
+    },
     "grill-me": {
       "source": "mattpocock/skills",
       "sourceType": "github",
