@@ -1,0 +1,874 @@
+---
+title: "PostgreSQL 快速入门：从建表到事务与索引"
+description: "用一个迷你电商案例，从建表、CRUD、JOIN 和聚合，一路掌握事务、索引与 EXPLAIN。"
+date: "2026-08-19"
+category: "数据库"
+cover: "/blog/images/postgresql-quick-start-cover.svg"
+published: true
+path: "postgresql-quick-start"
+tags: ["PostgreSQL", "SQL", "数据库"]
+---
+
+很多应用最后都会落到同一组问题上：数据怎么存，几张表怎么关联，一次操作改了多处数据时如何保证它们一起成功，查询变慢后又该从哪里开始检查。
+
+PostgreSQL 是一个开源的关系型数据库。SQL 是与它交互的主要语言，但会背 `SELECT`、`INSERT` 还不够。真正写业务时，还需要理解数据类型、约束、事务和索引分别解决什么问题。
+
+本文用一个迷你电商数据库贯穿全文，从启动 PostgreSQL、创建四张表开始，依次完成数据写入、查询、关联、聚合、事务和索引。示例以 PostgreSQL 18 为准，核心 SQL 可以在 PostgreSQL 15 及以上版本运行。
+
+## 启动一个练习数据库
+
+本地已经安装 Docker 的话，一条命令就能启动 PostgreSQL 18：
+
+```bash
+docker run --name pg-quick-start --rm \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=shop \
+  -p 127.0.0.1:5432:5432 \
+  -d postgres:18
+```
+
+这里创建了一个名为 `shop` 的数据库，用户名和密码都是 `postgres`。端口只绑定到本机，密码也只适合这个一次性练习环境，真实项目不要把数据库密码直接写进命令或仓库。
+
+接着进入容器里的 `psql`：
+
+```bash
+docker exec -it pg-quick-start psql -U postgres -d shop
+```
+
+连接成功后，先确认版本和当前连接：
+
+```sql
+SELECT version();
+SELECT current_database(), current_user;
+```
+
+`psql` 里以反斜杠开头的是客户端命令，不是 SQL：
+
+```text
+\conninfo      -- 查看当前连接
+\dt            -- 查看当前 schema 中的表
+\d products    -- 查看一张表的结构
+\q             -- 退出 psql
+```
+
+这个容器使用了 `--rm`，执行 `docker stop pg-quick-start` 后，容器和里面的数据都会删除。它适合从头练习，不适合保存重要数据。
+
+## 先建立数据库的基本概念
+
+一个 PostgreSQL 服务可以管理多个**数据库（database）**。连接进入某个数据库后，里面还可以有多个 **schema**，schema 下才是表、视图和函数等对象。
+
+本文直接使用默认的 `public` schema。可以先把层级理解成：
+
+```text
+PostgreSQL 服务
+└── shop 数据库
+    └── public schema
+        ├── users 表
+        ├── products 表
+        ├── orders 表
+        └── order_items 表
+```
+
+表由列和行组成。列定义名称、数据类型和约束，行是一条具体记录。比如商品表可以规定 `price` 必须是精确数字且不能小于零，数据库会拒绝不符合规则的数据。
+
+SQL 语句通常以分号结束。字符串使用单引号，双引号用于区分大小写的标识符：
+
+```sql
+SELECT 'PostgreSQL';
+SELECT "CaseSensitiveColumn" FROM "CaseSensitiveTable";
+```
+
+未加双引号的标识符会被 PostgreSQL 折叠成小写。日常建表时统一使用小写 `snake_case`，就不用到处补双引号。
+
+入门阶段最常见的数据类型如下：
+
+| 类型 | 适合保存 | 例子 |
+| --- | --- | --- |
+| `INTEGER` / `BIGINT` | 整数、计数和 ID | 库存、主键 |
+| `NUMERIC(p, s)` | 需要精确计算的小数 | 金额 |
+| `TEXT` | 不固定长度的文本 | 名称、邮箱 |
+| `BOOLEAN` | 真或假 | 是否上架 |
+| `DATE` | 只有日期 | 生日 |
+| `TIMESTAMPTZ` | 表示一个确定时刻 | 创建时间、支付时间 |
+| `JSONB` | 结构可能变化的 JSON | 扩展属性 |
+
+金额不要使用 `REAL` 或 `DOUBLE PRECISION`。它们是浮点数，适合近似计算；订单金额需要精确计算，应该使用 `NUMERIC`。
+
+`TIMESTAMPTZ` 是 `timestamp with time zone` 的简写。它保存的是确定时刻，显示时会转换成当前会话的时区，但不会保留用户最初输入的时区名称。只有“墙上时间”而不对应确定时刻的值，才考虑 `TIMESTAMP`。
+
+## 设计四张互相关联的表
+
+这个案例有用户、商品、订单和订单项。一个用户可以有多个订单，一个订单包含多个订单项，每个订单项对应一种商品。
+
+<img
+  alt="迷你电商数据库中 users、orders、order_items 和 products 四张表的关系"
+  height={720}
+  src="/blog/postgresql-store-schema.svg"
+  width={1400}
+/>
+
+先创建 `users`：
+
+```sql
+CREATE TABLE users (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+`GENERATED ALWAYS AS IDENTITY` 会通过隐式序列生成 ID。它比旧教程里常见的 `BIGSERIAL` 更明确，也更接近 SQL 标准。身份列负责生成值，但不自动保证唯一，所以这里仍然需要 `PRIMARY KEY`。
+
+主键同时保证 `id` 唯一且非空。`UNIQUE` 保证邮箱不重复，`NOT NULL` 则不允许字段缺失。
+
+接着创建商品表：
+
+```sql
+CREATE TABLE products (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  sku TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
+  stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+`DEFAULT` 在插入时补上默认值，`CHECK` 负责拦住负数价格和库存。约束应该表达始终成立的数据规则，不能只依靠页面表单校验：数据还可能来自脚本、后台任务或其他服务。
+
+订单表通过外键关联用户：
+
+```sql
+CREATE TABLE orders (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  order_no TEXT NOT NULL UNIQUE,
+  user_id BIGINT NOT NULL REFERENCES users (id),
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'paid', 'cancelled')),
+  total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0
+    CHECK (total_amount >= 0),
+  paid_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+`REFERENCES users (id)` 表示 `orders.user_id` 必须指向真实存在的用户。没有明确写 `ON DELETE` 时默认不会让仍有订单的用户被删除，这通常比把历史订单一起级联删除安全。
+
+`paid_at` 没有 `NOT NULL`，因为待支付订单还没有支付时间。数据库里的 `NULL` 表示未知或不存在，不等于空字符串，也不等于数字 `0`。
+
+最后创建订单项：
+
+```sql
+CREATE TABLE order_items (
+  order_id BIGINT NOT NULL
+    REFERENCES orders (id) ON DELETE CASCADE,
+  product_id BIGINT NOT NULL REFERENCES products (id),
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  unit_price NUMERIC(10, 2) NOT NULL CHECK (unit_price >= 0),
+  PRIMARY KEY (order_id, product_id)
+);
+```
+
+这里使用 `(order_id, product_id)` 作为联合主键，同一个订单里的一种商品只保存一行。删除订单时，订单项没有独立存在的意义，因此使用 `ON DELETE CASCADE` 一起删除。
+
+`unit_price` 保存下单时的价格快照。以后商品涨价，只改 `products.price`，历史订单金额不能跟着变化。`orders.total_amount` 同样是订单确认时的快照，真实项目需要在同一个事务中维护它和订单项的一致性。
+
+表建好后，用 `\dt` 查看全部表，用 `\d orders` 查看订单表的列、约束和索引。
+
+需要调整结构时使用 `ALTER TABLE`。例如给商品增加可选描述：
+
+```sql
+ALTER TABLE products ADD COLUMN description TEXT;
+```
+
+真实项目的表结构变更应该交给迁移工具管理。给大表改类型、增加带默认值的列或重建约束可能持有锁，不要把本地的一条 `ALTER TABLE` 直接复制到生产环境。
+
+## 写入第一批数据
+
+先插入三个用户。没有提供 `id` 和 `created_at`，PostgreSQL 会使用身份列和默认值：
+
+```sql
+INSERT INTO users (email, display_name)
+VALUES
+  ('alice@example.com', 'Alice'),
+  ('bob@example.com', 'Bob'),
+  ('carol@example.com', 'Carol')
+RETURNING id, email, created_at;
+```
+
+`RETURNING` 会直接返回本次写入后的列，不需要再发一次查询。它也可以用在 `UPDATE` 和 `DELETE` 中，是 PostgreSQL 很实用的扩展。
+
+再插入商品：
+
+```sql
+INSERT INTO products (sku, name, price, stock, active)
+VALUES
+  ('KB-001', 'Mechanical Keyboard', 599.00, 10, TRUE),
+  ('HUB-001', 'USB-C Hub', 199.00, 5, TRUE),
+  ('STAND-001', 'Laptop Stand', 259.00, 8, TRUE),
+  ('CABLE-001', 'USB-C Cable', 59.90, 30, FALSE);
+```
+
+`INSERT` 既能写一行，也能在一个 `VALUES` 中写多行。字段列表最好始终明确写出，避免以后表结构变化时，值和列错位。
+
+如果唯一字段冲突，普通 `INSERT` 会报错。`ON CONFLICT` 可以把它改成忽略或更新：
+
+```sql
+INSERT INTO products (sku, name, price, stock)
+VALUES ('HUB-001', 'USB-C Hub', 199.00, 5)
+ON CONFLICT (sku) DO UPDATE
+SET
+  name = EXCLUDED.name,
+  price = EXCLUDED.price,
+  stock = EXCLUDED.stock
+RETURNING id, sku, price, stock;
+```
+
+`EXCLUDED` 表示原本准备插入、但发生冲突的那一行。`ON CONFLICT (sku)` 能工作，是因为 `sku` 上有唯一约束。这个模式通常叫 upsert，但不要用它掩盖意外的唯一键冲突。
+
+为了让后面的关联查询有数据，再写入三个订单：
+
+```sql
+INSERT INTO orders (order_no, user_id, status, total_amount, paid_at)
+SELECT 'ORD-20260819-001', id, 'paid', 997.00, CURRENT_TIMESTAMP
+FROM users
+WHERE email = 'alice@example.com';
+
+INSERT INTO orders (order_no, user_id, status, total_amount)
+SELECT 'ORD-20260819-002', id, 'pending', 259.00
+FROM users
+WHERE email = 'alice@example.com';
+
+INSERT INTO orders (order_no, user_id, status, total_amount, paid_at)
+SELECT 'ORD-20260819-003', id, 'paid', 398.00, CURRENT_TIMESTAMP
+FROM users
+WHERE email = 'bob@example.com';
+```
+
+这里的 `INSERT ... SELECT` 把查询结果写进目标表。最后补上订单项：
+
+```sql
+INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+SELECT
+  orders.id,
+  products.id,
+  wanted.quantity,
+  products.price
+FROM (
+  VALUES
+    ('ORD-20260819-001', 'KB-001', 1),
+    ('ORD-20260819-001', 'HUB-001', 2),
+    ('ORD-20260819-002', 'STAND-001', 1),
+    ('ORD-20260819-003', 'HUB-001', 2)
+) AS wanted(order_no, sku, quantity)
+JOIN orders ON orders.order_no = wanted.order_no
+JOIN products ON products.sku = wanted.sku;
+```
+
+上面为了准备数据，一次用到了派生表和 JOIN。暂时只要知道它把订单号、SKU 和数量映射成了真实主键，后面会分别拆开这些查询语法。
+
+## 把数据查出来
+
+`SELECT` 的基本结构是：选择列、指定数据来源，再按条件筛选。
+
+```sql
+SELECT id, sku, name, price
+FROM products
+WHERE active = TRUE;
+```
+
+布尔列本身就可以作为条件，所以上面也能写成 `WHERE active`。明确列名比 `SELECT *` 更稳定：表新增字段后，接口结果不会无意中改变，也能避免读出根本用不到的大字段。
+
+多个条件用 `AND`、`OR`、`NOT` 组合：
+
+```sql
+SELECT sku, name, price, stock
+FROM products
+WHERE active
+  AND price BETWEEN 100 AND 600
+  AND stock > 0
+ORDER BY price DESC;
+```
+
+这会按价格从高到低返回键盘、支架和扩展坞。常用的筛选写法还有：
+
+```sql
+-- 匹配集合中的任意值
+SELECT order_no, status
+FROM orders
+WHERE status IN ('pending', 'paid');
+
+-- ILIKE 是 PostgreSQL 的不区分大小写匹配
+SELECT sku, name
+FROM products
+WHERE name ILIKE '%usb%';
+
+-- NULL 需要用 IS NULL 或 IS NOT NULL 判断
+SELECT order_no, status
+FROM orders
+WHERE paid_at IS NULL;
+
+-- 去掉重复值
+SELECT DISTINCT status
+FROM orders
+ORDER BY status;
+```
+
+`paid_at = NULL` 不会得到想要的结果。`NULL` 参与普通比较时，结果是未知，不是 `TRUE`；筛选条件只保留结果为 `TRUE` 的行。
+
+排序和分页通常一起出现：
+
+```sql
+SELECT order_no, status, total_amount, created_at
+FROM orders
+ORDER BY created_at DESC, id DESC
+LIMIT 20 OFFSET 0;
+```
+
+没有 `ORDER BY`，数据库不保证返回顺序。即使这次看起来按 ID 排列，下次执行也可能不同。`OFFSET` 适合简单的小数据分页，页码很深时会扫描并丢弃大量行，真实项目通常改用基于游标的分页。
+
+## 更新和删除之前先确认范围
+
+`UPDATE` 修改符合条件的行：
+
+```sql
+UPDATE products
+SET price = 209.00
+WHERE sku = 'HUB-001'
+RETURNING id, sku, price;
+```
+
+`DELETE` 删除符合条件的行：
+
+```sql
+DELETE FROM orders
+WHERE status = 'cancelled'
+  AND created_at < CURRENT_TIMESTAMP - INTERVAL '90 days'
+RETURNING id, order_no;
+```
+
+执行写操作前，我通常先把相同条件放进 `SELECT`，确认范围：
+
+```sql
+SELECT id, order_no
+FROM orders
+WHERE status = 'cancelled'
+  AND created_at < CURRENT_TIMESTAMP - INTERVAL '90 days';
+```
+
+漏掉 `WHERE` 会更新或删除整张表。还不确定时，可以先放进事务，检查 `RETURNING` 的结果后再决定 `COMMIT` 还是 `ROLLBACK`：
+
+```sql
+BEGIN;
+
+UPDATE products
+SET price = ROUND(price * 0.9, 2)
+WHERE active
+RETURNING sku, price;
+
+ROLLBACK;
+```
+
+`DELETE`、`TRUNCATE` 和 `DROP` 解决的问题不同：
+
+| 命令 | 结果 |
+| --- | --- |
+| `DELETE FROM table WHERE ...` | 删除指定行，可以带条件和 `RETURNING` |
+| `TRUNCATE TABLE table` | 快速清空整张表，不支持 `WHERE` |
+| `DROP TABLE table` | 连表结构一起删除 |
+
+这三条都不是“清理一下”的同义词。尤其是 `TRUNCATE` 和 `DROP`，运行前必须确认当前数据库和目标表。
+
+## 把多张表连起来
+
+订单表只保存 `user_id`，订单项只保存 `product_id`。需要显示用户名和商品名时，再通过 JOIN 把相关行组合起来：
+
+```sql
+SELECT
+  orders.order_no,
+  users.display_name,
+  products.name AS product_name,
+  order_items.quantity,
+  order_items.unit_price,
+  order_items.quantity * order_items.unit_price AS subtotal
+FROM orders
+JOIN users ON users.id = orders.user_id
+JOIN order_items ON order_items.order_id = orders.id
+JOIN products ON products.id = order_items.product_id
+ORDER BY orders.order_no, products.name;
+```
+
+没有写类型的 `JOIN` 默认是 `INNER JOIN`，只保留两边都能匹配的行。结果中每个订单项占一行：
+
+| order_no | display_name | product_name | quantity | unit_price | subtotal |
+| --- | --- | --- | ---: | ---: | ---: |
+| ORD-20260819-001 | Alice | Mechanical Keyboard | 1 | 599.00 | 599.00 |
+| ORD-20260819-001 | Alice | USB-C Hub | 2 | 199.00 | 398.00 |
+| ORD-20260819-002 | Alice | Laptop Stand | 1 | 259.00 | 259.00 |
+| ORD-20260819-003 | Bob | USB-C Hub | 2 | 199.00 | 398.00 |
+
+一张订单因为有多个订单项，会在结果中出现多行。这不是重复数据，而是 JOIN 后结果的粒度变成了“一行一个订单项”。JOIN 之前先想清楚每张表的一行代表什么，很多重复计数问题都能在这里发现。
+
+如果希望没有订单的用户也出现，需要使用 `LEFT JOIN`：
+
+```sql
+SELECT
+  users.id,
+  users.display_name,
+  COUNT(orders.id) AS order_count
+FROM users
+LEFT JOIN orders ON orders.user_id = users.id
+GROUP BY users.id, users.display_name
+ORDER BY users.id;
+```
+
+`LEFT JOIN` 会保留左边的全部用户，找不到订单时，右边的订单列会是 `NULL`，因此 Carol 的 `order_count` 是 `0`。
+
+这里要写 `COUNT(orders.id)`，不能写 `COUNT(*)`。后者会把 Carol 那一行带有空订单列的连接结果也算进去，得到 `1`。
+
+`RIGHT JOIN` 可以交换左右方向，通常改写成更容易阅读的 `LEFT JOIN`。`FULL JOIN` 保留两边未匹配的行，`CROSS JOIN` 生成笛卡尔积。它们有明确用途，但不是日常业务查询的主力。
+
+## 聚合多行数据
+
+`COUNT`、`SUM`、`AVG`、`MIN` 和 `MAX` 会把多行压缩成统计结果。例如统计已支付订单：
+
+```sql
+SELECT
+  users.display_name,
+  COUNT(orders.id) AS paid_order_count,
+  COALESCE(SUM(orders.total_amount), 0) AS paid_total
+FROM users
+LEFT JOIN orders
+  ON orders.user_id = users.id
+  AND orders.status = 'paid'
+GROUP BY users.id, users.display_name
+ORDER BY paid_total DESC;
+```
+
+结果如下：
+
+| display_name | paid_order_count | paid_total |
+| --- | ---: | ---: |
+| Alice | 1 | 997.00 |
+| Bob | 1 | 398.00 |
+| Carol | 0 | 0 |
+
+`GROUP BY` 定义按哪些列分组，其他出现在 `SELECT` 中的普通列也必须进入分组。聚合没有匹配行时，`SUM` 返回 `NULL`，`COALESCE` 会取第一个非空值，所以这里把它转换成 `0`。
+
+连接已支付订单的条件写在 `ON` 中，是为了继续保留没有已支付订单的用户。如果把 `orders.status = 'paid'` 放进 `WHERE`，那些右表为 `NULL` 的行也会被过滤，`LEFT JOIN` 就退化成了接近 `INNER JOIN` 的结果。
+
+`WHERE` 在分组前过滤行，`HAVING` 在分组后过滤聚合结果：
+
+```sql
+SELECT
+  users.display_name,
+  SUM(orders.total_amount) AS paid_total
+FROM users
+JOIN orders ON orders.user_id = users.id
+WHERE orders.status = 'paid'
+GROUP BY users.id, users.display_name
+HAVING SUM(orders.total_amount) >= 500
+ORDER BY paid_total DESC;
+```
+
+这个查询只会留下已支付金额至少为 `500` 的 Alice。
+
+## 用表达式整理结果
+
+`CASE` 可以根据条件生成一列，而不是修改原始数据：
+
+```sql
+SELECT
+  sku,
+  name,
+  CASE
+    WHEN NOT active THEN 'offline'
+    WHEN stock = 0 THEN 'out_of_stock'
+    WHEN stock < 10 THEN 'low_stock'
+    ELSE 'in_stock'
+  END AS stock_status
+FROM products
+ORDER BY sku;
+```
+
+`COALESCE` 常用于为空值提供展示上的默认值：
+
+```sql
+SELECT
+  order_no,
+  COALESCE(paid_at::TEXT, '未支付') AS payment_time
+FROM orders
+ORDER BY order_no;
+```
+
+`::TEXT` 是 PostgreSQL 的类型转换简写，标准 SQL 也可以写成 `CAST(paid_at AS TEXT)`。
+
+字符串可以使用 `||` 拼接，时间可以配合 `INTERVAL` 运算：
+
+```sql
+SELECT display_name || ' <' || email || '>' AS label
+FROM users;
+
+SELECT order_no, created_at
+FROM orders
+WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '7 days';
+```
+
+数据库内置函数很多，不需要在入门时全部记住。先掌握查询的结构，遇到具体的文本、日期和数学处理需求时再查对应函数。
+
+## 子查询和 CTE 都在拆问题
+
+查询可以嵌套在另一个查询中。下面先计算在售商品的平均价格，再找出高于平均价的商品：
+
+```sql
+SELECT sku, name, price
+FROM products
+WHERE active
+  AND price > (
+    SELECT AVG(price)
+    FROM products
+    WHERE active
+  )
+ORDER BY price DESC;
+```
+
+括号里的子查询只返回一个值，因此可以直接参与比较。相关子查询、`EXISTS` 等写法也很常见，但先把普通 JOIN 和聚合写清楚，通常更容易检查结果。
+
+CTE 使用 `WITH` 给一段查询起名字。查询层级变多时，它能把步骤拆开：
+
+```sql
+WITH paid_totals AS (
+  SELECT
+    user_id,
+    SUM(total_amount) AS total_amount
+  FROM orders
+  WHERE status = 'paid'
+  GROUP BY user_id
+)
+SELECT
+  users.display_name,
+  paid_totals.total_amount
+FROM paid_totals
+JOIN users ON users.id = paid_totals.user_id
+WHERE paid_totals.total_amount >= 500;
+```
+
+CTE 可以理解成只在这一条语句中存在的命名查询，但不要把它简单等同于“必定生成临时表”。从 PostgreSQL 12 开始，单次引用、没有副作用的 CTE 默认可能被合并进外层查询一起优化。
+
+递归 CTE 能处理树和图，窗口函数能在保留明细行的同时计算排名和累计值。它们很有用，但不属于这篇快速入门的主线。
+
+## 用事务把多步操作绑在一起
+
+创建订单、写入订单项、扣减库存和更新总金额是一个整体。如果只成功一半，数据库就会进入错误状态。事务让这一组操作要么全部提交，要么全部撤销。
+
+下面给待支付订单增加一个扩展坞，并同步扣减库存：
+
+```sql
+BEGIN;
+
+UPDATE products
+SET stock = stock - 1
+WHERE sku = 'HUB-001'
+  AND stock >= 1
+RETURNING id, sku, stock;
+
+INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+SELECT
+  orders.id,
+  products.id,
+  1,
+  products.price
+FROM orders
+CROSS JOIN products
+WHERE orders.order_no = 'ORD-20260819-002'
+  AND products.sku = 'HUB-001'
+ON CONFLICT (order_id, product_id) DO UPDATE
+SET quantity = order_items.quantity + EXCLUDED.quantity;
+
+UPDATE orders
+SET total_amount = (
+  SELECT SUM(quantity * unit_price)
+  FROM order_items
+  WHERE order_id = orders.id
+)
+WHERE order_no = 'ORD-20260819-002'
+RETURNING order_no, total_amount;
+
+COMMIT;
+```
+
+`BEGIN` 开启事务，`COMMIT` 让全部修改生效。如果库存更新的 `RETURNING` 没有返回行，说明商品不存在或库存不足，应用应该停止后续语句并执行 `ROLLBACK`。不能只发出更新命令，却不检查实际影响了几行。
+
+`stock >= 1` 和减库存写在同一条 `UPDATE` 中，比先查库存、再单独更新更安全。并发请求会竞争同一行的锁，但完整的下单并发控制还涉及锁和隔离级别，应该单独展开。
+
+遇到错误时也需要回滚：
+
+```sql
+BEGIN;
+
+UPDATE products
+SET stock = -1
+WHERE sku = 'HUB-001';
+
+-- 上一条违反 CHECK 约束后，当前事务进入失败状态
+SELECT sku, stock FROM products;
+
+ROLLBACK;
+```
+
+PostgreSQL 的一条语句在事务中失败后，后续普通语句不会继续执行，而是提示当前事务已经中止。执行 `ROLLBACK` 后才能回到可用状态。
+
+如果没有显式写 `BEGIN`，每条成功的 SQL 仍会在自己的隐式事务中提交。真正需要原子性的是跨越多条语句的业务操作。
+
+## 索引不是越多越好
+
+没有索引时，数据库可能需要逐行扫描整张表。索引建立了一份额外的数据结构，让特定条件和排序能更快定位行。PostgreSQL 的 `CREATE INDEX` 默认创建 B-tree，适合等值、范围和排序查询。
+
+外键不会自动在引用列上创建索引。根据前面的关联和查询，可以先补这几个：
+
+```sql
+CREATE INDEX orders_user_id_idx ON orders (user_id);
+
+CREATE INDEX orders_status_created_at_idx
+ON orders (status, created_at DESC);
+
+CREATE INDEX order_items_product_id_idx
+ON order_items (product_id);
+```
+
+主键和唯一约束已经自动创建唯一 B-tree 索引，不要再给 `users.id`、`users.email` 或 `products.sku` 重复建一份。
+
+联合索引 `(status, created_at)` 最适合先按 `status` 等值过滤、再按 `created_at` 查询或排序的场景。列顺序应该来自真实查询，不是把所有常用列都塞进一个大索引。
+
+索引会占空间，每次 `INSERT`、`UPDATE` 和 `DELETE` 也需要维护它。读取更快、写入更慢是它的基本交换，应该先观察查询，再建立和验证索引。
+
+## 用 EXPLAIN 看数据库准备怎么查
+
+在 SQL 前加 `EXPLAIN`，PostgreSQL 会显示查询计划，但不真正执行查询：
+
+```sql
+EXPLAIN
+SELECT order_no, status, total_amount
+FROM orders
+WHERE status = 'paid'
+ORDER BY created_at DESC;
+```
+
+刚开始先认几个节点：
+
+- `Seq Scan`：顺序扫描整张表。
+- `Index Scan`：通过索引定位行，再读取表数据。
+- `Index Only Scan`：需要的列可以直接从索引取得。
+- `Nested Loop`、`Hash Join`、`Merge Join`：不同的连接方式。
+- `Sort`：额外排序步骤。
+
+`cost` 是规划器内部的成本估算，不是毫秒；`rows` 是预计行数。示例只有几行数据，顺序扫描整张表可能比走索引更便宜，所以看到 `Seq Scan` 不代表索引失效。
+
+加入 `ANALYZE` 后，查询会真正执行，并显示实际耗时和行数：
+
+```sql
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT order_no, status, total_amount
+FROM orders
+WHERE status = 'paid'
+ORDER BY created_at DESC;
+```
+
+预计行数和实际行数相差很大时，统计信息、数据分布或查询条件可能需要进一步检查。`BUFFERS` 可以看到缓存页的读取情况，但这里只需先认识，不必急着分析每个数字。
+
+`EXPLAIN ANALYZE` 对写操作同样会真正写入。只想观察计划又不想保留影响时，需要用事务保护：
+
+```sql
+BEGIN;
+EXPLAIN ANALYZE
+UPDATE products SET price = price * 1.01 WHERE active;
+ROLLBACK;
+```
+
+## 先认识几个 PostgreSQL 特色
+
+前面已经用过 `RETURNING`、`ILIKE`、`ON CONFLICT`、`::` 类型转换和 `TIMESTAMPTZ`。除此之外，PostgreSQL 还原生支持 JSONB、数组和 UUID：
+
+```sql
+SELECT '{"theme": "dark", "language": "zh-CN"}'::JSONB ->> 'theme';
+
+SELECT ARRAY['sql', 'postgresql'] @> ARRAY['sql'];
+```
+
+JSONB 和数组适合保存有明确边界的半结构化数据，但不能因为方便就把用户、订单和商品全部塞进一个 JSON 字段。需要关联、约束和独立查询的数据，仍然优先使用普通列和关系表。
+
+PostgreSQL 18 新增了时间有序的 UUID v7 生成函数：
+
+```sql
+-- 仅 PostgreSQL 18+
+SELECT uuidv7();
+```
+
+本文主线使用身份列，是为了让示例更容易阅读。真实项目选自增整数还是 UUID，需要结合数据合并、离线生成、暴露方式和存储成本决定。
+
+## 最容易踩坑的地方
+
+刚开始使用 PostgreSQL 时，下面这些规则比背更多语法重要：
+
+1. **字符串用单引号，标识符用双引号。** 最省事的做法是标识符统一使用小写 `snake_case`，避免双引号。
+2. **`NULL` 不等于任何值。** 使用 `IS NULL`、`IS NOT NULL`，展示时再考虑 `COALESCE`。
+3. **没有 `ORDER BY` 就没有稳定顺序。** 主查询中的排序才决定最终结果。
+4. **金额使用 `NUMERIC`。** 浮点数不能保证十进制金额的精确结果。
+5. **业务时间优先考虑 `TIMESTAMPTZ`。** 它表示确定时刻，但不保存原始时区名称。
+6. **身份列不保证编号连续。** 事务回滚或冲突都可能让序列出现空洞，ID 只能用于标识，不能承担业务编号含义。
+7. **主键和唯一约束会创建索引，外键引用列不会。** 是否给外键列建索引，要结合连接和删除检查决定。
+8. **`WHERE` 和 `HAVING` 不在同一阶段。** 前者过滤明细行，后者过滤分组结果。
+9. **事务失败后先 `ROLLBACK`。** 不要在已经中止的事务里反复尝试其他语句。
+10. **`EXPLAIN ANALYZE` 会真正执行。** 分析写操作时先用事务包住。
+11. **CTE 不一定会物化。** 它首先是组织查询的工具，不应该被默认当作优化屏障。
+12. **写操作先确认范围。** 对 `UPDATE` 和 `DELETE` 先执行同条件的 `SELECT`，重要操作再加事务保护。
+
+## 一张常用 SQL 速查表
+
+| 目的 | 语法 |
+| --- | --- |
+| 查看数据 | `SELECT columns FROM table` |
+| 筛选 | `WHERE condition` |
+| 排序 | `ORDER BY column ASC / DESC` |
+| 限制数量 | `LIMIT count OFFSET count` |
+| 插入 | `INSERT INTO table (columns) VALUES (...)` |
+| 冲突更新 | `INSERT ... ON CONFLICT (...) DO UPDATE` |
+| 更新 | `UPDATE table SET column = value WHERE ...` |
+| 删除行 | `DELETE FROM table WHERE ...` |
+| 返回写入结果 | `INSERT / UPDATE / DELETE ... RETURNING columns` |
+| 内连接 | `FROM a JOIN b ON ...` |
+| 保留左表 | `FROM a LEFT JOIN b ON ...` |
+| 分组 | `GROUP BY columns` |
+| 过滤分组 | `HAVING aggregate_condition` |
+| 公共表表达式 | `WITH name AS (...) SELECT ...` |
+| 开启事务 | `BEGIN` |
+| 提交 / 回滚 | `COMMIT` / `ROLLBACK` |
+| 创建索引 | `CREATE INDEX name ON table (columns)` |
+| 查看查询计划 | `EXPLAIN query` |
+| 实际执行并分析 | `EXPLAIN (ANALYZE, BUFFERS) query` |
+
+## 完整初始化脚本
+
+下面的脚本用于全新的 `shop` 练习数据库。它不会主动删除已有对象，因此同一个数据库只需要执行一次：
+
+```sql title="shop.sql"
+CREATE TABLE users (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE products (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  sku TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
+  stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE products ADD COLUMN description TEXT;
+
+CREATE TABLE orders (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  order_no TEXT NOT NULL UNIQUE,
+  user_id BIGINT NOT NULL REFERENCES users (id),
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'paid', 'cancelled')),
+  total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0
+    CHECK (total_amount >= 0),
+  paid_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE order_items (
+  order_id BIGINT NOT NULL
+    REFERENCES orders (id) ON DELETE CASCADE,
+  product_id BIGINT NOT NULL REFERENCES products (id),
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  unit_price NUMERIC(10, 2) NOT NULL CHECK (unit_price >= 0),
+  PRIMARY KEY (order_id, product_id)
+);
+
+INSERT INTO users (email, display_name)
+VALUES
+  ('alice@example.com', 'Alice'),
+  ('bob@example.com', 'Bob'),
+  ('carol@example.com', 'Carol');
+
+INSERT INTO products (sku, name, price, stock, active)
+VALUES
+  ('KB-001', 'Mechanical Keyboard', 599.00, 10, TRUE),
+  ('HUB-001', 'USB-C Hub', 199.00, 5, TRUE),
+  ('STAND-001', 'Laptop Stand', 259.00, 8, TRUE),
+  ('CABLE-001', 'USB-C Cable', 59.90, 30, FALSE);
+
+INSERT INTO orders (order_no, user_id, status, total_amount, paid_at)
+SELECT 'ORD-20260819-001', id, 'paid', 997.00, CURRENT_TIMESTAMP
+FROM users
+WHERE email = 'alice@example.com';
+
+INSERT INTO orders (order_no, user_id, status, total_amount)
+SELECT 'ORD-20260819-002', id, 'pending', 259.00
+FROM users
+WHERE email = 'alice@example.com';
+
+INSERT INTO orders (order_no, user_id, status, total_amount, paid_at)
+SELECT 'ORD-20260819-003', id, 'paid', 398.00, CURRENT_TIMESTAMP
+FROM users
+WHERE email = 'bob@example.com';
+
+INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+SELECT
+  orders.id,
+  products.id,
+  wanted.quantity,
+  products.price
+FROM (
+  VALUES
+    ('ORD-20260819-001', 'KB-001', 1),
+    ('ORD-20260819-001', 'HUB-001', 2),
+    ('ORD-20260819-002', 'STAND-001', 1),
+    ('ORD-20260819-003', 'HUB-001', 2)
+) AS wanted(order_no, sku, quantity)
+JOIN orders ON orders.order_no = wanted.order_no
+JOIN products ON products.sku = wanted.sku;
+
+CREATE INDEX orders_user_id_idx ON orders (user_id);
+
+CREATE INDEX orders_status_created_at_idx
+ON orders (status, created_at DESC);
+
+CREATE INDEX order_items_product_id_idx
+ON order_items (product_id);
+```
+
+保存成 `shop.sql` 后，可以从宿主机执行：
+
+```bash
+docker exec -i pg-quick-start psql -U postgres -d shop < shop.sql
+```
+
+## 刚开始记住这些规则
+
+建表时先选对数据类型，再用主键、外键、唯一约束和检查约束守住数据。查询时先确定结果中“一行代表什么”，再决定 JOIN 和聚合，能避开大量重复统计问题。
+
+涉及多张表的写操作放进事务，任何一步失败都回滚。查询变慢时不要凭感觉加索引，先找到真实慢查询，用 `EXPLAIN (ANALYZE, BUFFERS)` 比较预计行数和实际行数，再根据筛选、连接和排序方式设计索引。
+
+这篇文章覆盖的是日常开发的起点。接下来可以继续学习窗口函数、锁与隔离级别、视图、JSONB 索引、全文搜索、分区、权限、备份恢复和复制。ORM 能减少重复代码，但不能代替对这些 SQL 和数据库行为的理解。
+
+## 参考资料
+
+- [PostgreSQL 18 官方文档](https://www.postgresql.org/docs/18/)
+- [PostgreSQL 版本政策](https://www.postgresql.org/support/versioning/)
+- [SQL 语言教程](https://www.postgresql.org/docs/18/tutorial-sql.html)
+- [数据定义与约束](https://www.postgresql.org/docs/18/ddl.html)
+- [数据操作与 RETURNING](https://www.postgresql.org/docs/18/dml.html)
+- [查询语法](https://www.postgresql.org/docs/18/queries.html)
+- [事务](https://www.postgresql.org/docs/18/tutorial-transactions.html)
+- [索引](https://www.postgresql.org/docs/18/indexes.html)
+- [使用 EXPLAIN](https://www.postgresql.org/docs/18/using-explain.html)
