@@ -29,8 +29,8 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   ),
   title: {
-    default: '开发札记',
-    template: '%s | 开发札记',
+    default: 'Tuntun',
+    template: '%s | Tuntun',
   },
 }
 

@@ -11,7 +11,7 @@ import {
 import styles from '@/components/blog/blog.module.css'
 
 export const metadata: Metadata = {
-  description: '来自开发札记的工程实践、技术观察与产品思考。',
+  description: '工程实践、技术观察与产品思考。',
   title: '博客',
 }
 
@@ -59,8 +59,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
     <div className={styles.listPage}>
       <header className={styles.listIntro}>
         <div>
-          <p className={styles.kicker}>WRITING</p>
-          <h1 className={styles.listTitle}>开发札记</h1>
+          <h1 className={styles.listTitle}>文章</h1>
         </div>
         <div>
           <p className={styles.listLead}>
