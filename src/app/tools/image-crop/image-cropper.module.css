@@ -1,5 +1,5 @@
 .cropper {
-  --crop-canvas: color-mix(in oklab, var(--primary) 2.5%, var(--background));
+  --crop-canvas: var(--tools-canvas);
   --crop-surface: color-mix(in oklab, var(--card) 90%, transparent);
   --crop-surface-solid: color-mix(in oklab, var(--card) 98%, var(--background));
   --crop-line: color-mix(in oklab, var(--foreground) 10%, transparent);
@@ -10,13 +10,7 @@
 
   min-height: calc(100svh - var(--site-header-height));
   color: var(--foreground);
-  background:
-    radial-gradient(
-      circle at 15% 0%,
-      color-mix(in oklab, var(--primary) 5%, transparent),
-      transparent 29rem
-    ),
-    var(--crop-canvas);
+  background: var(--crop-canvas);
 }
 
 .fileInput {

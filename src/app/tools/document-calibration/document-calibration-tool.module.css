@@ -1,9 +1,5 @@
 .tool {
-  --calibration-canvas: color-mix(
-    in oklab,
-    var(--primary) 2.5%,
-    var(--background)
-  );
+  --calibration-canvas: var(--tools-canvas);
   --calibration-line: color-mix(in oklab, var(--foreground) 11%, transparent);
   --calibration-line-strong: color-mix(
     in oklab,
@@ -29,13 +25,7 @@
   height: calc(100svh - var(--site-header-height));
   overflow: hidden;
   color: var(--foreground);
-  background:
-    radial-gradient(
-      circle at 50% 0%,
-      color-mix(in oklab, var(--primary) 5%, transparent),
-      transparent 32rem
-    ),
-    var(--calibration-canvas);
+  background: var(--calibration-canvas);
 }
 
 .fileInput,

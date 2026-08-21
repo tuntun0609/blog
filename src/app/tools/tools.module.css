@@ -1,26 +1,4 @@
 .shell {
-  --tools-warm-paper: oklch(0.972 0.012 82);
-  --tools-canvas: color-mix(
-    in oklab,
-    var(--home-paper) 72%,
-    var(--tools-warm-paper)
-  );
-  --tools-card: color-mix(
-    in oklab,
-    var(--home-paper) 92%,
-    var(--tools-warm-paper)
-  );
-  --tools-image-paper: oklch(0.955 0.015 82);
-  --tools-image-line: oklch(0.82 0.016 82 / 62%);
-  --tools-line: color-mix(in oklab, var(--home-ink) 13%, transparent);
-  --tools-line-strong: color-mix(in oklab, var(--home-ink) 24%, transparent);
-  --tools-accent: oklch(0.5 0.09 303);
-  --tools-accent-soft: color-mix(
-    in oklab,
-    var(--tools-accent) 8%,
-    var(--tools-canvas)
-  );
-
   min-height: 100vh;
   color: var(--home-ink);
   background: var(--tools-canvas);

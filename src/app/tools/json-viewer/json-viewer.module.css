@@ -12,13 +12,7 @@
   min-height: calc(100svh - var(--site-header-height));
   padding: 1rem 1rem 0rem;
   color: var(--foreground);
-  background:
-    radial-gradient(
-      circle at 50% -10%,
-      color-mix(in oklab, var(--primary) 8%, transparent),
-      transparent 32rem
-    ),
-    var(--background);
+  background: var(--tools-canvas);
 }
 
 .workspace {

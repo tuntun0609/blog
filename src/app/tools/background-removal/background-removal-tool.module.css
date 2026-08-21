@@ -1,5 +1,5 @@
 .tool {
-  --removal-canvas: color-mix(in oklab, var(--primary) 2%, var(--background));
+  --removal-canvas: var(--tools-canvas);
   --removal-surface: var(--background);
   --removal-line: color-mix(in oklab, var(--foreground) 12%, transparent);
   --removal-line-strong: color-mix(

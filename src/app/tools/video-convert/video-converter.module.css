@@ -15,8 +15,6 @@
     var(--convert-accent) 9%,
     transparent
   );
-  --convert-canvas: #f2f3f5;
-  --convert-canvas-highlight: #fafafb;
   --convert-surface: rgb(255 255 255 / 92%);
   --convert-surface-solid: #fff;
   --convert-surface-subtle: #f7f7f8;
@@ -49,17 +47,7 @@
   position: relative;
   min-height: calc(100svh - 4.35rem);
   color: var(--convert-ink);
-  background:
-    radial-gradient(
-      circle at 50% -12rem,
-      var(--convert-canvas-highlight) 0,
-      transparent 34rem
-    ),
-    linear-gradient(
-      180deg,
-      var(--convert-canvas-highlight),
-      var(--convert-canvas)
-    );
+  background: var(--tools-canvas);
 }
 
 [class~="dark"] .converter {
@@ -78,8 +66,6 @@
     var(--convert-accent) 18%,
     transparent
   );
-  --convert-canvas: #111318;
-  --convert-canvas-highlight: #191c22;
   --convert-surface: rgb(32 35 42 / 90%);
   --convert-surface-solid: #20232a;
   --convert-surface-subtle: #252830;

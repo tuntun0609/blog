@@ -1,9 +1,5 @@
 .tool {
-  --palette-canvas: color-mix(
-    in oklab,
-    var(--palette-primary) 4%,
-    var(--background)
-  );
+  --palette-canvas: var(--tools-canvas);
   --palette-surface: var(--background);
   --palette-line: color-mix(in oklab, var(--foreground) 12%, transparent);
   --palette-line-strong: color-mix(
@@ -19,22 +15,6 @@
   overflow: hidden;
   color: var(--foreground);
   background: var(--palette-canvas);
-  transition: background-color var(--duration-reveal) var(--ease-out);
-}
-
-.tool[data-has-source] {
-  background:
-    radial-gradient(
-      circle at 12% 10%,
-      color-mix(in oklab, var(--palette-primary) 10%, transparent),
-      transparent 32rem
-    ),
-    radial-gradient(
-      circle at 92% 88%,
-      color-mix(in oklab, var(--palette-secondary) 8%, transparent),
-      transparent 34rem
-    ),
-    var(--palette-canvas);
 }
 
 .fileInput,
