@@ -114,8 +114,7 @@
   transition:
     background-color var(--duration-ui) var(--ease-out),
     border-color var(--duration-ui) var(--ease-out),
-    box-shadow var(--duration-ui) var(--ease-out),
-    transform var(--duration-press) var(--ease-out);
+    box-shadow var(--duration-ui) var(--ease-out);
 }
 
 [class~="dark"] .dropZone {
@@ -646,7 +645,6 @@
     box-shadow:
       0 0 0 3px var(--crop-accent-soft),
       var(--crop-shadow-sm);
-    transform: translateY(-1px);
   }
 }
 

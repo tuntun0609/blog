@@ -444,7 +444,6 @@
 
 .colorCard:hover {
   box-shadow: 0 8px 18px rgb(0 0 0 / 14%);
-  transform: translateY(-2px);
 }
 
 .colorCard:active {
