@@ -4,7 +4,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   Clock3Icon,
-  Layers3Icon,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
@@ -15,6 +14,7 @@ import { ArticlePageActions } from '@/components/blog/page-actions'
 import { ReadingProgress } from '@/components/blog/reading-progress'
 import { getMdxComponents } from '@/components/mdx'
 import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
+import { Badge } from '@/components/ui/badge'
 import {
   blogSource,
   formatPostDate,
@@ -80,7 +80,16 @@ export default async function PostPage({ params }: PostPageProps) {
       <article>
         <header className={styles.articleHeader}>
           <div>
-            <p className={styles.kicker}>ARTICLE / {post.data.category}</p>
+            <ul aria-label="文章分类与标签" className={styles.articleTaxonomy}>
+              <li>
+                <Badge>{post.data.category}</Badge>
+              </li>
+              {post.data.tags.map((tag) => (
+                <li key={tag}>
+                  <Badge variant="secondary">{tag}</Badge>
+                </li>
+              ))}
+            </ul>
             <h1 className={styles.articleTitle}>{post.data.title}</h1>
             <p className={styles.articleDescription}>{post.data.description}</p>
           </div>
@@ -100,13 +109,6 @@ export default async function PostPage({ params }: PostPageProps) {
                 <dd>
                   <Clock3Icon aria-hidden="true" />
                   {readTimeInMinutes} 分钟
-                </dd>
-              </div>
-              <div>
-                <dt>文章分类</dt>
-                <dd>
-                  <Layers3Icon aria-hidden="true" />
-                  {post.data.category}
                 </dd>
               </div>
             </dl>

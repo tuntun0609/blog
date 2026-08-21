@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { formatPostDate } from '@/lib/blog'
+import type { BlogCategory } from '@/lib/blog-taxonomy'
 import styles from './blog.module.css'
 
 interface PostCardProps {
@@ -11,7 +12,7 @@ interface PostCardProps {
       title?: string
       description?: string
       date: string
-      category: string
+      category: BlogCategory
       cover: string
       tags: string[]
     }
@@ -35,18 +36,23 @@ export function PostCard({ post, preload = false }: PostCardProps) {
           />
         </div>
         <div className={styles.postCopy}>
-          <time className={styles.postDate} dateTime={post.data.date}>
-            {formatPostDate(post.data.date)}
-          </time>
+          <div className={styles.postMeta}>
+            <span className={styles.postCategory}>{post.data.category}</span>
+            <time className={styles.postDate} dateTime={post.data.date}>
+              {formatPostDate(post.data.date)}
+            </time>
+          </div>
           <h2 className={styles.postTitle}>{title}</h2>
           <p className={styles.postDescription}>{post.data.description}</p>
-          <ul aria-label="文章标签" className={styles.postTags}>
-            {post.data.tags.map((tag) => (
-              <li key={tag}>
-                <Badge variant="secondary">{tag}</Badge>
-              </li>
-            ))}
-          </ul>
+          {post.data.tags.length > 0 ? (
+            <ul aria-label="文章标签" className={styles.postTags}>
+              {post.data.tags.map((tag) => (
+                <li key={tag}>
+                  <Badge variant="secondary">{tag}</Badge>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </article>
     </Link>

@@ -1,17 +1,20 @@
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
 } from '@/components/ui/pagination'
+import type { BlogCategory } from '@/lib/blog-taxonomy'
 import { getBlogListHref } from '@/lib/blog-url'
 import { cn } from '@/lib/utils'
 import styles from './blog.module.css'
 
 interface BlogPaginationProps {
-  activeTag?: string
+  activeCategory?: BlogCategory
   currentPage: number
+  query?: string
   totalPages: number
 }
 
@@ -31,7 +34,7 @@ function BlogPageLink({
   size = 'icon',
 }: BlogPageLinkProps) {
   return (
-    <a
+    <Link
       aria-current={active ? 'page' : undefined}
       aria-label={label}
       className={cn(
@@ -42,13 +45,14 @@ function BlogPageLink({
       href={href}
     >
       {children}
-    </a>
+    </Link>
   )
 }
 
 export function BlogPagination({
-  activeTag,
+  activeCategory,
   currentPage,
+  query,
   totalPages,
 }: BlogPaginationProps) {
   return (
@@ -57,7 +61,11 @@ export function BlogPagination({
         {currentPage > 1 ? (
           <PaginationItem>
             <BlogPageLink
-              href={getBlogListHref(currentPage - 1, activeTag)}
+              href={getBlogListHref({
+                category: activeCategory,
+                page: currentPage - 1,
+                query,
+              })}
               label="前往上一页"
             >
               <ChevronLeftIcon aria-hidden="true" />
@@ -69,7 +77,11 @@ export function BlogPagination({
             <PaginationItem key={pageNumber}>
               <BlogPageLink
                 active={pageNumber === currentPage}
-                href={getBlogListHref(pageNumber, activeTag)}
+                href={getBlogListHref({
+                  category: activeCategory,
+                  page: pageNumber,
+                  query,
+                })}
                 label={`前往第 ${pageNumber} 页`}
               >
                 {pageNumber}
@@ -80,7 +92,11 @@ export function BlogPagination({
         {currentPage < totalPages ? (
           <PaginationItem>
             <BlogPageLink
-              href={getBlogListHref(currentPage + 1, activeTag)}
+              href={getBlogListHref({
+                category: activeCategory,
+                page: currentPage + 1,
+                query,
+              })}
               label="前往下一页"
             >
               <ChevronRightIcon aria-hidden="true" />

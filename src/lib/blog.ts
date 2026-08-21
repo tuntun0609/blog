@@ -1,7 +1,8 @@
 import { posts } from 'collections/server'
 import { loader } from 'fumadocs-core/source'
 import { slugsFromData } from 'fumadocs-core/source/plugins/slugs'
-import type { BlogTagFacet } from '@/lib/blog-types'
+import { BLOG_CATEGORIES, type BlogCategory } from '@/lib/blog-taxonomy'
+import type { BlogCategoryFacet } from '@/lib/blog-types'
 
 const BLOG_GITHUB_SOURCE_BASE_URL =
   'https://github.com/tuntun0609/blog/blob/master'
@@ -14,7 +15,7 @@ export const blogSource = loader({
 
 export const POSTS_PER_PAGE = 20
 
-const tagNameCollator = new Intl.Collator('zh-CN')
+const SEARCH_TERM_SEPARATOR = /\s+/
 
 const publishedPosts = Object.freeze(
   blogSource
@@ -23,24 +24,58 @@ const publishedPosts = Object.freeze(
     .sort((a, b) => Date.parse(b.data.date) - Date.parse(a.data.date))
 )
 
-const tagFacets = Object.freeze(
-  Array.from(
-    publishedPosts.reduce((counts, post) => {
-      for (const tag of new Set(post.data.tags)) {
-        counts.set(tag, (counts.get(tag) ?? 0) + 1)
-      }
-
-      return counts
-    }, new Map<string, number>())
-  )
-    .map(([name, count]) => ({ count, name }))
-    .sort(
-      (a, b) => b.count - a.count || tagNameCollator.compare(a.name, b.name)
-    )
+const categoryFacets = Object.freeze(
+  BLOG_CATEGORIES.map((name) => ({
+    count: publishedPosts.filter((post) => post.data.category === name).length,
+    name,
+  })) satisfies BlogCategoryFacet[]
 )
+
+interface PublishedPostFilters {
+  category?: BlogCategory
+  query?: string
+}
+
+const normalizeSearchText = (value: string): string =>
+  value.normalize('NFKC').trim().toLocaleLowerCase('zh-CN')
+
+const matchesSearchQuery = (
+  post: (typeof publishedPosts)[number],
+  query: string
+): boolean => {
+  const searchTerms = normalizeSearchText(query)
+    .split(SEARCH_TERM_SEPARATOR)
+    .filter(Boolean)
+
+  if (searchTerms.length === 0) {
+    return true
+  }
+
+  const searchableText = normalizeSearchText(
+    [
+      post.data.title,
+      post.data.description,
+      post.data.category,
+      ...post.data.tags,
+    ].join('\n')
+  )
+
+  return searchTerms.every((term) => searchableText.includes(term))
+}
 
 export function getPublishedPosts() {
   return publishedPosts
+}
+
+export function getFilteredPublishedPosts({
+  category,
+  query,
+}: PublishedPostFilters) {
+  return publishedPosts.filter(
+    (post) =>
+      (!category || post.data.category === category) &&
+      (!query || matchesSearchQuery(post, query))
+  )
 }
 
 export async function getPostMarkdown(
@@ -67,8 +102,8 @@ export function getRecentPosts(limit: number) {
   return publishedPosts.slice(0, limit)
 }
 
-export function getPublishedTagFacets(): readonly BlogTagFacet[] {
-  return tagFacets
+export function getPublishedCategoryFacets(): readonly BlogCategoryFacet[] {
+  return categoryFacets
 }
 
 export function formatPostDate(date: string) {

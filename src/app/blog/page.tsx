@@ -1,13 +1,23 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BlogPagination } from '@/components/blog/blog-pagination'
+import { CategoryFilter } from '@/components/blog/category-filter'
 import { PostCard } from '@/components/blog/post-card'
-import { TagFilter } from '@/components/blog/tag-filter'
+import { Button } from '@/components/ui/button'
 import {
-  getPublishedPosts,
-  getPublishedTagFacets,
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from '@/components/ui/empty'
+import {
+  getFilteredPublishedPosts,
+  getPublishedCategoryFacets,
   POSTS_PER_PAGE,
 } from '@/lib/blog'
+import { BLOG_CATEGORIES, isBlogCategory } from '@/lib/blog-taxonomy'
 import styles from '@/components/blog/blog.module.css'
 
 export const metadata: Metadata = {
@@ -17,26 +27,42 @@ export const metadata: Metadata = {
 
 interface BlogPageProps {
   searchParams: Promise<{
+    category?: string | string[]
     page?: string | string[]
+    q?: string | string[]
     tag?: string | string[]
   }>
 }
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
-  const posts = getPublishedPosts()
-  const tags = getPublishedTagFacets()
-  const { page, tag } = await searchParams
-  const pageValue = Array.isArray(page) ? page[0] : page
-  const tagValue = Array.isArray(tag) ? tag[0] : tag
-  const activeTag = tagValue?.trim() || undefined
-
-  if (activeTag && !tags.some((item) => item.name === activeTag)) {
+  const { category, page, q, tag } = await searchParams
+  if (tag !== undefined) {
     notFound()
   }
 
-  const filteredPosts = activeTag
-    ? posts.filter((post) => post.data.tags.includes(activeTag))
-    : posts
+  const categoryValue = Array.isArray(category) ? category[0] : category
+  const pageValue = Array.isArray(page) ? page[0] : page
+  const queryValue = Array.isArray(q) ? q[0] : q
+  const normalizedCategory = categoryValue?.trim()
+  const activeQuery = queryValue?.trim() || undefined
+
+  if (normalizedCategory && !isBlogCategory(normalizedCategory)) {
+    notFound()
+  }
+
+  const activeCategory =
+    normalizedCategory && isBlogCategory(normalizedCategory)
+      ? normalizedCategory
+      : undefined
+  const categories = getPublishedCategoryFacets()
+  const totalPosts = categories.reduce(
+    (total, categoryFacet) => total + categoryFacet.count,
+    0
+  )
+  const filteredPosts = getFilteredPublishedPosts({
+    category: activeCategory,
+    query: activeQuery,
+  })
   const totalPages = Math.max(
     1,
     Math.ceil(filteredPosts.length / POSTS_PER_PAGE)
@@ -53,7 +79,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
 
   const start = (currentPage - 1) * POSTS_PER_PAGE
   const visiblePosts = filteredPosts.slice(start, start + POSTS_PER_PAGE)
-  const categories = new Set(posts.map((post) => post.data.category)).size
 
   return (
     <div className={styles.listPage}>
@@ -68,33 +93,55 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
           <dl className={styles.listSummary}>
             <div>
               <dt>已发布</dt>
-              <dd>{posts.length} 篇文章</dd>
+              <dd>{totalPosts} 篇文章</dd>
             </div>
             <div>
-              <dt>主题</dt>
-              <dd>{categories} 个方向</dd>
+              <dt>分类</dt>
+              <dd>{BLOG_CATEGORIES.length} 个分类</dd>
             </div>
           </dl>
         </div>
       </header>
 
-      <TagFilter
-        activeTag={activeTag}
+      <CategoryFilter
+        activeCategory={activeCategory}
+        categories={categories}
+        query={activeQuery}
         resultCount={filteredPosts.length}
-        tags={tags}
-        totalPosts={posts.length}
+        totalPosts={totalPosts}
       />
 
       <section aria-label="文章列表" className={styles.postList}>
-        {visiblePosts.map((post, index) => (
-          <PostCard key={post.url} post={post} preload={index === 0} />
-        ))}
+        {visiblePosts.length > 0 ? (
+          visiblePosts.map((post, index) => (
+            <PostCard key={post.url} post={post} preload={index === 0} />
+          ))
+        ) : (
+          <Empty className={styles.searchEmpty}>
+            <EmptyHeader>
+              <EmptyTitle>没有找到相关文章</EmptyTitle>
+              <EmptyDescription>
+                换一个关键词，或者清除分类后查看全部文章。
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button
+                nativeButton={false}
+                render={<Link href="/blog" />}
+                variant="outline"
+              >
+                查看全部文章
+              </Button>
+            </EmptyContent>
+          </Empty>
+        )}
       </section>
 
       {totalPages > 1 ? (
         <BlogPagination
-          activeTag={activeTag}
+          activeCategory={activeCategory}
           currentPage={currentPage}
+          query={activeQuery}
           totalPages={totalPages}
         />
       ) : null}

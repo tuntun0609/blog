@@ -1,6 +1,7 @@
 import { pageSchema } from 'fumadocs-core/source/schema'
 import { defineConfig, defineDocs } from 'fumadocs-mdx/config'
 import { z } from 'zod'
+import { BLOG_CATEGORIES } from './src/lib/blog-taxonomy'
 
 export const posts = defineDocs({
   dir: 'content/blog',
@@ -9,14 +10,15 @@ export const posts = defineDocs({
       includeProcessedMarkdown: true,
     },
     schema: pageSchema.extend({
-      category: z.string().min(1),
+      category: z.enum(BLOG_CATEGORIES),
       cover: z.string().startsWith('/'),
       date: z.iso.date(),
       path: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
       published: z.boolean().default(true),
       tags: z
         .array(z.string().trim().min(1))
-        .min(1)
+        .max(2)
+        .default([])
         .refine((tags) => new Set(tags).size === tags.length, {
           message: 'Tags must be unique',
         }),

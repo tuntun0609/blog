@@ -115,49 +115,43 @@
   font-weight: 650;
 }
 
-.tagFilter {
+.blogFilter {
   padding-block: 1.75rem;
 }
 
-.tagFilterHeader {
+.blogFilterHeader {
   display: flex;
   gap: 2rem;
   align-items: flex-start;
   justify-content: space-between;
 }
 
-.tagFilterHeader h2 {
+.blogFilterHeader h2 {
   margin: 0;
   font-size: 0.86rem;
   font-weight: 700;
 }
 
-.tagFilterHeader p {
+.blogFilterHeader p {
   margin: 0.45rem 0 0;
   font-size: 0.72rem;
   color: var(--home-muted);
 }
 
-.tagSearch {
+.articleSearch {
   width: min(100%, 18rem);
 }
 
-.tagSearchSummary {
-  margin: 0.45rem 0 0;
-  font-size: 0.7rem;
-  color: var(--home-muted);
-  text-align: right;
-}
-
-.tagFilterOptions {
+.categoryFilterOptions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
   margin-top: 1.25rem;
 }
 
-.tagSearchEmpty {
+.searchEmpty {
   margin-top: 1rem;
+  border: 1px dashed var(--home-line);
 }
 
 .postLink {
@@ -314,6 +308,15 @@
   font-size: 1.05rem;
   line-height: 1.8;
   color: var(--home-muted);
+}
+
+.articleTaxonomy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
 .articleSidebar {
@@ -652,17 +655,13 @@
     margin-top: 1.75rem;
   }
 
-  .tagFilterHeader {
+  .blogFilterHeader {
     flex-direction: column;
     gap: 1rem;
   }
 
-  .tagSearch {
+  .articleSearch {
     width: 100%;
-  }
-
-  .tagSearchSummary {
-    text-align: left;
   }
 
   .postRow {
