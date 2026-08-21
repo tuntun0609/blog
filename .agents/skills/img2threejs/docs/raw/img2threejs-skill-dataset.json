@@ -949,7 +949,10 @@
           "Gold Gems là hình ảnh đảo ngược — gần như toàn bộ phủ vàng kim, rất ít xanh"
         ],
         "threejs_target": "Procedural gradient/noise-driven vertex color or texture blend across the blade UV, parameterized by a seed value driving cluster position and blue/purple/gold color ramp",
-        "applies_to": ["knife", "rifle"]
+        "applies_to": [
+          "knife",
+          "rifle"
+        ]
       },
       {
         "name": "Doppler Phases & Gem Variants",
@@ -975,7 +978,9 @@
           "Black Pearl: nền tím đậm/đen với hiệu ứng đổi màu tím-sang-xanh lá ngũ sắc tùy góc nhìn — độc nhất trong các phase"
         ],
         "threejs_target": "Binary metalness (1.0) + dynamic color-ramp lookup driven by 3D noise coordinates and view-angle (fresnel-like) term for the iridescent shift; implement as a custom shader/TSL node reading a color-ramp texture keyed by noise + viewDir·normal",
-        "applies_to": ["knife"]
+        "applies_to": [
+          "knife"
+        ]
       },
       {
         "name": "Fade Pattern Percentage",
@@ -997,7 +1002,13 @@
           "Một số dao (Falchion) có thể vượt quá 100% khi gradient tràn sang cả cán dao"
         ],
         "threejs_target": "Anodized Airbrushed rendering path (Style 5): triplanar-mapped radial gradient, parameterized by a rotation angle theta derived from paint_seed feeding a purple→pink→yellow color ramp",
-        "applies_to": ["knife", "rifle", "pistol", "smg", "sniper"]
+        "applies_to": [
+          "knife",
+          "rifle",
+          "pistol",
+          "smg",
+          "sniper"
+        ]
       },
       {
         "name": "Sticker Placement & Layering",
@@ -1015,7 +1026,13 @@
           "Hầu hết súng hỗ trợ 5 slot sticker (MP5-SD hỗ trợ 8)"
         ],
         "threejs_target": "Multiple decal planes (PlaneGeometry or projected decal texture) parented to weapon UV reference nodes, z-offset ordered by application timestamp, transform driven by offset_x/offset_y/rotation/scale parameters",
-        "applies_to": ["rifle", "pistol", "smg", "sniper", "heavy"]
+        "applies_to": [
+          "rifle",
+          "pistol",
+          "smg",
+          "sniper",
+          "heavy"
+        ]
       },
       {
         "name": "CS2 Rarity Tier System",
@@ -1125,7 +1142,13 @@
           "Tối đa một charm mỗi vũ khí; số điểm neo lên đến hàng chục (vd. ~17 ở AWP, ~20 ở AK-47) nhưng tránh vùng tay cầm/tiếp xúc tay"
         ],
         "threejs_target": "Independent mesh with a spring-joint (soft constraint) parented to a named attachment socket on the weapon skeleton, simulated via a simple physics/spring update each frame",
-        "applies_to": ["rifle", "pistol", "smg", "sniper", "heavy"]
+        "applies_to": [
+          "rifle",
+          "pistol",
+          "smg",
+          "sniper",
+          "heavy"
+        ]
       },
       {
         "name": "Glove Float Cap Range",
@@ -1143,7 +1166,9 @@
           "Vết mòn thể hiện rõ nhất ở gù bảo vệ khớp, đầu ngón tay và cạnh lòng bàn tay"
         ],
         "threejs_target": "Same wear-state mix() shader as weapons but with wear_remap_min=0.06/wear_remap_max=0.80 applied before sampling the float-driven blend",
-        "applies_to": ["gloves"]
+        "applies_to": [
+          "gloves"
+        ]
       },
       {
         "name": "CS2 Weapon Finish Styles",
@@ -1169,7 +1194,13 @@
           "Gunsmith: lai giữa Custom-Paint và Patina, mặt nạ grayscale chia vùng bong tróc sơn và vùng kim loại tối màu"
         ],
         "threejs_target": "Distinct shader path per paint_style value: triplanar UV projection for spray/anodized-airbrushed, native-UV tiling for hydrographic/patina/custom, each feeding a style-specific wear mix() function",
-        "applies_to": ["rifle", "pistol", "smg", "sniper", "heavy"]
+        "applies_to": [
+          "rifle",
+          "pistol",
+          "smg",
+          "sniper",
+          "heavy"
+        ]
       }
     ],
     "rendering_shader_mapping": [

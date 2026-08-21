@@ -5,7 +5,7 @@
       "source": "vercel/ai",
       "sourceType": "github",
       "skillPath": "skills/use-ai-sdk/SKILL.md",
-      "computedHash": "da25c27a274ef2b71017c255f95a26350d2519765a75cb54ee1a37872b121dab"
+      "computedHash": "0883204d11b055e968dee697c5858e68064c27dfd4deb6310212895daa65c5ad"
     },
     "animation-vocabulary": {
       "source": "emilkowalski/skill",
@@ -41,7 +41,7 @@
       "source": "tuntun0609/skills",
       "sourceType": "github",
       "skillPath": "skills/git-workflow/SKILL.md",
-      "computedHash": "8a2970064da200766e84e1f30a117d226b18a761b863eb205e552ff33d5d0563"
+      "computedHash": "edcdb3f2ff4f48bfe50bfb6974cf7f2bffd79f4570412c0aba836f6987225995"
     },
     "grill-me": {
       "source": "mattpocock/skills",
@@ -59,25 +59,19 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/grilling/SKILL.md",
-      "computedHash": "a16b2f661db6caf310d7e02dd0d069e597cb888873e210e66f641eae715c5f23"
+      "computedHash": "4dd886b0196bf43729d954ae326016f2bd9f5f79d892500b407c33a753362f14"
     },
     "img2threejs": {
       "source": "img2threejs/img2threejs",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "8847fdf1adc583458efd0ad41b43674d64153fc6f91c4a70f0b12ec58a6846a5"
+      "computedHash": "f516b4a1803f9c39bd375cb0f478e3c2b939abeb11ea6e8e48d710448a7bdf9f"
     },
     "improve-animations": {
       "source": "emilkowalski/skill",
       "sourceType": "github",
       "skillPath": "skills/improve-animations/SKILL.md",
       "computedHash": "eeb219a407e325b687af88db25771cc3018e3148245604112f5ac6990b6fd79c"
-    },
-    "next-best-practices": {
-      "source": "vercel-labs/openreview",
-      "sourceType": "github",
-      "skillPath": ".agents/skills/next-best-practices/SKILL.md",
-      "computedHash": "db85045827ebeb83ac8dbc992b69188755eeb74dcf01cbf5e694d58aa494a106"
     },
     "pick-ui-library": {
       "source": "emilkowalski/skill",

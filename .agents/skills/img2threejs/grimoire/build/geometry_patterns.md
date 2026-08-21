@@ -133,7 +133,7 @@ A procedural object is usually failing when:
 
 **Curve the small details.** Serrations/scallops/teeth as straight boxes look wrong. Use `ellipsoid` (or slightly canted primitives, alternating ±angle) for rounded scallop teeth. Each detail with its own small cant reads as a hand-ground edge.
 
-**Grip / friction texture = geometric ridge segments.** For a knurled/wrapped/segmented grip, model raised barrel bands: a thin core cylinder + N short attachment-tube segments (radius just *proud* of the core, small groove gaps). Size them barely larger than the core — oversized tori read as a coil/spring, not a grip. Material texture alone (no geometry) reads as smooth/"thô".
+**Grip / friction texture = geometric ridge segments.** For a knurled/wrapped/segmented grip, model raised barrel bands: a thin core cylinder + N short attachment-tube segments (radius just *proud* of the core, small groove gaps). Size them barely larger than the core — oversized tori read as a coil/spring, not a grip. Material texture alone (no geometry) reads as smooth and coarse at once.
 
 **`invisibleRoot`/container material is still subject to the material-pass PBR gate.** Give the container a *complete* material (roughness map, frequency bands, textureResolution) — copy a proven one — or it fails "needs usable referencePbr / roughness map" even though it never renders.
 

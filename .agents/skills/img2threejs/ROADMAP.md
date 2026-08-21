@@ -72,6 +72,12 @@ judgment is spent only where a script cannot decide.
 
 | Version | Theme | Primary goal | Highlights |
 |---|---|---|---|
+| v1.0 | Object pipeline | Shipped | Staged sculpt pipeline (blockout through optimization), render-vs-reference review loop, action-ready runtime hierarchy |
+| v1.1 | Detail-first analysis | Shipped | Required `detailInventory` artifact (gloss, bevel, fasteners, linework, stains), strict-quality gate blocking shallow specs before codegen |
+| v1.2-gates | Portable structural gates | In progress | Host-specific tool-call enforcement is deferred; portable ledger, geometry, evidence, and report gates run in forge scripts. |
+| v1.2 | Humanoid character generator | Shipped | Character/hybrid domain detection, anatomy and facial landmarks, proportion-lock and feature-placement build passes, per-part character materials |
+| v1.3 | Quality & efficiency (Divine Eye) | Shipped | Deterministic review harness, input-integrity and geometry-truth gates, projection-first texture/material analysis, CIEDE2000 colour math |
+| v1.4 | Weapon Pipeline | Shipped | CS2 image-matched reconstruction, provenance-aware intake, projection-first finishes, family-specific adapters, structural and component-coverage gates |
 | **v1.5** | Character Pipeline | Start supporting characters properly | Character reconstruction · facial features · rigging-ready topology · blendshape preparation · hair & clothing improvements |
 | **v1.6** | Environment Pipeline | Build scenes, not just objects | Buildings · rooms · streets · trees & vegetation · terrain-aware generation · multi-object reconstruction |
 | **v1.7** | Game Pipeline | Game-ready assets | Unity exporter · Unreal exporter · Blender bridge · FBX / OBJ / glTF improvements · LOD generation · collision mesh generation |
@@ -110,7 +116,11 @@ Characters become a first-class subject rather than a stylized approximation. Fa
 dedicated treatment, and the output topology is built to be rigged: clean, predictable loops that
 deform without artifacts, plus blendshape preparation so expression work has somewhere to attach.
 Hair and clothing — the two things that most often break a code-built character — get their own
-material and geometry improvements.
+material and geometry improvements. Optional local SAM2 masks, MediaPipe face/pose landmarks and
+Depth Anything V2 relative-depth priors feed provenance-backed evidence into intake without changing
+the zero-dependency core or gaining authority over geometry and review gates. The local v1.5 line
+also records resumable, evidence-backed workflow state so character intake and correction loops can
+continue across agents without turning state into a pass bypass.
 
 ### v1.6 — The Environment Update
 

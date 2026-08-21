@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import argparse
 import json
+import os
+import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -166,3 +170,55 @@ def evaluate_knife_review(
         "failedGates": failed,
     }
     return report
+
+
+def _load_object(path: Path, label: str) -> dict[str, Any]:
+    payload = json.loads(path.expanduser().read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"{label} must be a JSON object")
+    return payload
+
+
+def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
+    target = path.expanduser().resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    handle, temporary = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=target.parent)
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8") as stream:
+            json.dump(payload, stream, indent=2, ensure_ascii=False)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, target)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Evaluate the blocking CS2 knife review contract")
+    parser.add_argument("--manifest", type=Path, required=True, help="validated cs2-intake.json")
+    parser.add_argument("--metrics", type=Path, required=True, help="render/review metrics JSON")
+    parser.add_argument(
+        "--scene",
+        type=Path,
+        default=Path("forge/tests/fixtures/knife_review_scene.json"),
+        help="versioned review scene fixture",
+    )
+    parser.add_argument("--out", type=Path, required=True, help="output review report JSON")
+    args = parser.parse_args(argv)
+    try:
+        manifest = _load_object(args.manifest, "manifest")
+        metrics = _load_object(args.metrics, "metrics")
+        scene = load_review_scene(args.scene.expanduser())
+        report = evaluate_knife_review(manifest, metrics, scene)
+        _write_json_atomic(args.out, report)
+        print(json.dumps(report, indent=2, ensure_ascii=False))
+        return 0 if report["verdict"] == "pass" else 1
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -4,12 +4,14 @@ import json
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "stage4_review"))
 
-from cs2_review import evaluate_knife_review, load_review_scene  # noqa: E402
+from cs2_review import evaluate_knife_review, load_review_scene, main as cs2_review_main  # noqa: E402
 from append_review import main as append_review_main  # noqa: E402
 
 
@@ -52,6 +54,24 @@ class Cs2ReviewGateTest(unittest.TestCase):
         self.assertEqual(report["reviewScene"]["version"], 1)
         self.assertEqual(report["failedGates"], [])
         self.assertEqual(report["approximationNotes"], ["hidden blade side inferred from single view"])
+
+    def test_cli_writes_report_and_returns_verdict_status(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = root / "manifest.json"
+            metrics_path = root / "metrics.json"
+            report_path = root / "report.json"
+            manifest_path.write_text(json.dumps(self.manifest), encoding="utf-8")
+            metrics_path.write_text(json.dumps(self.passing_inputs()), encoding="utf-8")
+            with redirect_stdout(StringIO()):
+                result = cs2_review_main([
+                    "--manifest", str(manifest_path),
+                    "--metrics", str(metrics_path),
+                    "--scene", str(ROOT / "tests" / "fixtures" / "knife_review_scene.json"),
+                    "--out", str(report_path),
+                ])
+            self.assertEqual(result, 0)
+            self.assertEqual(json.loads(report_path.read_text(encoding="utf-8"))["verdict"], "pass")
 
     def test_wrong_family_is_blocking_even_when_visual_metrics_pass(self) -> None:
         manifest = {**self.manifest, "itemFamily": "rifle"}
@@ -106,6 +126,7 @@ class Cs2ReviewGateTest(unittest.TestCase):
                 str(spec_path), "--pass-id", "optimization-pass", "--fidelity", "0.9",
                 "--action", "continue", "--summary", "ok", "--cs2-review-json", str(report_path),
                 "--review-scene-json", str(ROOT / "tests" / "fixtures" / "knife_review_scene.json"),
+                "--force-out-of-order",
                 "--in-place",
             ])
             persisted = json.loads(spec_path.read_text(encoding="utf-8"))
@@ -114,6 +135,7 @@ class Cs2ReviewGateTest(unittest.TestCase):
                 append_review_main([
                     str(spec_path), "--pass-id", "optimization-pass", "--fidelity", "0.9",
                     "--action", "continue", "--summary", "blocked", "--cs2-review-json", str(failed_path),
+                    "--force-out-of-order",
                 ])
 
 

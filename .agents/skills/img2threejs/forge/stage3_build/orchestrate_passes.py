@@ -347,6 +347,23 @@ def material_pass_gaps(spec: dict[str, Any]) -> list[str]:
         gaps.append("no material defines roughness variation or normal/bump/displacement response")
     if not any(material_has_locality(item) for item in materials):
         gaps.append("no material defines local overrides, AO, dirt, wear, stains, moss, chips, or scratches")
+    material_pipeline = spec.get("materialPipeline")
+    if material_pipeline is not None:
+        if not isinstance(material_pipeline, dict) or material_pipeline.get("status") != "proceed":
+            gaps.append("materialPipeline must be wired and have status=proceed before material-pass")
+        else:
+            regions = material_pipeline.get("regions", [])
+            if not isinstance(regions, list) or not regions:
+                gaps.append("materialPipeline.regions must contain analyzed material regions")
+            else:
+                gaps.extend(
+                    f"material region {region.get('regionId')!r} is not accepted ({region.get('status')!r})"
+                    for region in regions
+                    if isinstance(region, dict) and region.get("status") != "proceed"
+                )
+            gate = spec.get("materialGate")
+            if gate is not None and (not isinstance(gate, dict) or gate.get("passed") is not True):
+                gaps.append("materialGate.passed must be true after crop/render comparison")
     if quality_first_enabled(spec):
         for material in materials:
             if material.get("qualityTier") == "utility":

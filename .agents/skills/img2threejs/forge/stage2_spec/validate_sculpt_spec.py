@@ -11,7 +11,18 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "stage3_build"))
 from feature_acceptance_policy import feature_gate_failures, feature_review_policy
+from sdf_primitives import validate_sdf_descriptor
+from subdivision import (
+    ATTACHMENT_CYLINDER_SUBDIVISION_SOURCE_FACES,
+    MAX_SUBDIVISION_ITERATIONS,
+    MAX_SUBDIVISION_QUAD_FACES,
+    resolve_instanced_cluster_base,
+    SUBDIVISION_SOURCE_FACE_ESTIMATES,
+)
+from visual_hull import validate_visual_hull_descriptor
+from pipeline_routing import resolve_pipeline_routing, validate_pipeline_routing
 
 
 REQUIRED_TOP_LEVEL = {
@@ -51,6 +62,17 @@ VALID_TOPOLOGY_CLASSES = {
     "surface-relief",
     "fiber-strand",
     "material-only",
+    "implicit",
+    # Plan 1.5: a zero-thickness, two-sided surface -- a wing membrane, a cape, a leaf,
+    # a fin. None of the other seven classes fit: it is not a volume (assembled-solid /
+    # continuous-sculpt / implicit all describe solids), and it is not relief carved into
+    # a host surface (surface-relief / conforming-shell). Before this class existed such a
+    # part had to be routed through `implicit`, but an SDF is a distance field to a
+    # *volume boundary* and cannot represent true zero thickness -- it is forced to
+    # thicken the membrane into a thin solid. This is the same field-representation limit
+    # TRELLIS.2's O-Voxel format removes; see docs/RESEARCH_TRELLIS2_TO_IMG2THREEJS.md
+    # section 1.1 and section 4. See validate_open_shell_topology below for what this forbids.
+    "open-shell",
 }
 CS2_ROUTES = {"reference-projection", "authored-texture", "procedural-finish"}
 CS2_EXACTNESS_TIERS = {"image-only", "metadata-assisted", "exact-texture"}
@@ -64,6 +86,190 @@ TOPOLOGY_ALLOWED_HINT = {
     "continuous-sculpt": "lathe, extrude, or curve-sweep",
     "fiber-strand": "tube or instanced-cluster",
 }
+
+
+# Plan 1.5 — the recessed-feature gate (the US-004 defect: "the eye reads as a patch, not
+# a recessed socket"). This is a spec-authoring failure, not a measurement failure, and it
+# is undetectable downstream: a silhouette gate cannot see an interior concavity (a dimple
+# inside the outline changes no silhouette in any view), and a dark-pixel ratio on a
+# concave feature measures cavity SHADING, not material (the reference ear reads 14.3%
+# "dark" from shading gradient alone, peaking at luminance 60-79, versus the wing's 32.9%
+# near-black from actual material). So this class of defect has to be caught in the schema.
+#
+# How a component declares "recessed": we extend the existing free-text `role` field
+# (already token-matched by ATTACHMENT_ROLES / component_requires_attachment below) rather
+# than invent a parallel boolean field. A spec author names the part's role with one of
+# these tokens (`role: "eye-socket"`, `"ear-canal"`, `"mouth-cavity"`, `"nostril"`, ...);
+# `component.name`/`id` are checked too since components are commonly named after the
+# feature they are. This was chosen over (a) a new `concave: true` field, which would be a
+# second place to encode the same fact `role` already carries and would need its own
+# authoring discipline, and (b) reusing `topologyClass` itself, which describes HOW a part
+# is built, not WHAT it represents -- the whole point of this gate is to compare the two.
+#
+# Token design, revised after review — plain "socket" collides with a DIFFERENT, load-
+# bearing meaning already in this file: ATTACHMENT_ROLES (below) uses bare "socket" for an
+# attachment POINT (`attachment.parentSocket`, `actionProfile.sockets[]`), e.g. a handle's
+# hilt socket. That is a real, common authoring case and is not a concavity, so bare
+# "socket" is deliberately NOT a recessed-feature token. Instead we match the specific
+# compound "eyesocket" as a normalized substring (hyphens/spaces/underscores stripped, so
+# `role: "eye-socket"`, `"eye_socket"`, and `"eye socket"` all match) -- narrower than a
+# bare word, so it cannot fire on a plain attachment socket. "hollow" and "concave" are
+# real words but too easily legitimate outside a cavity context ("hollow tube", "concave
+# lens" are both real, non-recessed parts), so they are matched against `role` ONLY, never
+# against `name`/`id`, keeping them out of reach of incidental part-naming collisions.
+# "dimple" was dropped entirely: a dimple is shallow by definition, so it is the wrong word
+# to hold to a depth-requiring rule (below) in the first place.
+#
+# THE CONTRACT, spelled out because the rule below is now strict (allow-list: implicit +
+# subtract, nothing else) and that strictness needs to be a stated trade, not a trap:
+# the token IS the declaration. If a component's role/name/id calls it a cavity, canal, or
+# recess, this rule holds it to building a REAL one. A shallow decorative relief -- a 0.2mm
+# panel line, a knurl pattern -- is not a cavity; do not name it one. Rename it instead
+# (e.g. `panel-relief`, `groove-relief`) and it is untouched by this gate, free to be
+# `surface-relief` or any other topologyClass. That is the legitimate way out, and
+# `test_shallow_relief_panel_without_a_cavity_token_is_accepted` in
+# forge/tests/test_recessed_and_open_shell_topology.py proves it actually works.
+RECESSED_FEATURE_TOKENS = {"cavity", "canal", "recess", "recessed", "nostril"}
+RECESSED_FEATURE_COMPOUND_PHRASES = {"eyesocket"}
+RECESSED_FEATURE_ROLE_ONLY_TOKENS = {"hollow", "concave"}
+# A recessed feature is real concavity: it must be carved out of a volume (`implicit` +
+# an SDF `subtract` operation -- see sdf_primitives.VALID_SDF_OPERATIONS). This is
+# deliberately an ALLOW-list (state the one right shape), not a deny-list (enumerate every
+# wrong one), after review found that a deny-list of {"surface-relief", "plane-card"} still
+# let a THIRD route to the exact same US-004 defect through: `topologyClass:
+# "assembled-solid"` + a convex sphere primitive is not surface-relief, is not plane-card,
+# and never reaches the subtract check below (which was scoped to `implicit`) -- yet it is
+# exactly a convex ball sitting where a recess belongs, and `assembled-solid` + sphere is
+# the MOST likely authoring mistake of the three, since assembled-solid is the common
+# default and a sphere is the obvious eye shape. A deny-list has to predict every wrong
+# answer and a fourth route always remains possible; an allow-list only has to state the
+# right one, so it closes all of them at once.
+RECESSED_FEATURE_REQUIRED_TOPOLOGY = "implicit"
+
+
+def component_role_tokens(component: dict[str, Any]) -> set[str]:
+    """Same tokenization ATTACHMENT_ROLES matching uses: lowercase, split on non-alphanumerics,
+    across role/name/id so a part authored as e.g. `id: "left-eye-socket"` is caught even if
+    `role` itself is generic or absent. Fields are joined with a literal space, which also
+    acts as the token separator, so a word split across two fields (role="fake eye", name=
+    "socket-thing") can never merge into one token here."""
+    role = str(component.get("role") or "")
+    name = str(component.get("name") or "")
+    component_id = str(component.get("id") or "")
+    return set(re.findall(r"[a-z0-9]+", f"{role} {name} {component_id}".lower()))
+
+
+def _normalize_identity_field(value: Any) -> str:
+    return re.sub(r"[\s_-]+", "", str(value or "").lower())
+
+
+def component_recessed_feature_matches(component: dict[str, Any]) -> set[str]:
+    """Return which recessed-feature signal(s) fired, for both the boolean gate and the
+    error message. Compound phrases are checked per-field (role, name, id separately, never
+    concatenated) so a phrase can never assemble itself across a field boundary."""
+    matches = component_role_tokens(component) & RECESSED_FEATURE_TOKENS
+    normalized_fields = (
+        _normalize_identity_field(component.get("role")),
+        _normalize_identity_field(component.get("name")),
+        _normalize_identity_field(component.get("id")),
+    )
+    matches |= {
+        phrase
+        for phrase in RECESSED_FEATURE_COMPOUND_PHRASES
+        if any(phrase in field for field in normalized_fields)
+    }
+    role_tokens = set(re.findall(r"[a-z0-9]+", str(component.get("role") or "").lower()))
+    matches |= role_tokens & RECESSED_FEATURE_ROLE_ONLY_TOKENS
+    return matches
+
+
+def component_is_recessed_feature(component: dict[str, Any]) -> bool:
+    return bool(component_recessed_feature_matches(component))
+
+
+def validate_recessed_feature_topology(component_id: str, component: dict[str, Any], errors: list[str]) -> None:
+    matches = component_recessed_feature_matches(component)
+    if not matches:
+        return
+    topology_class = component.get("topologyClass")
+    primitive = component.get("primitive")
+    if topology_class != RECESSED_FEATURE_REQUIRED_TOPOLOGY:
+        errors.append(
+            f"component {component_id!r} is authored as a recessed feature (role/name/id matches "
+            f"{', '.join(sorted(matches))!r}) but is "
+            f"topologyClass={topology_class!r} primitive={primitive!r} -- a recessed feature must be real "
+            "concavity carved OUT of a volume, not this shape or relief (a convex primitive, a flat "
+            "plane-card, and a surface-relief bump are all the same US-004 defect: an eye that reads as a "
+            "patch, not a recess) -- reclassify as topologyClass 'implicit' with a geometryDescriptor.sdf "
+            "whose operations include 'subtract' to carve the cavity out of the parent volume "
+            "(see forge/_shared/sdf_primitives.py VALID_SDF_OPERATIONS)"
+        )
+        return
+    # A rule should verify what it advises: the message above tells the author to use
+    # `implicit` + a `subtract` operation, so `implicit` alone is not enough -- an implicit
+    # component built ONLY from union/smooth-union operations is a bulge sticking OUT of its
+    # parent, not a cavity carved INTO it. That is the same US-004 defect (an eye that reads
+    # as a patch, not a recess) wearing a different disguise, and this gate would otherwise
+    # wave it through. `subtract` must be PRESENT among the operations, not the only one --
+    # a socket legitimately built by smooth-unioning two shapes and then subtracting the
+    # result is fine. If `geometryDescriptor.sdf` itself is missing, skip: the
+    # `topologyClass 'implicit' requires geometryDescriptor.sdf` check elsewhere already
+    # covers that structural case, so this stays free of a duplicate/confusing error.
+    descriptor = component.get("geometryDescriptor")
+    sdf = descriptor.get("sdf") if isinstance(descriptor, dict) else None
+    if isinstance(sdf, dict):
+        operations = sdf.get("operations")
+        operation_types = (
+            [operation.get("type") for operation in operations if isinstance(operation, dict)]
+            if isinstance(operations, list)
+            else []
+        )
+        if "subtract" not in operation_types:
+            found = ", ".join(sorted({str(item) for item in operation_types})) or "none"
+            errors.append(
+                f"component {component_id!r} is authored as a recessed feature (role/name/id matches "
+                f"{', '.join(sorted(matches))!r}) and is topologyClass 'implicit', but its "
+                f"geometryDescriptor.sdf.operations contain no 'subtract' operation (found: {found}) -- "
+                "a recessed feature must be carved OUT of a volume; building it only from "
+                "union/smooth-union operations produces a bulge sticking OUT, not a cavity, which is "
+                "the same US-004 defect (an eye that reads as a patch, not a recess) in disguise. Add a "
+                "'subtract' operation that removes volume from the parent shape "
+                "(see forge/_shared/sdf_primitives.py VALID_SDF_OPERATIONS)"
+            )
+
+
+# Plan 1.5 — open-shell may not pair with a closed SDF: an SDF is a distance field to a
+# volume boundary and has no way to express zero thickness, so combining `topologyClass:
+# "open-shell"` with `geometryDescriptor.sdf` would silently thicken the membrane into a
+# thin solid, defeating the reason open-shell exists. A double-sided material is required
+# for the same reason a one-sided membrane renders invisible from behind: Three.js
+# backface-culls a single-sided material, and an open-shell part is, by definition, seen
+# from both sides.
+def validate_open_shell_topology(
+    component_id: str,
+    component: dict[str, Any],
+    materials_by_id: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> None:
+    if component.get("topologyClass") != "open-shell":
+        return
+    descriptor = component.get("geometryDescriptor")
+    if isinstance(descriptor, dict) and "sdf" in descriptor:
+        errors.append(
+            f"component {component_id!r} topologyClass 'open-shell' cannot combine with "
+            "geometryDescriptor.sdf -- an SDF is a closed distance field and cannot represent zero "
+            "thickness, so it would silently thicken the membrane into a thin solid; drop the sdf "
+            "descriptor and build the open-shell surface directly (e.g. plane-card, curve-sweep, or "
+            "extrude)"
+        )
+    material_id = component.get("material")
+    material = materials_by_id.get(material_id) if isinstance(material_id, str) else None
+    if not isinstance(material, dict) or material.get("doubleSided") is not True:
+        errors.append(
+            f"component {component_id!r} topologyClass 'open-shell' is a zero-thickness two-sided "
+            f"surface but its material {material_id!r} does not set doubleSided: true -- a one-sided "
+            "membrane renders invisible from behind; set materials[].doubleSided = true on its material"
+        )
 
 
 # Plan 1.3 G.1 — spec-level flatness gate (the karambit-blade defect signature).
@@ -454,6 +660,28 @@ def validate_cs2_contract(spec: dict[str, Any], errors: list[str], warnings: lis
         errors.append("procedural-finish cannot claim exact-texture")
 
 
+def validate_pipeline_routing_contract(spec: dict[str, Any], errors: list[str]) -> None:
+    routing = spec.get("pipelineRouting")
+    legacy_cs2 = routing is None and spec.get("cs2Intake") is not None
+    if routing is None:
+        if spec.get("cs2Intake") is None:
+            return
+        routing = resolve_pipeline_routing(legacy_cs2=True)
+    routing_errors = validate_pipeline_routing(routing)
+    errors.extend(routing_errors)
+    if not isinstance(routing, dict) or routing.get("status") != "resolved":
+        errors.append("pipelineRouting must be resolved before validation")
+        return
+    routing_track = routing.get("track")
+    object_class = spec.get("preSpecAssessment", {}).get("objectClass", {})
+    if routing_track == "character-v1.5" and spec.get("cs2Intake") is not None:
+        errors.append("character-v1.5 routing cannot carry cs2Intake")
+    if routing_track == "character-v1.5" and object_class.get("primaryDomain") not in {"character", "hybrid"}:
+        errors.append("character-v1.5 routing requires the character template")
+    if routing_track == "weapon-v1.4" and not legacy_cs2 and object_class.get("cs2") is not True:
+        errors.append("weapon-v1.4 routing requires the CS2 weapon template")
+
+
 def validate_materials(spec: dict[str, Any], errors: list[str], warnings: list[str]) -> set[str]:
     material_ids: set[str] = set()
     for index, material in enumerate(spec.get("materials", [])):
@@ -474,6 +702,9 @@ def validate_materials(spec: dict[str, Any], errors: list[str], warnings: list[s
             value = material.get(field)
             if value is not None and not isinstance(value, str):
                 errors.append(f"material {material_id!r} {field} must be a string")
+        double_sided = material.get("doubleSided")
+        if double_sided is not None and not isinstance(double_sided, bool):
+            errors.append(f"material {material_id!r} doubleSided must be boolean")
         for field in ("albedo", "ambientOcclusion"):
             value = material.get(field)
             if value is not None and not isinstance(value, dict):
@@ -550,6 +781,42 @@ def validate_materials(spec: dict[str, Any], errors: list[str], warnings: list[s
     return material_ids
 
 
+def validate_material_pipeline_contract(spec: dict[str, Any], material_ids: set[str], errors: list[str], warnings: list[str]) -> None:
+    """Validate the optional v1.5 material-reference hand-off.
+
+    Legacy specs remain valid. Once ``materialPipeline`` is present, every
+    analyzed region must point at a real spec material and retain evidence.
+    """
+    pipeline = spec.get("materialPipeline")
+    if pipeline is None:
+        return
+    if not isinstance(pipeline, dict):
+        errors.append("materialPipeline must be an object")
+        return
+    if pipeline.get("schemaVersion") != 1:
+        errors.append("materialPipeline.schemaVersion must be 1")
+    status = pipeline.get("status")
+    if status not in {"proceed", "probe"}:
+        errors.append("materialPipeline.status must be proceed or probe")
+    regions = pipeline.get("regions")
+    if not isinstance(regions, list) or not regions:
+        errors.append("materialPipeline.regions must be a non-empty array")
+        return
+    for index, region in enumerate(regions):
+        if not isinstance(region, dict):
+            errors.append(f"materialPipeline.regions[{index}] must be an object")
+            continue
+        material_id = region.get("specMaterialId")
+        if material_id not in material_ids:
+            errors.append(f"materialPipeline region {region.get('regionId')!r} references unknown material {material_id!r}")
+        for field in ("componentId", "regionId", "profileId"):
+            if not isinstance(region.get(field), str) or not region[field].strip():
+                errors.append(f"materialPipeline.regions[{index}].{field} is required")
+    registry = pipeline.get("registry")
+    if not isinstance(registry, str) or not registry.strip():
+        errors.append("materialPipeline.registry is required")
+    elif not registry.endswith("material-reference.json"):
+        warnings.append("quality: materialPipeline.registry does not point to material-reference.json")
 def validate_dimensions(component_id: str, dimensions: Any, errors: list[str]) -> None:
     if dimensions is None:
         return
@@ -586,6 +853,121 @@ def validate_geometry_descriptor(component_id: str, descriptor: Any, errors: lis
     stack = descriptor.get("deformationStack")
     if stack is not None and not isinstance(stack, list):
         errors.append(f"component {component_id!r} geometryDescriptor.deformationStack must be an array")
+    subdivide = descriptor.get("subdivide")
+    if subdivide is not None:
+        if not isinstance(subdivide, dict):
+            errors.append(f"component {component_id!r} geometryDescriptor.subdivide must be an object")
+        elif "iterations" in subdivide:
+            iterations = subdivide["iterations"]
+            label = f"component {component_id!r} geometryDescriptor.subdivide.iterations"
+            if not isinstance(iterations, int) or isinstance(iterations, bool) or iterations < 0:
+                errors.append(f"{label} must be a non-negative integer")
+            elif iterations > MAX_SUBDIVISION_ITERATIONS:
+                errors.append(f"{label} must not exceed {MAX_SUBDIVISION_ITERATIONS}")
+    decimate = descriptor.get("decimate")
+    if decimate is not None:
+        label = f"component {component_id!r} geometryDescriptor.decimate"
+        if not isinstance(decimate, dict):
+            errors.append(f"{label} must be an object")
+        else:
+            ratio = decimate.get("targetRatio")
+            if isinstance(ratio, bool) or not isinstance(ratio, (int, float)):
+                errors.append(f"{label}.targetRatio must be a number")
+            elif not 0.0 < float(ratio) < 1.0:
+                # 1.0 is rejected rather than treated as a no-op: asking to keep everything is
+                # almost always a mistaken ratio, and paying for a quadric pass that removes
+                # nothing is worse than being told.
+                errors.append(f"{label}.targetRatio must be greater than 0 and less than 1")
+            uv_strategy = str(descriptor.get("uvStrategy") or "")
+            if "unwrap" in uv_strategy.lower() or "authored" in uv_strategy.lower():
+                # Decimation keeps `position` and recomputes normals; a quadric collapse has no
+                # correct answer for an authored UV at the merged vertex, so the seam would move.
+                errors.append(
+                    f"{label} cannot combine with an authored/unwrapped uvStrategy "
+                    f"({uv_strategy!r}); decimation keeps position only and drops UVs"
+                )
+    if "sdf" in descriptor:
+        validate_sdf_descriptor(component_id, descriptor["sdf"], errors)
+    if "visualHull" in descriptor:
+        validate_visual_hull_descriptor(component_id, descriptor["visualHull"], errors)
+    if "sdf" in descriptor and "visualHull" in descriptor:
+        errors.append(f"component {component_id!r} geometryDescriptor cannot combine sdf and visualHull")
+    if "visualHull" in descriptor and "subdivide" in descriptor:
+        errors.append(f"component {component_id!r} geometryDescriptor.visualHull cannot combine with subdivide")
+
+
+def attachment_emits_cylinder(attachment: Any) -> bool:
+    if not isinstance(attachment, dict):
+        return False
+    start = attachment.get("localStart")
+    end = attachment.get("localEnd")
+    start_vector = start if as_number_list(start, 3) else [0, 0, 0]
+    end_vector = end if as_number_list(end, 3) else [0, 1, 0]
+    return sum((float(end_vector[index]) - float(start_vector[index])) ** 2 for index in range(3)) > 0.0001**2
+
+
+def emitted_subdivision_primitive(primitive: str, topology_class: Any, descriptor: dict[str, Any]) -> str:
+    if topology_class == "implicit":
+        return "implicit sdf"
+    return resolve_instanced_cluster_base(primitive, descriptor, VALID_PRIMITIVES)
+
+
+def validate_subdivision_budget(
+    component_id: str,
+    primitive: Any,
+    topology_class: Any,
+    descriptor: Any,
+    attachment: Any,
+    errors: list[str],
+) -> None:
+    if not isinstance(primitive, str) or not isinstance(descriptor, dict):
+        return
+    subdivide = descriptor.get("subdivide")
+    if not isinstance(subdivide, dict):
+        return
+    iterations = subdivide.get("iterations")
+    if (
+        not isinstance(iterations, int)
+        or isinstance(iterations, bool)
+        or iterations < 1
+        or iterations > MAX_SUBDIVISION_ITERATIONS
+    ):
+        return
+    emitted_primitive = emitted_subdivision_primitive(primitive, topology_class, descriptor)
+    if emitted_primitive == "implicit sdf":
+        errors.append(
+            f"component {component_id!r} geometryDescriptor.subdivide.iterations cannot statically budget "
+            "emitted primitive 'implicit sdf'; subdivision is unsupported for this generator path"
+        )
+        return
+    if emitted_primitive == "plane-card":
+        errors.append(
+            f"component {component_id!r} geometryDescriptor.subdivide.iterations plane-card subdivision topology is unsupported "
+            "because generated PlaneGeometry has open boundary edges"
+        )
+        return
+    uses_attachment_cylinder = attachment_emits_cylinder(attachment)
+    if emitted_primitive == "torus" and not uses_attachment_cylinder:
+        errors.append(
+            f"component {component_id!r} geometryDescriptor.subdivide.iterations torus subdivision topology is unsupported "
+            "because generated TorusGeometry has an open weld seam"
+        )
+        return
+    source_faces = ATTACHMENT_CYLINDER_SUBDIVISION_SOURCE_FACES if uses_attachment_cylinder else SUBDIVISION_SOURCE_FACE_ESTIMATES.get(emitted_primitive)
+    if source_faces is None:
+        errors.append(
+            f"component {component_id!r} geometryDescriptor.subdivide.iterations cannot statically budget "
+            f"emitted primitive {emitted_primitive!r}; subdivision is unsupported for this generator path"
+        )
+        return
+    projected_faces = source_faces * (4**iterations)
+    if projected_faces > MAX_SUBDIVISION_QUAD_FACES:
+        source_label = "attachment cylinder" if uses_attachment_cylinder else f"primitive {emitted_primitive!r}"
+        errors.append(
+            f"component {component_id!r} geometryDescriptor.subdivide.iterations would produce "
+            f"{projected_faces} quad faces for {source_label}, exceeding "
+            f"the maximum {MAX_SUBDIVISION_QUAD_FACES}"
+        )
 
 
 def validate_bool_object(value: Any, label: str, errors: list[str]) -> None:
@@ -825,6 +1207,11 @@ def validate_components(
     warnings: list[str],
 ) -> None:
     components = spec.get("componentTree", [])
+    materials_by_id = {
+        material.get("id"): material
+        for material in spec.get("materials", [])
+        if isinstance(material, dict) and isinstance(material.get("id"), str)
+    }
     ids: set[str] = set()
     parent_refs: list[tuple[str, str]] = []
     for index, component in enumerate(components):
@@ -843,6 +1230,9 @@ def validate_components(
             errors.append(
                 f"component {component_id!r} primitive must be one of: {', '.join(sorted(VALID_PRIMITIVES))}"
             )
+        # Plan 1.5: recessed-feature gate runs unconditionally (not schema-version gated like
+        # topologyClass below) -- a flat patch faking a socket is a defect at any schema version.
+        validate_recessed_feature_topology(component_id, component, errors)
         if requires_topology_classification(spec):
             topology_class = component.get("topologyClass")
             topology_rationale = component.get("topologyRationale")
@@ -883,6 +1273,12 @@ def validate_components(
                     severity, message = flatness_risk(component_id, component)
                     if severity == "HIGH":
                         warnings.append(message)
+                if topology_class == "implicit":
+                    descriptor = component.get("geometryDescriptor")
+                    if not isinstance(descriptor, dict) or "sdf" not in descriptor:
+                        errors.append(f"component {component_id!r} topologyClass 'implicit' requires geometryDescriptor.sdf")
+                if topology_class == "open-shell":
+                    validate_open_shell_topology(component_id, component, materials_by_id, errors)
         level = component.get("level")
         if level is not None and level not in VALID_COMPONENT_LEVELS:
             errors.append(f"component {component_id!r} level must be macro, meso, or micro")
@@ -900,6 +1296,14 @@ def validate_components(
         if material and material not in material_ids:
             errors.append(f"component {component_id!r} references unknown material {material!r}")
         validate_geometry_descriptor(component_id, component.get("geometryDescriptor"), errors)
+        validate_subdivision_budget(
+            component_id,
+            primitive,
+            component.get("topologyClass"),
+            component.get("geometryDescriptor"),
+            component.get("attachment"),
+            errors,
+        )
         material_layers = component.get("materialLayers")
         if material_layers is not None:
             validate_string_array(material_layers, f"component {component_id!r} materialLayers", errors)
@@ -1883,6 +2287,158 @@ def validate_character_track(spec: dict[str, Any], errors: list[str], warnings: 
         )
 
 
+# PLAN_1.5 §5.2 Half A — the Joint Admission Gate. Pure semantics and arithmetic, which is why it
+# folds into this file rather than becoming a new module: §5.2 says so explicitly, and warns that
+# `forge/stage4_review/geometry_integrity.py` already owns that name. Half B
+# (INSIDE_VOLUME / UNIFORM_BONE_SCALE / NO_PRE_ROTATION) needs real geometry and belongs to a Node
+# script at stage 4, not here.
+SYMMETRY_PARITY_TOLERANCE = 0.05
+POOL_FLOOR_MIN_BONES = 4
+# §5.2 states PROPORTION_LIMIT as "bone length against the head-unit template (e.g. femur <= 2.5
+# HU)". READING CHOSEN: the rig carries no head unit — demanding `anatomy.proportions` would reject
+# the default `--character` template, which has no anatomy block at all — so the limit is expressed
+# as a fraction of the skeleton's own height. That is scale-free and needs no external input. On a
+# 6.78-head figure the plan's 2.5 HU is 2.5/6.78 = 37% of height, so 0.40 sits just above it.
+PROPORTION_LIMIT_FRACTION = 0.40
+
+
+def _mirror_partner(bone_id: str) -> str | None:
+    """`upper-arm-l` -> `upper-arm-r`, `thumb-l-1` -> `thumb-r-1`. None when not a left id.
+
+    Digit ids carry the side in the MIDDLE (`thumb-l-1`), so matching only a trailing `-l` would
+    silently skip all thirty phalanges — the majority of the skeleton.
+    """
+    if bone_id.endswith("-l"):
+        return bone_id[:-2] + "-r"
+    if "-l-" in bone_id:
+        return bone_id.replace("-l-", "-r-", 1)
+    return None
+
+
+def validate_rig_admission(
+    spec: dict[str, Any], errors: list[str], warnings: list[str]
+) -> None:
+    """The five Half-A checks. Runs only when a `rig` is present, so the pivot track is a no-op.
+
+    SYMMETRY_PARITY **snaps** rather than rejects, per §5.2's "On fail" column — an asymmetric
+    pair is a fixable authoring slip, not a broken skeleton. The other four reject.
+    """
+    rig = spec.get("rig")
+    if not isinstance(rig, dict):
+        return
+    bones = [b for b in (rig.get("bones") or []) if isinstance(b, dict) and b.get("id")]
+    if not bones:
+        return
+    by_id = {b["id"]: b for b in bones}
+
+    def joint(bone: dict[str, Any]) -> list[float]:
+        return [float(v) for v in (bone.get("jointPos") or [0.0, 0.0, 0.0])]
+
+    def tip(bone: dict[str, Any]) -> list[float]:
+        return [float(v) for v in (bone.get("tipPos") or [0.0, 0.0, 0.0])]
+
+    def length(bone: dict[str, Any]) -> float:
+        j, t = joint(bone), tip(bone)
+        return sum((t[i] - j[i]) ** 2 for i in range(3)) ** 0.5
+
+    # ---- NAME_UNIQUENESS ----
+    ids = [b["id"] for b in bones]
+    duplicates = sorted({i for i in ids if ids.count(i) > 1})
+    if duplicates:
+        errors.append(f"NAME_UNIQUENESS: duplicate bone id(s) {duplicates}")
+    roots = [b for b in bones if b.get("parent") in (None, "")]
+    if len(roots) != 1:
+        errors.append(
+            f"NAME_UNIQUENESS: exactly one root bone required (parent: null), found {len(roots)}"
+            + (f" ({sorted(b['id'] for b in roots)})" if roots else "")
+        )
+    for bone in bones:
+        parent = bone.get("parent")
+        if parent and parent not in by_id:
+            errors.append(
+                f"NAME_UNIQUENESS: bone {bone['id']!r} has unresolved parent {parent!r}"
+            )
+
+    # ---- POOL_FLOOR ----
+    if len(bones) < POOL_FLOOR_MIN_BONES:
+        errors.append(
+            f"POOL_FLOOR: the skeleton resolves only {len(bones)} bone(s); the weight function "
+            f"keeps four influences per vertex, so fewer than {POOL_FLOOR_MIN_BONES} leaves slots "
+            f"structurally unfillable"
+        )
+
+    # ---- SYMMETRY_PARITY (snap, do not reject) ----
+    for bone in bones:
+        partner_id = _mirror_partner(bone["id"])
+        if not partner_id or partner_id not in by_id:
+            continue
+        left, right = joint(bone), joint(by_id[partner_id])
+        mirrored = [-left[0], left[1], left[2]]
+        delta = max(abs(right[i] - mirrored[i]) for i in range(3))
+        if delta > SYMMETRY_PARITY_TOLERANCE:
+            by_id[partner_id]["jointPos"] = [round(v, 5) for v in mirrored]
+            left_tip = tip(bone)
+            by_id[partner_id]["tipPos"] = [round(v, 5) for v in
+                                           (-left_tip[0], left_tip[1], left_tip[2])]
+            warnings.append(
+                f"SYMMETRY_PARITY: {partner_id!r} was {delta:.4f} off the mirror of "
+                f"{bone['id']!r} (tolerance {SYMMETRY_PARITY_TOLERANCE}); snapped to the "
+                f"mirrored coordinate rather than rejected"
+            )
+
+    # ---- MONOTONIC_CHAIN ----
+    # §5.2 words this as "cumulative length along a limb chain must increase monotonically; no
+    # bone may fold back through its parent". READING CHOSEN: the operative clause is the second.
+    #
+    # I first implemented the first clause as euclidean distance from the root joint to each tip,
+    # and it REJECTED the correct 49-bone template on ten bones — which is the strongest possible
+    # evidence that a check is mis-specified rather than the model being wrong. The reason is
+    # anatomy: a clavicle reaches 0.70 up at the shoulder, then the upper arm hangs DOWN so its
+    # tip lands at 0.49, back toward the hips. Distance-from-root is legitimately non-monotonic
+    # for any chain that goes out then down. (Read as arc length the clause is trivially true,
+    # since bone lengths are positive, so that cannot be the intent either.)
+    #
+    # So this compares DIRECTION. A bone folds back only when it points substantially opposite
+    # its parent. The threshold is generous on purpose: a thumb sits near 90 degrees to the palm
+    # and must pass, while a genuinely inverted bone sits near 180 and must not.
+    MONOTONIC_CHAIN_OPPOSED_DOT = -0.5           # ~120 degrees apart
+
+    def direction(bone: dict[str, Any]) -> list[float] | None:
+        j, t = joint(bone), tip(bone)
+        delta = [t[i] - j[i] for i in range(3)]
+        norm = sum(d * d for d in delta) ** 0.5
+        return [d / norm for d in delta] if norm > 1e-9 else None
+
+    for bone in bones:
+        parent_id = bone.get("parent")
+        parent = by_id.get(parent_id) if parent_id else None
+        if not parent or parent.get("chain") != bone.get("chain"):
+            continue          # a limb leaving the spine is a branch, not a continuation
+        child_dir, parent_dir = direction(bone), direction(parent)
+        if not child_dir or not parent_dir:
+            continue
+        dot = sum(child_dir[i] * parent_dir[i] for i in range(3))
+        if dot < MONOTONIC_CHAIN_OPPOSED_DOT:
+            errors.append(
+                f"MONOTONIC_CHAIN: bone {bone['id']!r} points {dot:.3f} against its parent "
+                f"{parent_id!r} (limit {MONOTONIC_CHAIN_OPPOSED_DOT}) — it folds back through "
+                f"its parent instead of extending the chain"
+            )
+
+    # ---- PROPORTION_LIMIT ----
+    ys = [v for bone in bones for v in (joint(bone)[1], tip(bone)[1])]
+    skeleton_height = max(ys) - min(ys) if ys else 0.0
+    if skeleton_height > 0:
+        limit = skeleton_height * PROPORTION_LIMIT_FRACTION
+        for bone in bones:
+            if length(bone) > limit:
+                errors.append(
+                    f"PROPORTION_LIMIT: bone {bone['id']!r} is {length(bone):.4f} long, over "
+                    f"{PROPORTION_LIMIT_FRACTION:.0%} of the skeleton's {skeleton_height:.4f} "
+                    f"height ({limit:.4f})"
+                )
+
+
 def validate_spec(spec: dict[str, Any]) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -1909,7 +2465,9 @@ def validate_spec(spec: dict[str, Any]) -> tuple[list[str], list[str]]:
     validate_look_dev_targets(spec, errors, warnings)
     evidence_ids = validate_evidence(spec, errors, warnings)
     material_ids = validate_materials(spec, errors, warnings)
+    validate_material_pipeline_contract(spec, material_ids, errors, warnings)
     validate_cs2_contract(spec, errors, warnings)
+    validate_pipeline_routing_contract(spec, errors)
     validate_cs2_view_dependent_environment(spec, errors)
     validate_components(spec, material_ids, evidence_ids, errors, warnings)
     lod_plan = spec.get("lodPlan")
@@ -1921,6 +2479,7 @@ def validate_spec(spec: dict[str, Any]) -> tuple[list[str], list[str]]:
     validate_quality_depth(spec, errors, warnings)
     validate_detail_inventory(spec, errors, warnings)
     validate_character_track(spec, errors, warnings)
+    validate_rig_admission(spec, errors, warnings)
     if suitability == "pass" and spec.get("risks"):
         warnings.append("suitability is pass but risks are present; confirm they are acceptable")
     return errors, warnings

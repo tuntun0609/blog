@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The Divine Eye (đôi mắt thần) — deterministic multi-signal render↔reference evaluator.
+"""The Divine Eye — deterministic multi-signal render↔reference evaluator.
 
 Plan 1.3 Phase 3 core (§3.1 ensemble, §3.3 combination + self-uncertainty). This is
 the single authority the correction loop asks "how close is this render to the
@@ -41,6 +41,7 @@ from diagnose_render import (  # noqa: E402
     bbox_of,
     bilateral_symmetry_error,
     load_mask,
+    mask_is_inverted,
     proportion_delta,
     silhouette_iou,
 )
@@ -64,6 +65,12 @@ ASPECT_SOFT_MAX = 0.05      # aspect-ratio delta allowed for a reconstruction-mo
 RECON_OBJ_MIN = 0.48        # objectness ≥ this rescues an IoU-only hard reject → probe (recon mode).
 #                            Separates same-object-different-framing (real pairs ~0.53–0.58) from a
 #                            genuinely different shape (~0.43). Rescue only ever downgrades reject→probe.
+# RESOLUTION CEILING, and it is a hard limit on what this module can ever report.
+# Every signal below -- SSIM, tonal, blowout, flat, edge overlap -- is computed on these grids, so a
+# feature a few pixels wide in a 1920px reference is not scored badly, it is ABSENT before any
+# comparison happens. No threshold tuning recovers it. per_feature.py cannot compensate either: it
+# consumes a scores dict and never opens an image, so its critical-feature gate is sound and starved.
+# Feature-scale fidelity needs zoom patches instead: grimoire/review/divine_eye_microscope.md.
 LUMA_SIZE = 64   # SSIM / tonal / blowout / flat work on this downsampled luma grid
 EDGE_SIZE = 96   # edge overlap grid
 HUE_ZONE_DELTA_E = 2.3   # per-band CIEDE2000 "same hue zone" tolerance (Context Part 2.2)
@@ -234,7 +241,7 @@ def edge_overlap(a: list[float], b: list[float], size: int) -> float:
             union += 1
             if ea[i] and eb[i]:
                 inter += 1
-    return inter / union if union else 1.0
+    return inter / union if union else 0.0
 
 
 def _blown_fraction(luma: list[float], hi: float = 0.95) -> float:
@@ -274,8 +281,8 @@ def tonal_parity(ref: list[float], ren: list[float], bins: int = 16) -> float:
 
 def evaluate(reference_png: Path, render_png: Path) -> dict[str, Any]:
     """Run all deterministic signals and combine into a verdict + routing action."""
-    ref_mask = load_mask(reference_png)
-    ren_mask = load_mask(render_png)
+    ref_mask, ref_mask_warnings = load_mask(reference_png)
+    ren_mask, ren_mask_warnings = load_mask(render_png)
     ref_luma = load_luma(reference_png, LUMA_SIZE)
     ren_luma = load_luma(render_png, LUMA_SIZE)
     ref_edge = load_luma(reference_png, EDGE_SIZE)
@@ -327,6 +334,11 @@ def evaluate(reference_png: Path, render_png: Path) -> dict[str, Any]:
 
     # HARD gates: a fail is an immediate reject with a specific numeric reason.
     hard_failures: list[str] = []
+    if mask_is_inverted(ref_mask_warnings) or mask_is_inverted(ren_mask_warnings):
+        hard_failures.append(
+            "foreground mask fell back to whole-frame coverage; silhouette, scale and aspect "
+            "signals are not measuring the subject"
+        )
     if iou < IOU_HARD_MIN:
         hard_failures.append(f"silhouette IoU {iou:.3f} < {IOU_HARD_MIN}")
     if scale_delta > SCALE_HARD_MAX:
@@ -392,6 +404,10 @@ def evaluate(reference_png: Path, render_png: Path) -> dict[str, Any]:
         "fidelity": round(fidelity, 4),
         "fidelityTarget": FIDELITY_TARGET,
         "hardGateFailures": hard_failures,
+        "maskWarnings": (
+            [f"reference: {w}" for w in ref_mask_warnings]
+            + [f"render: {w}" for w in ren_mask_warnings]
+        ),
         "disagreementSpread": round(spread, 4),
         "signals": {
             "silhouetteIoU": round(iou, 4),

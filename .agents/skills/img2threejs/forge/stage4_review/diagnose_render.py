@@ -63,17 +63,22 @@ COLOR_DELTA_E_THRESHOLD = 20.0  # generous vs. the JND (~2-3) to tolerate render
 MASK_GRID_SIZE = 224
 
 
-def load_mask(png_path: Path, size: int = MASK_GRID_SIZE) -> list[bool]:
-    """Returns a flat row-major boolean grid of length size*size (foreground=True)."""
+def mask_is_inverted(warnings: list[str]) -> bool:
+    """Return whether foreground extraction fell back to whole-frame coverage."""
+    return any("tiny" in str(warning).lower() for warning in warnings)
+
+
+def load_mask(png_path: Path, size: int = MASK_GRID_SIZE) -> tuple[list[bool], list[str]]:
+    """Return the resized foreground mask and extraction warnings."""
     width, height, pixels, _warnings = load_image(png_path)
-    mask, _diag, _warn = build_foreground_mask(width, height, pixels)
+    mask, _diag, mask_warnings = build_foreground_mask(width, height, pixels)
     resized: list[bool] = []
     for y in range(size):
         sy = min(height - 1, int(y * height / size))
         for x in range(size):
             sx = min(width - 1, int(x * width / size))
             resized.append(mask[sy * width + sx])
-    return resized
+    return resized, mask_warnings
 
 
 def silhouette_iou(reference_mask: list[bool], render_mask: list[bool]) -> float:
@@ -84,7 +89,7 @@ def silhouette_iou(reference_mask: list[bool], render_mask: list[bool]) -> float
             union += 1
             if ref and render:
                 intersection += 1
-    return intersection / union if union else 1.0
+    return intersection / union if union else 0.0
 
 
 def bbox_of(mask: list[bool], size: int = MASK_GRID_SIZE) -> tuple[int, int, int, int]:
@@ -178,8 +183,12 @@ def run_tier1(
     spec_path: Path | None = None,
     pass_id: str | None = None,
 ) -> dict[str, Any]:
-    reference_mask = load_mask(reference_path)
-    render_mask = load_mask(render_path)
+    reference_mask, reference_mask_warnings = load_mask(reference_path)
+    render_mask, render_mask_warnings = load_mask(render_path)
+    mask_warnings = (
+        [f"reference: {w}" for w in reference_mask_warnings]
+        + [f"render: {w}" for w in render_mask_warnings]
+    )
 
     iou = silhouette_iou(reference_mask, render_mask)
     reference_bbox = bbox_of(reference_mask)
@@ -194,6 +203,12 @@ def run_tier1(
         "bilateralSymmetryError": round(symmetry, 4),
     }
     failures: list[str] = []
+    if mask_is_inverted(reference_mask_warnings) or mask_is_inverted(render_mask_warnings):
+        failures.append(
+            "silhouette evidence is unusable: the foreground mask fell back to whole-frame "
+            "coverage (subject under 3.5% of the frame), so IoU and proportion are not "
+            "measuring the subject; re-capture with the subject filling more of the frame"
+        )
     if iou < SILHOUETTE_IOU_THRESHOLD:
         failures.append(f"silhouette IoU {iou:.3f} is below threshold {SILHOUETTE_IOU_THRESHOLD}")
     if proportions["aspect_ratio_delta"] > ASPECT_RATIO_DELTA_THRESHOLD:
@@ -230,6 +245,7 @@ def run_tier1(
         "passed": not failures,
         "checks": checks,
         "failures": failures,
+        "maskWarnings": mask_warnings,
         "renderHash": render_hash(render_path),
         "passId": pass_id,
     }

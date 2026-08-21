@@ -2,8 +2,15 @@
   "profile_schema_version": 1,
   "defaults": {
     "encoding": "utf-8",
-    "languages": ["en", "vi"],
-    "source_extensions": [".md", ".json", ".jsonl"],
+    "languages": [
+      "en",
+      "vi"
+    ],
+    "source_extensions": [
+      ".md",
+      ".json",
+      ".jsonl"
+    ],
     "tokenizer": {
       "version": "1",
       "unicode_normalization": "NFKC",
@@ -24,7 +31,10 @@
   "collections": {
     "cs2": {
       "source_roots": [],
-      "optional_source_roots": ["docs/cs2/", "docs/cs2-anatomy/"],
+      "optional_source_roots": [
+        "docs/cs2/",
+        "docs/cs2-anatomy/"
+      ],
       "distilled_records": [
         "docs/specs/vocabulary/cs2.jsonl",
         "docs/specs/vocabulary/cs2_reconstruction.jsonl",

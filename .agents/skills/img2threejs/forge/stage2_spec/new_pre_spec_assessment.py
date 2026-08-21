@@ -30,6 +30,9 @@ from forge._shared.spec_search import (  # noqa: E402
     load_profile,
     serialize_search_results,
 )
+from forge._shared.pipeline_routing import (  # noqa: E402
+    resolve_pipeline_routing,
+)
 from forge.stage2_spec.new_sculpt_spec import (  # noqa: E402
     make_pre_spec_assessment,
     make_quality_contract,
@@ -119,8 +122,6 @@ class PreSpecPayloadRequired(TypedDict):
     preSpecAssessment: dict[str, JsonValue]
     qualityContract: dict[str, JsonValue]
     authoringInstruction: str
-
-
 class PreSpecPayload(PreSpecPayloadRequired, total=False):
     localSpecSearch: LocalSpecSearchPayload
 
@@ -135,8 +136,6 @@ def select_spec_collection(target_name: str, requested_collection: str | None) -
     if requested_collection:
         return requested_collection
     return "cs2" if detect_cs2_intent(target_name) else "core_3d"
-
-
 def search_local_specs(
     target_name: str,
     collection: str,
@@ -171,6 +170,7 @@ def make_payload(
     complexity: str,
     is_cs2: bool = False,
     manifest: dict | None = None,
+    is_character: bool = False,
 ) -> PreSpecPayload:
     assessment = make_pre_spec_assessment(target_name)
     contract = make_quality_contract()
@@ -202,6 +202,34 @@ def make_payload(
             "and unknowns before generating or implementing ObjectSculptSpec."
         ),
     }
+    if manifest is not None:
+        existing_routing = manifest.get("pipelineRouting")
+        if isinstance(existing_routing, dict):
+            routing = resolve_pipeline_routing(
+                classification=existing_routing.get("classification")
+            )
+        else:
+            routing = resolve_pipeline_routing(legacy_cs2=True)
+    elif is_character and is_cs2:
+        routing = resolve_pipeline_routing(
+            explicit_track="character-v1.5",
+            classification={
+                "kind": "weapon",
+                "confidence": 1.0,
+                "evidenceRefs": ["pipeline-routing:explicit:weapon-v1.4"],
+                "provider": "pipeline-routing-cli",
+                "version": "1",
+            },
+        )
+    elif is_character:
+        routing = resolve_pipeline_routing(explicit_track="character-v1.5")
+    elif is_cs2:
+        routing = resolve_pipeline_routing(explicit_track="weapon-v1.4")
+    else:
+        routing = None
+    if routing is not None:
+        payload["pipelineRouting"] = routing
+        payload["preSpecAssessment"]["pipelineRouting"] = routing
     if manifest is not None:
         intake = {
             "schemaVersion": manifest.get("schemaVersion"),
@@ -242,6 +270,7 @@ def main(argv: list[str]) -> int:
              f"never below the {CS2_DETAIL_MINIMUM} floor even if --complexity is set lower.",
     )
     parser.add_argument("--manifest", type=Path, help="CS2 intake manifest")
+    parser.add_argument("--character", action="store_true", help="Use the character-v1.5 authoring track")
     parser.add_argument(
         "--collection",
         help="Spec-search collection; defaults to cs2 for CS2 targets and core_3d otherwise.",
@@ -269,7 +298,14 @@ def main(argv: list[str]) -> int:
         if manifest.get("state") not in {"proceed", "fallback"}:
             parser.error(f"CS2 intake is not ready for assessment: {manifest.get('state', 'unknown')}")
         is_cs2 = True
-    payload_object = make_payload(args.target_name, args.image, complexity, is_cs2, manifest)
+    payload_object = make_payload(
+        args.target_name,
+        args.image,
+        complexity,
+        is_cs2,
+        manifest,
+        args.character,
+    )
     collection = select_spec_collection(args.target_name, args.collection)
     try:
         payload_object["localSpecSearch"] = search_local_specs(

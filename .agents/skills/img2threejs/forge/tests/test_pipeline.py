@@ -22,8 +22,13 @@ SCRIPTS = SKILL / "forge"
 
 
 def run(script, *args):
+    command = [sys.executable, str(SCRIPTS / script), *map(str, args)]
+    # These tests exercise legacy codegen details using intentionally shallow fixtures.
+    # Production CLI calls must not use this explicit non-production escape hatch.
+    if script == "stage3_build/generate_threejs_factory.py" and "--pass-id" not in args:
+        command.append("--allow-nonstrict")
     return subprocess.run(
-        [sys.executable, str(SCRIPTS / script), *map(str, args)],
+        command,
         capture_output=True, text=True,
     )
 
@@ -239,7 +244,8 @@ class PipelineTest(unittest.TestCase):
 
         # Recording a PASSING tier1 result (identical ref/render) unblocks it.
         run("stage4_review/diagnose_render.py", "--reference", self.ref, "--render", self.ref,
-            "--pass-id", "blockout", "--spec", self.spec, "--in-place")
+            "--pass-id", "blockout", "--spec", self.spec, "--map-stripped-render", self.render,
+            "--in-place")
         unblocked = run("stage3_build/orchestrate_passes.py", "check", self.spec, "--pass-id", "blockout")
         self.assertEqual(unblocked.returncode, 0, unblocked.stderr)
 
@@ -266,6 +272,43 @@ class PipelineTest(unittest.TestCase):
                      "--pass-id", "lighting-pass")
         self.assertNotEqual(locked.returncode, 0)
 
+    def test_generate_factory_blocks_strict_quality_before_writing_output(self):
+        run("stage2_spec/new_sculpt_spec.py", "Oak", "--out", self.spec)
+        out = self.dir / "blocked-production-factory.ts"
+        report = self.dir / "blocked-report.json"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS / "stage3_build/generate_threejs_factory.py"),
+                str(self.spec),
+                "--out",
+                str(out),
+                "--pass-id",
+                "blockout",
+                "--blocked-report",
+                str(report),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("BLOCKED", result.stderr)
+        self.assertIn("strict-quality", result.stderr)
+        self.assertFalse(out.exists())
+        payload = json.loads(report.read_text())
+        self.assertEqual(payload["status"], "BLOCKED")
+        self.assertEqual(payload["gate"], "strict-quality")
+
+    def test_generate_factory_default_path_is_byte_stable(self):
+        run("stage2_spec/new_sculpt_spec.py", "Oak", "--out", self.spec)
+        first = self.dir / "default-a.ts"
+        second = self.dir / "default-b.ts"
+        first_result = run("stage3_build/generate_threejs_factory.py", self.spec, "--out", first)
+        second_result = run("stage3_build/generate_threejs_factory.py", self.spec, "--out", second)
+        self.assertEqual(first_result.returncode, 0, first_result.stderr)
+        self.assertEqual(second_result.returncode, 0, second_result.stderr)
+        self.assertEqual(first.read_bytes(), second.read_bytes())
+
     def test_generate_factory_emits_f3_f4_material_and_environment(self):
         # Plan 1.3 F.3/F.4: previously-missing MeshPhysicalMaterial properties and the
         # environment map must both appear in the generated code (codegen-output test,
@@ -282,6 +325,32 @@ class PipelineTest(unittest.TestCase):
         self.assertIn("import { RoomEnvironment }", ts)
         self.assertIn("PMREMGenerator", ts)
         self.assertIn("Environment(renderer: THREE.WebGLRenderer)", ts)
+
+    def test_generate_factory_emits_ws5_pbr_constraints_and_dense_maps(self):
+        run("stage2_spec/new_sculpt_spec.py", "Oak", "--out", self.spec)
+        out = self.dir / "createObjectModel.ts"
+        r = run("stage3_build/generate_threejs_factory.py", self.spec, "--out", out)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        ts = out.read_text()
+        for marker in ("clampAlbedoChannel", "clampPbrF0", "clampPbrIor", "clampPbrMetalness",
+                        "binaryMetalness", "material.displacementMap = textures.height",
+                        "material.normalMap = textures.normal"):
+            self.assertIn(marker, ts, f"missing WS5 generator rule: {marker}")
+        self.assertIn("clampAlbedoChannel(Number(match[1]))", ts)
+        self.assertIn("iridescenceIOR: clampPbrIor", ts)
+
+    def test_dense_component_enables_height_maps_when_shared_material_is_plain(self):
+        run("stage2_spec/new_sculpt_spec.py", "Oak", "--out", self.spec)
+        spec = json.loads(self.spec.read_text())
+        component = spec["componentTree"][0]
+        component["geometryDensity"] = "dense"
+        spec["materials"][0].pop("geometryDensity", None)
+        spec["materials"][0].pop("denseMesh", None)
+        self.spec.write_text(json.dumps(spec))
+        out = self.dir / "createOakModel.ts"
+        result = run("stage3_build/generate_threejs_factory.py", self.spec, "--out", out)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("}, options, true)", out.read_text())
 
     def test_generate_factory_emits_auto_framing(self):
         # Plan 1.3 §3.2: auto-framing by bounding box is a prerequisite for the Divine
@@ -573,6 +642,7 @@ class PipelineTest(unittest.TestCase):
                 "--fidelity", "0.8", "--action", "continue",
                 "--summary", "Blockout silhouette acceptable.",
                 "--render-screenshot", self.render, "--comparison-image", cmp,
+                "--map-stripped-render", self.render,
                 "--ai-vision-score", "0.8", "--layer-scores-json", layers,
                 "--feature-reviews-json", freviews,
                 "--camera-view", "front", "--in-place")
@@ -696,15 +766,47 @@ class PipelineTest(unittest.TestCase):
     # ---- v1.2 character generator ----
 
     def test_character_flag_builds_humanoid_tree(self):
+        # Plan 1.5: the default character template is a general humanoid, not a hardcoded bust
+        # of one reference person -- it must include a lower body and full arms, and must NOT
+        # include that person's specific traits (glasses/headphones/chest decal) unless the
+        # caller opts in with --accessories. See new_sculpt_spec.py make_character_component_tree.
         run("stage2_spec/new_sculpt_spec.py", "Person", "--character", "--out", self.spec)
         spec = json.loads(self.spec.read_text())
         ids = {c["id"] for c in spec["componentTree"]}
-        for part in ("root", "head", "torso", "neck", "hair", "glasses-frame-l", "arm-l"):
+        for part in (
+            "root", "head", "abdomen", "chest", "neck", "hair",  # spine is two segments (US-001)
+            "pelvis", "thigh-l", "shin-l", "foot-l",  # lower body
+            "upper-arm-l", "forearm-l", "hand-l",  # full arm, not a single "arm-l" capsule
+            "eye-l", "eye-cavity-l",  # eyes as recessed cavities, not brows alone
+        ):
             self.assertIn(part, ids)
-        # all parts flattened to root (no cascading non-uniform parent scale)
-        for c in spec["componentTree"]:
-            if c["id"] != "root":
-                self.assertEqual(c["parent"], "root")
+        for accessory in ("glasses-frame-l", "hp-band", "shirt-decal"):
+            self.assertNotIn(accessory, ids)
+        # Plan 1.5 WS-E: now that a non-uniformly-scaled parent can no longer distort a
+        # nested child (generate_threejs_factory.py bakes dimensions into geometry, not the
+        # pivot Group's scale), the template authors a REAL parent chain instead of flattening
+        # every part onto "root". Anatomically sensible parents, not a flat list.
+        by_id = {c["id"]: c for c in spec["componentTree"]}
+        expected_parents = {
+            # US-001 split the single torso into abdomen + chest so the waist can flex, and
+            # parented the spine to the pelvis. The pelvis is now the only root-parented body
+            # part, which is also what made derive_character_rig's hand-picked bone root and its
+            # torso joint exception unnecessary.
+            "pelvis": "root", "abdomen": "pelvis", "chest": "abdomen",
+            "neck": "chest", "head": "neck",
+            # US-002 inserted a clavicle between chest and upper arm so the shoulder can shrug
+            # and the arm's rotation origin sits on the joint instead of inside the ribcage.
+            "clavicle-l": "chest", "upper-arm-l": "clavicle-l",
+            "forearm-l": "upper-arm-l", "hand-l": "forearm-l",
+            "thigh-l": "pelvis", "shin-l": "thigh-l", "foot-l": "shin-l",
+            "hair": "head", "eye-l": "head", "eye-cavity-l": "head",
+        }
+        for child_id, expected_parent in expected_parents.items():
+            self.assertEqual(by_id[child_id]["parent"], expected_parent,
+                              f"{child_id} should be parented on {expected_parent!r}")
+        # not every part is nested this deep -- confirm the tree isn't secretly still flat
+        non_root_parents = {c["parent"] for c in spec["componentTree"] if c["id"] != "root"}
+        self.assertTrue(non_root_parents - {"root"}, "componentTree is still flattened onto root")
         # distinct per-part colors (skin vs hair vs shirt), not a single fallback
         colors = {m["id"]: m.get("color") for m in spec["materials"] if m["id"] in ("skin", "hair", "shirt")}
         self.assertEqual(len({colors["skin"], colors["hair"], colors["shirt"]}), 3)
@@ -712,6 +814,36 @@ class PipelineTest(unittest.TestCase):
         for m in spec["materials"]:
             if m["id"] in ("skin", "hair", "shirt"):
                 self.assertGreaterEqual(len(m.get("colorVariation", {}).get("palette", [])), 2)
+
+    def test_character_accessories_flag_restores_bust_traits(self):
+        run("stage2_spec/new_sculpt_spec.py", "Person", "--character", "--accessories",
+            "--out", self.spec)
+        spec = json.loads(self.spec.read_text())
+        ids = {c["id"] for c in spec["componentTree"]}
+        for accessory in ("glasses-frame-l", "hp-band", "shirt-decal"):
+            self.assertIn(accessory, ids)
+
+    def test_digits_are_baseline_not_a_flag(self):
+        """US-003 replaced the `--fingers` flag with real digits in the default template.
+
+        The flag added ONE box called "fingers-l" plus one called "thumb-l" — a mitten, opt-in.
+        A humanoid that cannot curl a finger is not finished, so five digits of three phalanges
+        each are now baseline and the flag is gone. This asserts both halves: the digits exist
+        without any flag, and the old mitten ids do not come back.
+        """
+        run("stage2_spec/new_sculpt_spec.py", "Person", "--character", "--out", self.spec)
+        spec = json.loads(self.spec.read_text())
+        ids = {c["id"] for c in spec["componentTree"]}
+        for side in ("l", "r"):
+            for digit in ("thumb", "index", "middle", "ring", "little"):
+                for phalanx in (1, 2, 3):
+                    self.assertIn(f"{digit}-{side}-{phalanx}", ids)
+        self.assertNotIn("fingers-l", ids)
+        self.assertNotIn("thumb-l", ids)
+        by_id = {c["id"]: c for c in spec["componentTree"]}
+        self.assertEqual(by_id["middle-l-1"]["parent"], "hand-l")
+        self.assertEqual(by_id["middle-l-2"]["parent"], "middle-l-1")
+        self.assertEqual(by_id["middle-l-3"]["parent"], "middle-l-2")
 
     def test_character_autodetect_from_domain(self):
         run("stage2_spec/new_pre_spec_assessment.py", "Person", "--complexity", "complex", "--out", self.assessment)

@@ -1,12 +1,20 @@
 from __future__ import annotations
 
+import sys
 from collections import Counter
 from itertools import combinations
+from math import isfinite
+from pathlib import Path
 from typing import Any, TypeAlias
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from self_intersection import analyze_mesh  # noqa: E402
 
 SEAM_MIN_OVERLAP = 0.02
 SEAM_MAX_OVERLAP = 0.05
 SEAM_SOURCE = "grimoire/build/geometry_patterns.md"
+DEFAULT_TRIANGLE_BUDGET = 50_000
+NORMAL_DOT_THRESHOLD = 0.0
 EdgeKey: TypeAlias = tuple[tuple[float, ...], tuple[float, ...]]
 
 
@@ -90,6 +98,96 @@ def _blade_thickness(mesh: dict[str, Any]) -> dict[str, Any]:
             "reported": bool(values)}
 
 
+def _triangle_count(mesh: dict[str, Any]) -> int | None:
+    if isinstance(mesh.get("triangleCount"), (int, float)) and not isinstance(mesh["triangleCount"], bool):
+        return max(0, int(mesh["triangleCount"]))
+    indices = mesh.get("indices")
+    if isinstance(indices, list):
+        return len(indices) if indices and isinstance(indices[0], (list, tuple)) else len(indices) // 3
+    return None
+
+
+def _has_reduced_lod_tiers(lod_plan: Any) -> bool:
+    if not isinstance(lod_plan, list) or len(lod_plan) < 2:
+        return False
+    previous_distance: float | None = None
+    previous_triangles: int | None = None
+    for tier in lod_plan:
+        if not isinstance(tier, dict):
+            return False
+        distance = tier.get("distance")
+        triangles = tier.get("triangleCount")
+        if (
+            not isinstance(distance, (int, float))
+            or isinstance(distance, bool)
+            or not isfinite(distance)
+            or not isinstance(triangles, int)
+            or isinstance(triangles, bool)
+            or triangles < 1
+        ):
+            return False
+        if previous_distance is not None and distance <= previous_distance:
+            return False
+        if previous_triangles is not None and triangles >= previous_triangles:
+            return False
+        previous_distance = float(distance)
+        previous_triangles = triangles
+    return True
+
+
+def _normal_consistency(mesh: dict[str, Any]) -> dict[str, Any] | None:
+    normals = mesh.get("normals")
+    if not isinstance(normals, list) or not isinstance(mesh.get("vertices"), list):
+        return None
+    if len(normals) != len(mesh["vertices"]):
+        return {"checked": False, "consistent": False, "reason": "normal count does not match vertex count"}
+    indices = mesh.get("indices")
+    triangles = indices if isinstance(indices, list) and indices and isinstance(indices[0], (list, tuple)) else (
+        [indices[i:i + 3] for i in range(0, len(indices), 3)] if isinstance(indices, list) else []
+    )
+    if not triangles:
+        return None
+    flips = 0
+    checked = 0
+    invalid_normals = 0
+    for triangle in triangles:
+        if len(triangle) != 3:
+            continue
+        try:
+            a, b, c = (mesh["vertices"][int(index)] for index in triangle)
+            edge_a = [float(b[i]) - float(a[i]) for i in range(3)]
+            edge_b = [float(c[i]) - float(a[i]) for i in range(3)]
+            face = [
+                edge_a[1] * edge_b[2] - edge_a[2] * edge_b[1],
+                edge_a[2] * edge_b[0] - edge_a[0] * edge_b[2],
+                edge_a[0] * edge_b[1] - edge_a[1] * edge_b[0],
+            ]
+            length = sum(value * value for value in face) ** 0.5
+            if length <= 1e-12:
+                continue
+            face = [value / length for value in face]
+            average = [
+                sum(float(mesh["normals"][int(index)][axis]) for index in triangle) / 3
+                for axis in range(3)
+            ]
+            normal_length = sum(value * value for value in average) ** 0.5
+            if normal_length <= 1e-12:
+                invalid_normals += 1
+                continue
+            dot = sum(face[axis] * average[axis] for axis in range(3)) / normal_length
+            checked += 1
+            flips += dot < NORMAL_DOT_THRESHOLD
+        except (IndexError, TypeError, ValueError):
+            return {"checked": False, "consistent": False, "reason": "invalid vertex/normal data"}
+    return {
+        "checked": checked > 0,
+        "consistent": flips == 0 and invalid_normals == 0,
+        "checkedTriangles": checked,
+        "flippedTriangles": flips,
+        "invalidNormalTriangles": invalid_normals,
+    }
+
+
 def measure_geometry_integrity(payload: dict[str, Any]) -> dict[str, Any]:
     meshes = payload.get("meshes") or payload.get("components") or []
     if isinstance(meshes, dict):
@@ -98,6 +196,14 @@ def measure_geometry_integrity(payload: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("built geometry meshes/components must be an array or object")
     reports: list[dict[str, Any]] = []
     failures: list[str] = []
+    issues: list[dict[str, Any]] = []
+    performance = payload.get("performanceBudget") if isinstance(payload.get("performanceBudget"), dict) else {}
+    triangle_budget = performance.get("triangleBudget", payload.get("triangleBudget", DEFAULT_TRIANGLE_BUDGET))
+    if not isinstance(triangle_budget, (int, float)) or isinstance(triangle_budget, bool) or triangle_budget <= 0:
+        triangle_budget = DEFAULT_TRIANGLE_BUDGET
+    lod_plan = payload.get("lodPlan")
+    lod_plan_valid = _has_reduced_lod_tiers(lod_plan)
+    total_triangles = 0
     for index, mesh in enumerate(meshes):
         if not isinstance(mesh, dict):
             continue
@@ -107,12 +213,56 @@ def measure_geometry_integrity(payload: dict[str, Any]) -> dict[str, Any]:
         else:
             item.update({"boundaryEdges": None, "nonManifoldEdges": None, "note": "mesh topology not supplied"})
         role = str(mesh.get("role") or "").lower()
+        triangles = _triangle_count(mesh)
+        item["triangleCount"] = triangles
+        if triangles is not None:
+            total_triangles += triangles
+        normals = _normal_consistency(mesh)
+        if normals is not None:
+            item["normalConsistency"] = normals
+            if normals.get("consistent") is False:
+                message = f"{item['id']}: inconsistent face/vertex normals"
+                failures.append(message)
+                issues.append({"severity": "error", "code": "normal-consistency", "mesh": item["id"], "message": message})
+        elif isinstance(mesh.get("vertices"), list) and isinstance(mesh.get("indices"), list):
+            message = f"{item['id']}: normals are required for watertight geometry validation"
+            failures.append(message)
+            item["normalConsistency"] = {"checked": False, "consistent": False, "reason": "normals missing"}
+            issues.append({"severity": "error", "code": "normal-missing", "mesh": item["id"], "message": message})
         if role == "blade" or "blade" in str(item["id"]).lower():
             item["thickness"] = _blade_thickness(mesh)
             if item["thickness"]["constantGrind"] or item["thickness"]["missingDistalTaper"]:
                 failures.append(f"{item['id']}: blade has constant thickness or missing distal taper")
-        if item["realization"] == "separate-geometry" and item.get("boundaryEdges", 0) not in (0, None):
-            failures.append(f"{item['id']}: openEdges={item['boundaryEdges']} (separate geometry)")
+        if item.get("boundaryEdges", 0) not in (0, None):
+            message = f"{item['id']}: openEdges={item['boundaryEdges']} ({item['realization']})"
+            failures.append(message)
+            issues.append({"severity": "error", "code": "watertight", "mesh": item["id"], "message": message})
+        if item.get("nonManifoldEdges", 0):
+            message = f"{item['id']}: nonManifoldEdges={item['nonManifoldEdges']}"
+            failures.append(message)
+            issues.append({"severity": "error", "code": "non-manifold", "mesh": item["id"], "message": message})
+        # Both checks above are TOPOLOGICAL, and a surface pushed through its own far side changes no
+        # connectivity at all -- it reports 0 open edges, 0 non-manifold edges, and an identical edge
+        # count to the clean mesh. That is not a hypothetical: it is how a punched-through skull shipped.
+        # The geometric check belongs right here, beside the two it complements, or it is a CLI nobody
+        # remembers to run.
+        if isinstance(mesh.get("vertices"), list) and isinstance(mesh.get("indices"), list):
+            probe = analyze_mesh(mesh)
+            item["selfIntersection"] = {
+                key: probe[key]
+                for key in (
+                    "selfIntersecting", "insideVertexCount", "undecidedVertexCount",
+                    "sampledVertexCount", "totalVertexCount", "samplingStride",
+                )
+                if key in probe
+            }
+            if probe.get("selfIntersecting"):
+                message = (
+                    f"{item['id']}: selfIntersecting, {probe.get('insideVertexCount')} of "
+                    f"{probe.get('sampledVertexCount')} sampled vertices lie inside their own surface"
+                )
+                failures.append(message)
+                issues.append({"severity": "error", "code": "self-intersection", "mesh": item["id"], "message": message})
         reports.append(item)
     seams: list[dict[str, Any]] = []
     for first, second in combinations([item for item in meshes if isinstance(item, dict)], 2):
@@ -128,4 +278,17 @@ def measure_geometry_integrity(payload: dict[str, Any]) -> dict[str, Any]:
         seams.append(seam)
         if overlap < SEAM_MIN_OVERLAP:
             failures.append(f"seam {seam['a']}↔{seam['b']}: overlap={overlap:.3f} < {SEAM_MIN_OVERLAP:.2f}")
-    return {"passed": not failures, "source": SEAM_SOURCE, "minimumSeamOverlap": SEAM_MIN_OVERLAP, "maximumDocumentedSeamOverlap": SEAM_MAX_OVERLAP, "meshes": reports, "seams": seams, "failures": failures}
+    if total_triangles > triangle_budget:
+        message = f"triangle budget exceeded: {total_triangles} > {int(triangle_budget)}"
+        failures.append(message)
+        issues.append({"severity": "error", "code": "triangle-budget", "message": message, "triangles": total_triangles, "budget": int(triangle_budget)})
+        if not lod_plan_valid:
+            lod_message = "triangle budget exceeded without LOD tiers with increasing distance and decreasing triangleCount"
+            failures.append(lod_message)
+            code = "lod-required" if not isinstance(lod_plan, list) or not lod_plan else "lod-invalid"
+            issues.append({"severity": "error", "code": code, "message": lod_message})
+    return {"passed": not failures, "source": SEAM_SOURCE, "minimumSeamOverlap": SEAM_MIN_OVERLAP,
+            "maximumDocumentedSeamOverlap": SEAM_MAX_OVERLAP, "triangleBudget": int(triangle_budget),
+            "triangleCount": total_triangles, "lodPlanPresent": isinstance(lod_plan, list) and bool(lod_plan),
+            "lodPlanValid": lod_plan_valid,
+            "meshes": reports, "seams": seams, "failures": failures, "issues": issues}
