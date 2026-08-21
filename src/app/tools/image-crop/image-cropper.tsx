@@ -28,8 +28,11 @@ import {
 } from 'lucide-react'
 import type {
   ChangeEvent,
+  Dispatch,
   FocusEvent,
   KeyboardEvent as ReactKeyboardEvent,
+  RefObject,
+  SetStateAction,
   UIEvent,
 } from 'react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -151,6 +154,19 @@ interface LatestEditorState {
   shape: CropShape
 }
 
+interface CropperListenerOptions {
+  canvas: CropperCanvas
+  captureSnapshot: () => EditorSnapshot | null
+  commitSnapshot: () => void
+  latestStateRef: RefObject<LatestEditorState>
+  selection: CropperSelection
+  selectionHistoryTimerRef: RefObject<ReturnType<typeof setTimeout> | null>
+  setHistory: Dispatch<SetStateAction<HistoryState | null>>
+  setRotation: Dispatch<SetStateAction<number>>
+  syncEditorMeasurements: () => void
+  syncLatestState: (next: Partial<LatestEditorState>) => void
+}
+
 const ASPECT_PRESETS = Object.entries(ASPECT_PRESET_LABELS).map(
   ([value, label]) => ({ label, value: value as AspectPreset })
 )
@@ -167,6 +183,7 @@ const DEFAULT_QUALITY = 92
 const MIN_ZOOM = 10
 const MAX_ZOOM = 500
 const ZOOM_STEP = 1
+const HISTORY_COMMIT_DELAY_MS = 220
 const CANVAS_MOVEMENT_BY_KEY: Partial<
   Record<string, readonly [number, number]>
 > = {
@@ -218,6 +235,140 @@ const getErrorMessage = (error: unknown): string => {
   return '处理图片时发生未知错误，请更换文件后重试。'
 }
 
+const createCropperListeners = ({
+  canvas,
+  captureSnapshot,
+  commitSnapshot,
+  latestStateRef,
+  selection,
+  selectionHistoryTimerRef,
+  setHistory,
+  setRotation,
+  syncEditorMeasurements,
+  syncLatestState,
+}: CropperListenerOptions): (() => void) => {
+  const clearHistoryTimer = () => {
+    if (!selectionHistoryTimerRef.current) {
+      return
+    }
+    clearTimeout(selectionHistoryTimerRef.current)
+    selectionHistoryTimerRef.current = null
+  }
+
+  const scheduleHistoryCommit = () => {
+    if (selectionHistoryTimerRef.current) {
+      clearTimeout(selectionHistoryTimerRef.current)
+    }
+    selectionHistoryTimerRef.current = setTimeout(() => {
+      selectionHistoryTimerRef.current = null
+      commitSnapshot()
+    }, HISTORY_COMMIT_DELAY_MS)
+  }
+
+  const handleSelectionChange = () => {
+    requestAnimationFrame(syncEditorMeasurements)
+    scheduleHistoryCommit()
+  }
+
+  const handleCanvasAction = (event: Event) => {
+    const { detail } = event as CustomEvent<{
+      action?: string
+      rotate?: number
+    }>
+    if (detail?.action === 'rotate' && detail.rotate) {
+      const nextRotation = normalizeRotation(
+        latestStateRef.current.rotation + (detail.rotate * 180) / Math.PI
+      )
+      setRotation(nextRotation)
+      syncLatestState({ rotation: nextRotation })
+    }
+    requestAnimationFrame(syncEditorMeasurements)
+  }
+
+  const handleCanvasActionEnd = () => {
+    clearHistoryTimer()
+    requestAnimationFrame(() => {
+      syncEditorMeasurements()
+      const snapshot = captureSnapshot()
+      if (snapshot) {
+        setHistory((current) =>
+          current ? pushHistory(current, snapshot) : createHistory(snapshot)
+        )
+      }
+    })
+  }
+
+  selection.addEventListener('change', handleSelectionChange)
+  canvas.addEventListener('action', handleCanvasAction)
+  canvas.addEventListener('actionend', handleCanvasActionEnd)
+
+  return () => {
+    clearHistoryTimer()
+    selection.removeEventListener('change', handleSelectionChange)
+    canvas.removeEventListener('action', handleCanvasAction)
+    canvas.removeEventListener('actionend', handleCanvasActionEnd)
+  }
+}
+
+interface CropperSourceOptions {
+  container: HTMLDivElement
+  sourceImage: HTMLImageElement
+}
+
+const buildCropperRuntime = async ({
+  container,
+  sourceImage,
+}: CropperSourceOptions): Promise<CropperRuntime> => {
+  await sourceImage.decode()
+  const { default: CropperConstructor } = await import('cropperjs')
+  const cropper = new CropperConstructor(sourceImage, {
+    container,
+    template: CROPPER_TEMPLATE,
+  })
+  const canvas = cropper.getCropperCanvas()
+  const image = cropper.getCropperImage()
+  const selection = cropper.getCropperSelection()
+  if (!(canvas && image && selection)) {
+    cropper.destroy()
+    throw new Error('图片裁剪器初始化失败。')
+  }
+  await image.$ready()
+
+  image.rotatable = true
+  image.scalable = true
+  image.translatable = true
+  selection.keyboard = false
+  selection.precise = true
+  selection.movable = true
+  selection.resizable = true
+  selection.aspectRatio = Number.NaN
+
+  const canvasBounds = canvas.getBoundingClientRect()
+  const imageBounds = image.getBoundingClientRect()
+  const initialSelection = fitAspectCrop({
+    aspectRatio: imageBounds.width / imageBounds.height,
+    bounds: { height: imageBounds.height, width: imageBounds.width },
+    coverage: 0.82,
+  })
+  selection.$change(
+    initialSelection.x + imageBounds.left - canvasBounds.left,
+    initialSelection.y + imageBounds.top - canvasBounds.top,
+    initialSelection.width,
+    initialSelection.height,
+    Number.NaN,
+    true
+  )
+
+  return {
+    canvas,
+    cropper,
+    grid: container.querySelector<CropperGrid>('cropper-grid'),
+    image,
+    initialScale: getMatrixScale(toTransformMatrix(image.$getTransform())),
+    selection,
+  }
+}
+
 const NumericField = ({
   label,
   max,
@@ -252,6 +403,7 @@ const NumericField = ({
   )
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: 裁剪器单体组件承载全部交互状态与回调，待拆分为独立 hooks 后移除此注释
 export function ImageCropper() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultTitleRef = useRef<HTMLDivElement>(null)
@@ -716,108 +868,26 @@ export function ImageCropper() {
         return
       }
       try {
-        await sourceImage.decode()
-        const { default: CropperConstructor } = await import('cropperjs')
+        const candidate = await buildCropperRuntime({ container, sourceImage })
         if (cancelled) {
+          candidate.cropper.destroy()
           return
         }
-        const cropper = new CropperConstructor(sourceImage, {
-          container,
-          template: CROPPER_TEMPLATE,
-        })
-        const canvas = cropper.getCropperCanvas()
-        const image = cropper.getCropperImage()
-        const selection = cropper.getCropperSelection()
-        if (!(canvas && image && selection)) {
-          cropper.destroy()
-          throw new Error('图片裁剪器初始化失败。')
-        }
-        await image.$ready()
-        if (cancelled) {
-          cropper.destroy()
-          return
-        }
-
-        const grid = container.querySelector<CropperGrid>('cropper-grid')
-        image.rotatable = true
-        image.scalable = true
-        image.translatable = true
-        selection.keyboard = false
-        selection.precise = true
-        selection.movable = true
-        selection.resizable = true
-        selection.aspectRatio = Number.NaN
-        const initialScale = getMatrixScale(
-          toTransformMatrix(image.$getTransform())
-        )
-        runtime = { canvas, cropper, grid, image, initialScale, selection }
+        runtime = candidate
         cropperRuntimeRef.current = runtime
 
-        const canvasBounds = canvas.getBoundingClientRect()
-        const imageBounds = image.getBoundingClientRect()
-        const imageArea = {
-          height: imageBounds.height,
-          width: imageBounds.width,
-        }
-        const initialSelection = fitAspectCrop({
-          aspectRatio: imageArea.width / imageArea.height,
-          bounds: imageArea,
-          coverage: 0.82,
+        const detachListeners = createCropperListeners({
+          canvas: candidate.canvas,
+          captureSnapshot,
+          commitSnapshot,
+          latestStateRef,
+          selection: candidate.selection,
+          selectionHistoryTimerRef,
+          setHistory,
+          setRotation,
+          syncEditorMeasurements,
+          syncLatestState,
         })
-        selection.$change(
-          initialSelection.x + imageBounds.left - canvasBounds.left,
-          initialSelection.y + imageBounds.top - canvasBounds.top,
-          initialSelection.width,
-          initialSelection.height,
-          Number.NaN,
-          true
-        )
-
-        const handleChange = () => {
-          requestAnimationFrame(syncEditorMeasurements)
-          if (selectionHistoryTimerRef.current) {
-            clearTimeout(selectionHistoryTimerRef.current)
-          }
-          selectionHistoryTimerRef.current = setTimeout(() => {
-            selectionHistoryTimerRef.current = null
-            commitSnapshot()
-          }, 220)
-        }
-        const handleAction = (event: Event) => {
-          const { detail } = event as CustomEvent<{
-            action?: string
-            rotate?: number
-          }>
-          if (detail?.action === 'rotate' && detail.rotate) {
-            const nextRotation = normalizeRotation(
-              latestStateRef.current.rotation + (detail.rotate * 180) / Math.PI
-            )
-            setRotation(nextRotation)
-            syncLatestState({ rotation: nextRotation })
-          }
-          requestAnimationFrame(syncEditorMeasurements)
-        }
-        const handleActionEnd = () => {
-          if (selectionHistoryTimerRef.current) {
-            clearTimeout(selectionHistoryTimerRef.current)
-            selectionHistoryTimerRef.current = null
-          }
-          requestAnimationFrame(() => {
-            syncEditorMeasurements()
-            const snapshot = captureSnapshot()
-            if (snapshot) {
-              setHistory((current) =>
-                current
-                  ? pushHistory(current, snapshot)
-                  : createHistory(snapshot)
-              )
-            }
-          })
-        }
-
-        selection.addEventListener('change', handleChange)
-        canvas.addEventListener('action', handleAction)
-        canvas.addEventListener('actionend', handleActionEnd)
 
         requestAnimationFrame(() => {
           syncEditorMeasurements()
@@ -828,15 +898,7 @@ export function ImageCropper() {
           }
         })
 
-        return () => {
-          if (selectionHistoryTimerRef.current) {
-            clearTimeout(selectionHistoryTimerRef.current)
-            selectionHistoryTimerRef.current = null
-          }
-          selection.removeEventListener('change', handleChange)
-          canvas.removeEventListener('action', handleAction)
-          canvas.removeEventListener('actionend', handleActionEnd)
-        }
+        return detachListeners
       } catch (error) {
         if (!cancelled) {
           setErrorMessage(getErrorMessage(error))
@@ -861,6 +923,7 @@ export function ImageCropper() {
     }
   }, [
     captureSnapshot,
+    commitSnapshot,
     sourceDimensions,
     sourceUrl,
     syncEditorMeasurements,
