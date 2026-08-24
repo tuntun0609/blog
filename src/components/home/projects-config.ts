@@ -1,7 +1,9 @@
 import {
+  siAgentskills,
   siGooglechrome,
   siJavascript,
   siNextdotjs,
+  siPython,
   siReact,
   siTailwindcss,
   siTypescript,
@@ -123,5 +125,20 @@ export const projects: readonly ProjectDefinition[] = [
       { name: 'JavaScript', path: siJavascript.path },
     ],
     title: 'leafer-x-snap',
+  },
+  {
+    description:
+      '围绕人像分析、生图与后期处理的 Agent Skills 集合，覆盖提示词、深度、配色与姿态。',
+    href: 'https://github.com/tuntun0609/portrait-shot-director',
+    preview: {
+      kind: 'image',
+      src: '/projects/portrait-shot-director-preview.png',
+    },
+    technologies: [
+      { name: 'Agent Skills', path: siAgentskills.path },
+      { name: 'Python', path: siPython.path },
+      { name: 'TypeScript', path: siTypescript.path },
+    ],
+    title: 'portrait-shot-director',
   },
 ] as const
