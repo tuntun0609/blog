@@ -1,58 +1,62 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
-import { formatPostDate } from '@/lib/blog'
-import type { BlogCategory } from '@/lib/blog-taxonomy'
+import { formatPostDate } from '@/lib/blog-date'
+import type { BlogPostSummary } from '@/lib/blog-types'
+import { cn } from '@/lib/utils'
 import styles from './blog.module.css'
 
 interface PostCardProps {
-  post: {
-    url: string
-    data: {
-      title?: string
-      description?: string
-      date: string
-      category: BlogCategory
-      cover: string
-      tags: string[]
-    }
-  }
-  preload?: boolean
+  eager?: boolean
+  headingLevel?: 2 | 3
+  post: BlogPostSummary
+  variant?: 'archive' | 'lead' | 'supporting'
 }
 
-export function PostCard({ post, preload = false }: PostCardProps) {
+const IMAGE_SIZES = {
+  archive:
+    '(max-width: 680px) calc(100vw - 2rem), (max-width: 1200px) calc(50vw - 2rem), 33rem',
+  lead: '(max-width: 680px) calc(100vw - 2rem), (max-width: 880px) calc(100vw - 2.5rem), 36rem',
+  supporting:
+    '(max-width: 680px) calc(100vw - 2rem), (max-width: 1200px) calc(25vw - 1.5rem), 16rem',
+} as const
+
+export function PostCard({
+  eager = false,
+  headingLevel = 3,
+  post,
+  variant = 'archive',
+}: PostCardProps) {
   const title = post.data.title ?? '未命名文章'
+  const Heading = headingLevel === 2 ? 'h2' : 'h3'
 
   return (
-    <Link className={styles.postLink} href={post.url}>
-      <article className={styles.postRow}>
-        <div className={styles.postImage}>
+    <Link
+      className={cn(styles.postLink, styles[`postLink_${variant}`])}
+      href={post.url}
+    >
+      <article className={cn(styles.postRow, styles[`postRow_${variant}`])}>
+        <div className={cn(styles.postImage, styles[`postImage_${variant}`])}>
           <Image
-            alt={title}
+            alt=""
             fill
-            preload={preload}
-            sizes="(max-width: 680px) 1px, (max-width: 880px) 136px, 168px"
+            loading={eager ? 'eager' : 'lazy'}
+            sizes={IMAGE_SIZES[variant]}
             src={post.data.cover}
           />
         </div>
-        <div className={styles.postCopy}>
+        <div className={cn(styles.postCopy, styles[`postCopy_${variant}`])}>
           <div className={styles.postMeta}>
             <span className={styles.postCategory}>{post.data.category}</span>
             <time className={styles.postDate} dateTime={post.data.date}>
               {formatPostDate(post.data.date)}
             </time>
           </div>
-          <h2 className={styles.postTitle}>{title}</h2>
+          <Heading
+            className={cn(styles.postTitle, styles[`postTitle_${variant}`])}
+          >
+            {title}
+          </Heading>
           <p className={styles.postDescription}>{post.data.description}</p>
-          {post.data.tags.length > 0 ? (
-            <ul aria-label="文章标签" className={styles.postTags}>
-              {post.data.tags.map((tag) => (
-                <li key={tag}>
-                  <Badge variant="secondary">{tag}</Badge>
-                </li>
-              ))}
-            </ul>
-          ) : null}
         </div>
       </article>
     </Link>

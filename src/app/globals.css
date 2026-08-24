@@ -123,7 +123,7 @@
   --home-soft-line: color-mix(in oklab, var(--home-ink) 12%, transparent);
   --home-panel: #161a22;
   --home-accent: var(--primary);
-  --home-blue: var(--primary);
+  --home-blue: oklch(0.811 0.111 293.571);
   --home-blue-soft: color-mix(in oklab, var(--primary) 16%, var(--background));
   --home-cyan: #67d4df;
   --home-pink: #ff8eb5;

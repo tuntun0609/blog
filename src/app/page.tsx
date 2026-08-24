@@ -11,7 +11,8 @@ import { TechnologiesKeyboard } from '@/components/home/technologies-keyboard'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
-import { formatPostDate, getRecentPosts } from '@/lib/blog'
+import { getRecentPosts } from '@/lib/blog'
+import { formatPostDate } from '@/lib/blog-date'
 import styles from './home.module.css'
 
 export const metadata: Metadata = {

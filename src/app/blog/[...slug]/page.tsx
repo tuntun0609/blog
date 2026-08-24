@@ -15,12 +15,8 @@ import { ReadingProgress } from '@/components/blog/reading-progress'
 import { getMdxComponents } from '@/components/mdx'
 import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { Badge } from '@/components/ui/badge'
-import {
-  blogSource,
-  formatPostDate,
-  getPostGitHubUrl,
-  getPublishedPosts,
-} from '@/lib/blog'
+import { blogSource, getPostGitHubUrl, getPublishedPosts } from '@/lib/blog'
+import { formatPostDate } from '@/lib/blog-date'
 import styles from '@/components/blog/blog.module.css'
 
 interface PostPageProps {

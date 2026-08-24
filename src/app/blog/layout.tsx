@@ -14,8 +14,8 @@ export default function BlogLayout({ children }: { children: ReactNode }) {
         {children}
       </main>
       <SiteFooter
-        linkHref="/blog"
-        linkLabel="文章归档"
+        linkHref="#main-content"
+        linkLabel="回到顶部"
         message="持续记录，认真构建"
       />
     </div>

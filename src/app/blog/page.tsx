@@ -1,29 +1,27 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { BlogPagination } from '@/components/blog/blog-pagination'
-import { CategoryFilter } from '@/components/blog/category-filter'
-import { PostCard } from '@/components/blog/post-card'
-import { Button } from '@/components/ui/button'
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from '@/components/ui/empty'
+import { Suspense } from 'react'
+import { BlogIndex } from '@/components/blog/blog-index'
 import {
   getFilteredPublishedPosts,
   getPublishedCategoryFacets,
-  POSTS_PER_PAGE,
+  getPublishedPosts,
 } from '@/lib/blog'
-import { BLOG_CATEGORIES, isBlogCategory } from '@/lib/blog-taxonomy'
-import styles from '@/components/blog/blog.module.css'
+import { POSTS_PER_PAGE } from '@/lib/blog-constants'
+import { isBlogCategory } from '@/lib/blog-taxonomy'
+import type { BlogPostSummary } from '@/lib/blog-types'
 
 export const metadata: Metadata = {
-  description: '工程实践、技术观察与产品思考。',
-  title: '博客',
+  authors: [{ name: 'Tuntun', url: 'https://github.com/tuntun0609' }],
+  description: '分享前端、后端、AI 与工程实践中真实遇到的问题。',
+  title: '文章',
 }
+
+const FEATURED_POST_URLS = [
+  '/blog/production-agent-message-store',
+  '/blog/video-convert-local-transcoder',
+  '/blog/postgresql-quick-start',
+] as const
 
 interface BlogPageProps {
   searchParams: Promise<{
@@ -55,9 +53,18 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
       ? normalizedCategory
       : undefined
   const categories = getPublishedCategoryFacets()
-  const totalPosts = categories.reduce(
-    (total, categoryFacet) => total + categoryFacet.count,
-    0
+  const posts = getPublishedPosts().map(
+    (post): BlogPostSummary => ({
+      data: {
+        category: post.data.category,
+        cover: post.data.cover,
+        date: post.data.date,
+        description: post.data.description,
+        tags: post.data.tags,
+        title: post.data.title,
+      },
+      url: post.url,
+    })
   )
   const filteredPosts = getFilteredPublishedPosts({
     category: activeCategory,
@@ -77,74 +84,20 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
     notFound()
   }
 
-  const start = (currentPage - 1) * POSTS_PER_PAGE
-  const visiblePosts = filteredPosts.slice(start, start + POSTS_PER_PAGE)
+  const featuredPosts = FEATURED_POST_URLS.map((url) =>
+    posts.find((post) => post.url === url)
+  ).filter((post): post is BlogPostSummary => post !== undefined)
 
   return (
-    <div className={styles.listPage}>
-      <header className={styles.listIntro}>
-        <div>
-          <h1 className={styles.listTitle}>文章</h1>
-        </div>
-        <div>
-          <p className={styles.listLead}>
-            记录前端工程、内容体验与产品构建中的具体问题，让实践成为可以继续使用的知识。
-          </p>
-          <dl className={styles.listSummary}>
-            <div>
-              <dt>已发布</dt>
-              <dd>{totalPosts} 篇文章</dd>
-            </div>
-            <div>
-              <dt>分类</dt>
-              <dd>{BLOG_CATEGORIES.length} 个分类</dd>
-            </div>
-          </dl>
-        </div>
-      </header>
-
-      <CategoryFilter
-        activeCategory={activeCategory}
+    <Suspense fallback={null}>
+      <BlogIndex
         categories={categories}
-        query={activeQuery}
-        resultCount={filteredPosts.length}
-        totalPosts={totalPosts}
+        featuredPosts={featuredPosts}
+        initialCategory={activeCategory}
+        initialPage={currentPage}
+        initialQuery={activeQuery}
+        posts={posts}
       />
-
-      <section aria-label="文章列表" className={styles.postList}>
-        {visiblePosts.length > 0 ? (
-          visiblePosts.map((post, index) => (
-            <PostCard key={post.url} post={post} preload={index === 0} />
-          ))
-        ) : (
-          <Empty className={styles.searchEmpty}>
-            <EmptyHeader>
-              <EmptyTitle>没有找到相关文章</EmptyTitle>
-              <EmptyDescription>
-                换一个关键词，或者清除分类后查看全部文章。
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button
-                nativeButton={false}
-                render={<Link href="/blog" />}
-                variant="outline"
-              >
-                查看全部文章
-              </Button>
-            </EmptyContent>
-          </Empty>
-        )}
-      </section>
-
-      {totalPages > 1 ? (
-        <BlogPagination
-          activeCategory={activeCategory}
-          currentPage={currentPage}
-          query={activeQuery}
-          totalPages={totalPages}
-        />
-      ) : null}
-    </div>
+    </Suspense>
   )
 }
