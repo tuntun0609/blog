@@ -1,14 +1,13 @@
 import { GitHubIcon } from '@/components/github-icon'
 import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { ProjectPreview } from './project-previews'
-import { projects } from './projects-config'
+import { ProjectTechnologyIcon } from './project-technology-icon'
+import { type ProjectTechnologyDefinition, projects } from './projects-config'
 import styles from './projects-showcase.module.css'
 
-const ProjectTechnology = ({ name, path }: { name: string; path: string }) => (
-  <li className={styles.technology} title={name}>
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d={path} />
-    </svg>
+const ProjectTechnology = ({ icon, name }: ProjectTechnologyDefinition) => (
+  <li className={styles.technology} data-icon={icon} title={name}>
+    <ProjectTechnologyIcon name={icon} />
     <span className={styles.srOnly}>{name}</span>
   </li>
 )

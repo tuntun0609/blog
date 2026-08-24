@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { Badge } from '@/components/ui/badge'
 import { formatPostDate } from '@/lib/blog-date'
 import type { BlogPostSummary } from '@/lib/blog-types'
 import { cn } from '@/lib/utils'
@@ -46,7 +47,7 @@ export function PostCard({
         </div>
         <div className={cn(styles.postCopy, styles[`postCopy_${variant}`])}>
           <div className={styles.postMeta}>
-            <span className={styles.postCategory}>{post.data.category}</span>
+            <Badge variant="secondary">{post.data.category}</Badge>
             <time className={styles.postDate} dateTime={post.data.date}>
               {formatPostDate(post.data.date)}
             </time>

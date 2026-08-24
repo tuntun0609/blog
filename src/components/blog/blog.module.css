@@ -74,7 +74,6 @@
   min-width: 0;
 }
 
-.postCategory,
 .articleMeta dt,
 .tocTitle,
 .continueLabel {
@@ -244,21 +243,6 @@
   gap: 0.6rem 0.9rem;
   align-items: center;
   margin-bottom: 0.7rem;
-}
-
-.postCategory {
-  display: inline-flex;
-  gap: 0.45rem;
-  align-items: center;
-  color: var(--home-blue);
-}
-
-.postCategory::before {
-  width: 0.42rem;
-  height: 0.42rem;
-  content: "";
-  background: currentColor;
-  border-radius: 50%;
 }
 
 .postDate {

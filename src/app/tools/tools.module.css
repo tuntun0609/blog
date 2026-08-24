@@ -1,4 +1,6 @@
 .shell {
+  --tools-canvas: var(--home-paper);
+
   min-height: 100vh;
   color: var(--home-ink);
   background: var(--tools-canvas);

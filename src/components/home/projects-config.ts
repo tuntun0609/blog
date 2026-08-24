@@ -1,13 +1,4 @@
-import {
-  siAgentskills,
-  siGooglechrome,
-  siJavascript,
-  siNextdotjs,
-  siPython,
-  siReact,
-  siTailwindcss,
-  siTypescript,
-} from 'simple-icons'
+import type { ProjectTechnologyIconName } from './project-technology-icon'
 
 export type ProjectPreview =
   | {
@@ -23,16 +14,16 @@ export type ProjectPreview =
       src: string
     }
 
-interface ProjectTechnology {
+export interface ProjectTechnologyDefinition {
+  icon: ProjectTechnologyIconName
   name: string
-  path: string
 }
 
 export interface ProjectDefinition {
   description: string
   href: string
   preview: ProjectPreview
-  technologies: readonly ProjectTechnology[]
+  technologies: readonly ProjectTechnologyDefinition[]
   title: string
 }
 
@@ -46,10 +37,10 @@ export const projects: readonly ProjectDefinition[] = [
       src: '/projects/dranimo-preview.png',
     },
     technologies: [
-      { name: 'Next.js', path: siNextdotjs.path },
-      { name: 'React', path: siReact.path },
-      { name: 'TypeScript', path: siTypescript.path },
-      { name: 'Tailwind CSS', path: siTailwindcss.path },
+      { icon: 'nextjs', name: 'Next.js' },
+      { icon: 'react', name: 'React' },
+      { icon: 'typescript', name: 'TypeScript' },
+      { icon: 'tailwindcss', name: 'Tailwind CSS' },
     ],
     title: 'dranimo',
   },
@@ -62,9 +53,9 @@ export const projects: readonly ProjectDefinition[] = [
       src: '/projects/blog-preview.png',
     },
     technologies: [
-      { name: 'Next.js', path: siNextdotjs.path },
-      { name: 'React', path: siReact.path },
-      { name: 'TypeScript', path: siTypescript.path },
+      { icon: 'nextjs', name: 'Next.js' },
+      { icon: 'mdx', name: 'MDX' },
+      { icon: 'typescript', name: 'TypeScript' },
     ],
     title: 'blog',
   },
@@ -77,9 +68,10 @@ export const projects: readonly ProjectDefinition[] = [
       src: 'https://raw.githubusercontent.com/tuntun0609/infographic-ai/master/public/editor-snapshot.png',
     },
     technologies: [
-      { name: 'React', path: siReact.path },
-      { name: 'TypeScript', path: siTypescript.path },
-      { name: 'Tailwind CSS', path: siTailwindcss.path },
+      { icon: 'nextjs', name: 'Next.js' },
+      { icon: 'react', name: 'React' },
+      { icon: 'typescript', name: 'TypeScript' },
+      { icon: 'tailwindcss', name: 'Tailwind CSS' },
     ],
     title: 'infographic-ai',
   },
@@ -89,10 +81,10 @@ export const projects: readonly ProjectDefinition[] = [
     href: 'https://github.com/tuntun0609/easy-saas-next',
     preview: { kind: 'code' },
     technologies: [
-      { name: 'Next.js', path: siNextdotjs.path },
-      { name: 'React', path: siReact.path },
-      { name: 'TypeScript', path: siTypescript.path },
-      { name: 'Tailwind CSS', path: siTailwindcss.path },
+      { icon: 'nextjs', name: 'Next.js' },
+      { icon: 'react', name: 'React' },
+      { icon: 'typescript', name: 'TypeScript' },
+      { icon: 'tailwindcss', name: 'Tailwind CSS' },
     ],
     title: 'easy-saas-next',
   },
@@ -105,9 +97,9 @@ export const projects: readonly ProjectDefinition[] = [
       src: 'https://raw.githubusercontent.com/tuntun0609/tun-bili-tool/master/assets/icon512.png',
     },
     technologies: [
-      { name: 'Chrome Extension', path: siGooglechrome.path },
-      { name: 'TypeScript', path: siTypescript.path },
-      { name: 'React', path: siReact.path },
+      { icon: 'chrome-web-store', name: 'Chrome Web Store' },
+      { icon: 'typescript', name: 'TypeScript' },
+      { icon: 'react', name: 'React' },
     ],
     title: 'tun-bili-tool',
   },
@@ -121,8 +113,8 @@ export const projects: readonly ProjectDefinition[] = [
       src: 'https://raw.githubusercontent.com/tuntun0609/leafer-x-snap/66a9ee56cf34e5e84419c7f1b02c41ef3348dadb/images/demo.png',
     },
     technologies: [
-      { name: 'TypeScript', path: siTypescript.path },
-      { name: 'JavaScript', path: siJavascript.path },
+      { icon: 'typescript', name: 'TypeScript' },
+      { icon: 'javascript', name: 'JavaScript' },
     ],
     title: 'leafer-x-snap',
   },
@@ -135,9 +127,9 @@ export const projects: readonly ProjectDefinition[] = [
       src: '/projects/portrait-shot-director-preview.png',
     },
     technologies: [
-      { name: 'Agent Skills', path: siAgentskills.path },
-      { name: 'Python', path: siPython.path },
-      { name: 'TypeScript', path: siTypescript.path },
+      { icon: 'agent-skills', name: 'Agent Skills' },
+      { icon: 'python', name: 'Python' },
+      { icon: 'typescript', name: 'TypeScript' },
     ],
     title: 'portrait-shot-director',
   },
