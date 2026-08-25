@@ -95,7 +95,7 @@ const getChartData = (history: number[]): ChartData => {
   }
 }
 
-const useFpsMetrics = (): FpsMetrics => {
+const useFpsMetrics = (isActive: boolean): FpsMetrics => {
   const [metrics, setMetrics] = useState<FpsMetrics>({
     fps: null,
     frameTime: null,
@@ -103,6 +103,10 @@ const useFpsMetrics = (): FpsMetrics => {
   })
 
   useEffect(() => {
+    if (!isActive) {
+      return
+    }
+
     let frameId = 0
     let frameCount = 0
     let sampleStart = 0
@@ -164,19 +168,21 @@ const useFpsMetrics = (): FpsMetrics => {
       stop()
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [])
+  }, [isActive])
 
   return metrics
 }
 
 export function FpsMonitorDemo() {
+  const demoRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const descriptionId = useId()
   const stressTimerRef = useRef<number | null>(null)
   const [isStressTestRunning, setIsStressTestRunning] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
   const [stressTestResult, setStressTestResult] =
     useState<StressTestResult | null>(null)
-  const metrics = useFpsMetrics()
+  const metrics = useFpsMetrics(isVisible)
   const chartData = getChartData(metrics.history)
   const lowestFps =
     metrics.history.length > 0 ? Math.min(...metrics.history) : null
@@ -196,6 +202,26 @@ export function FpsMonitorDemo() {
     },
     []
   )
+
+  useEffect(() => {
+    const demo = demoRef.current
+    if (!demo) {
+      return
+    }
+
+    if (typeof IntersectionObserver !== 'function') {
+      setIsVisible(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(Boolean(entry?.isIntersecting)),
+      { rootMargin: '160px 0px', threshold: 0.01 }
+    )
+
+    observer.observe(demo)
+    return () => observer.disconnect()
+  }, [])
 
   const runStressTest = useCallback((): void => {
     if (isStressTestRunning) {
@@ -228,7 +254,7 @@ export function FpsMonitorDemo() {
       : `帧率历史曲线，当前 ${metrics.fps} FPS，最低 ${lowestFps ?? metrics.fps} FPS`
 
   return (
-    <Card className="my-8">
+    <Card className="my-8" ref={demoRef}>
       <CardHeader className={styles.cardHeader}>
         <CardTitle>
           <h3 className={styles.demoTitle} id={titleId}>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { SiteHeader } from '@/components/site-header'
+import { Toaster } from '@/components/ui/sonner'
 import { DocumentCalibrationTool } from './document-calibration-tool'
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function DocumentCalibrationPage() {
       <main>
         <DocumentCalibrationTool />
       </main>
+      <Toaster richColors />
     </div>
   )
 }

@@ -1,7 +1,6 @@
 import { RootProvider } from 'fumadocs-ui/provider/next'
 import type { Metadata } from 'next'
-import { Geist_Mono, Noto_Sans, Shantell_Sans } from 'next/font/google'
-import { Toaster } from '@/components/ui/sonner'
+import { Geist_Mono, Noto_Sans } from 'next/font/google'
 import { cn } from '@/lib/utils'
 
 import './globals.css'
@@ -15,12 +14,6 @@ const notoSans = Noto_Sans({
 const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
-})
-
-const shantellSans = Shantell_Sans({
-  subsets: ['latin'],
-  variable: '--font-shantell-sans',
-  weight: ['400', '500', '600'],
 })
 
 export const metadata: Metadata = {
@@ -44,17 +37,13 @@ export default function RootLayout({
       className={cn(
         'h-full antialiased',
         geistMono.variable,
-        notoSans.variable,
-        shantellSans.variable
+        notoSans.variable
       )}
       lang="zh-CN"
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
-        <RootProvider>
-          {children}
-          <Toaster richColors />
-        </RootProvider>
+        <RootProvider>{children}</RootProvider>
       </body>
     </html>
   )

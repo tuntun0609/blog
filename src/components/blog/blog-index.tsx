@@ -2,6 +2,7 @@
 
 import { ArrowUpRightIcon, MailIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { BlogHero } from '@/components/blog/blog-hero'
 import { BlogPagination } from '@/components/blog/blog-pagination'
 import { CategoryFilter } from '@/components/blog/category-filter'
 import { PostCard } from '@/components/blog/post-card'
@@ -140,17 +141,7 @@ export function BlogIndex({
 
   return (
     <div className={styles.listPage}>
-      <header
-        className={isFiltered ? styles.listIntroCompact : styles.listIntro}
-      >
-        <div className={styles.listIdentity}>
-          <h1 className={styles.listTitle}>Tuntun</h1>
-          <p className={styles.listRole}>FullStack Developer</p>
-          <p className={styles.listLead}>
-            分享前端、后端、AI 与工程实践中真实遇到的问题。
-          </p>
-        </div>
-      </header>
+      <BlogHero compact={isFiltered} />
 
       {isFiltered || featuredPosts.length === 0 ? null : (
         <section

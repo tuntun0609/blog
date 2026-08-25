@@ -275,6 +275,14 @@
   height: 1rem;
 }
 
+.secondaryAction svg,
+.allProjectsLink svg,
+.allNotesLink svg,
+.githubCta svg,
+.contactLink > svg {
+  transition: transform 180ms ease;
+}
+
 .allNotesLink:focus-visible svg,
 .githubCta:focus-visible svg {
   transform: translate(2px, -2px);
@@ -625,6 +633,14 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .secondaryAction:hover svg,
+  .allProjectsLink:hover svg,
+  .allNotesLink:hover svg,
+  .githubCta:hover svg,
+  .contactLink:hover > svg {
+    transform: translate(2px, -2px);
+  }
+
   .allNotesLink:hover svg {
     transform: translate(2px, -2px);
   }
@@ -767,6 +783,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .secondaryAction svg,
+  .allProjectsLink svg,
+  .allNotesLink svg,
+  .githubCta svg,
+  .contactLink > svg {
+    transition: none;
+  }
+
   .noteCover img {
     transform: none;
     transition: none;

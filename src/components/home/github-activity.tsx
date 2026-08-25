@@ -1,12 +1,19 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { type Activity, ActivityCalendar } from 'react-activity-calendar'
+import type { Activity } from 'react-activity-calendar'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import styles from './github-activity.module.css'
 
 import 'react-activity-calendar/tooltips.css'
+
+const ActivityCalendar = dynamic(
+  () =>
+    import('react-activity-calendar').then((module) => module.ActivityCalendar),
+  { ssr: false }
+)
 
 const ACTIVITY_API_URL =
   'https://github-contributions-api.jogruber.de/v4/tuntun0609'
@@ -137,13 +144,44 @@ const formatActivityTooltip = (activity: Activity): string => {
 }
 
 export function GithubActivity() {
+  const activityRef = useRef<HTMLDivElement>(null)
   const { resolvedTheme } = useTheme()
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR)
   const [activities, setActivities] = useState<Activity[]>([])
+  const [shouldLoad, setShouldLoad] = useState(false)
   const [status, setStatus] = useState<'error' | 'loading' | 'ready'>('loading')
   const scrollAreaRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
+    const activity = activityRef.current
+    if (!activity) {
+      return
+    }
+
+    if (typeof IntersectionObserver !== 'function') {
+      setShouldLoad(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setShouldLoad(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '600px 0px', threshold: 0.01 }
+    )
+
+    observer.observe(activity)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!shouldLoad) {
+      return
+    }
+
     const controller = new AbortController()
 
     const loadActivities = async () => {
@@ -175,7 +213,7 @@ export function GithubActivity() {
     loadActivities()
 
     return () => controller.abort()
-  }, [selectedYear])
+  }, [selectedYear, shouldLoad])
 
   useEffect(() => {
     if (status !== 'ready') {
@@ -213,7 +251,12 @@ export function GithubActivity() {
   const hasActivityData = activities.length > 0
 
   return (
-    <div className={styles.activity} data-delay="1" data-reveal>
+    <div
+      className={styles.activity}
+      data-delay="1"
+      data-reveal
+      ref={activityRef}
+    >
       <div className={styles.toolbar}>
         <div>
           <p className={styles.label}>CONTRIBUTION GRAPH</p>

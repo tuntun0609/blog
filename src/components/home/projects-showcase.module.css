@@ -140,6 +140,7 @@
 .detailsLink svg {
   width: 0.85rem;
   height: 0.85rem;
+  transition: transform 180ms ease;
 }
 
 .githubLink:hover,
@@ -147,6 +148,12 @@
 .detailsLink:hover,
 .detailsLink:focus-visible {
   color: var(--home-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .detailsLink:hover svg {
+    transform: translate(2px, -2px);
+  }
 }
 
 .githubLink:focus-visible,

@@ -9,7 +9,7 @@ import {
 import dynamic from 'next/dynamic'
 import { useTheme } from 'next-themes'
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import styles from './tools.module.css'
 
 const MeshGradient = dynamic(
@@ -37,9 +37,11 @@ interface NavigatorWithConnection extends Navigator {
 }
 
 export function ToolsHeroField() {
+  const fieldRef = useRef<HTMLDivElement>(null)
   const { resolvedTheme } = useTheme()
   const shouldReduceMotion = useReducedMotion()
   const [canAnimateField, setCanAnimateField] = useState(false)
+  const [isFieldVisible, setIsFieldVisible] = useState(false)
   const [isPageVisible, setIsPageVisible] = useState(false)
   const [isParallaxActive, setIsParallaxActive] = useState(false)
   const [supportsWebGl, setSupportsWebGl] = useState(false)
@@ -73,6 +75,26 @@ export function ToolsHeroField() {
     }
   }, [])
 
+  useEffect(() => {
+    const field = fieldRef.current
+    if (!field) {
+      return
+    }
+
+    if (typeof IntersectionObserver !== 'function') {
+      setIsFieldVisible(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsFieldVisible(Boolean(entry?.isIntersecting)),
+      { rootMargin: '120px 0px', threshold: 0.01 }
+    )
+
+    observer.observe(field)
+    return () => observer.disconnect()
+  }, [])
+
   const activateParallax = useCallback((): void => {
     if (canAnimateField && !shouldReduceMotion) {
       setIsParallaxActive(true)
@@ -104,6 +126,7 @@ export function ToolsHeroField() {
   const colors = resolvedTheme === 'dark' ? DARK_COLORS : LIGHT_COLORS
   const canRenderShader =
     canAnimateField &&
+    isFieldVisible &&
     isPageVisible &&
     supportsWebGl &&
     Boolean(resolvedTheme) &&
@@ -116,6 +139,7 @@ export function ToolsHeroField() {
       onPointerEnter={activateParallax}
       onPointerLeave={resetParallax}
       onPointerMove={handlePointerMove}
+      ref={fieldRef}
     >
       {canRenderShader ? (
         <motion.div

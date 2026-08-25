@@ -1,5 +1,6 @@
 import {
   ArrowDownIcon,
+  ArrowUpRightIcon,
   BookOpenIcon,
   Code2Icon,
   MailIcon,
@@ -10,7 +11,6 @@ import { BilibiliIcon } from '@/components/bilibili-icon'
 import { GitHubIcon } from '@/components/github-icon'
 import { AvatarStickerClient } from '@/components/home/avatar-sticker-client'
 import { HeroTitleReveal } from '@/components/home/hero-title-reveal'
-import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { XIcon } from '@/components/x-icon'
 import styles from '@/app/home.module.css'
 

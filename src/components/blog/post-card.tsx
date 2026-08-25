@@ -18,7 +18,7 @@ const IMAGE_SIZES = {
     '(max-width: 680px) calc(100vw - 2rem), (max-width: 1200px) calc(50vw - 2rem), 33rem',
   lead: '(max-width: 680px) calc(100vw - 2rem), (max-width: 880px) calc(100vw - 2.5rem), 36rem',
   supporting:
-    '(max-width: 680px) calc(100vw - 2rem), (max-width: 1200px) calc(25vw - 1.5rem), 16rem',
+    '(max-width: 680px) calc(40vw - 1.25rem), (max-width: 880px) calc(100vw - 2.5rem), (max-width: 1200px) calc(25vw - 1.5rem), 16rem',
 } as const
 
 export function PostCard({

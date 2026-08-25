@@ -1,5 +1,6 @@
-import { MailIcon, RssIcon } from 'lucide-react'
+import { ArrowUpRightIcon, MailIcon, RssIcon } from 'lucide-react'
 import type { Metadata } from 'next'
+import { Shantell_Sans } from 'next/font/google'
 import Image from 'next/image'
 import Link from 'next/link'
 import { GitHubIcon } from '@/components/github-icon'
@@ -10,7 +11,6 @@ import { ProjectsShowcase } from '@/components/home/projects-showcase'
 import { TechnologiesKeyboard } from '@/components/home/technologies-keyboard'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
-import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { getRecentPosts } from '@/lib/blog'
 import { formatPostDate } from '@/lib/blog-date'
 import styles from './home.module.css'
@@ -22,11 +22,17 @@ export const metadata: Metadata = {
 
 const RECENT_POSTS_LIMIT = 6
 
+const shantellSans = Shantell_Sans({
+  subsets: ['latin'],
+  variable: '--font-shantell-sans',
+  weight: '400',
+})
+
 export default function HomePage() {
   const recentPosts = getRecentPosts(RECENT_POSTS_LIMIT)
 
   return (
-    <div className={styles.page} id="tuntun-home">
+    <div className={`${styles.page} ${shantellSans.variable}`} id="tuntun-home">
       <HomeMotion rootId="tuntun-home" />
 
       <a className={styles.skipLink} href="#main-content">

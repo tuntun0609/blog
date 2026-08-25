@@ -1,5 +1,5 @@
+import { ArrowUpRightIcon } from 'lucide-react'
 import { GitHubIcon } from '@/components/github-icon'
-import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { ProjectPreview } from './project-previews'
 import { ProjectTechnologyIcon } from './project-technology-icon'
 import { type ProjectTechnologyDefinition, projects } from './projects-config'

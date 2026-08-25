@@ -1,5 +1,6 @@
 import { DocsBody } from 'fumadocs-ui/layouts/docs/page'
 import {
+  ArrowUpRightIcon,
   CalendarDaysIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -13,7 +14,6 @@ import readingTime from 'reading-time'
 import { ArticlePageActions } from '@/components/blog/page-actions'
 import { ReadingProgress } from '@/components/blog/reading-progress'
 import { getMdxComponents } from '@/components/mdx'
-import { ArrowUpRightIcon } from '@/components/ui/arrow-up-right'
 import { Badge } from '@/components/ui/badge'
 import { blogSource, getPostGitHubUrl, getPublishedPosts } from '@/lib/blog'
 import { formatPostDate } from '@/lib/blog-date'
