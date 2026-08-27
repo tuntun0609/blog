@@ -54,36 +54,25 @@
 }
 
 .listPage {
-  padding-block: clamp(4rem, 7vw, 6.25rem) 8rem;
+  padding-block: clamp(3.5rem, 5vw, 4.75rem) 8rem;
 }
 
 .listIntro,
 .listIntroCompact {
-  position: relative;
-  display: grid;
-  align-items: center;
-  overflow: clip;
-  isolation: isolate;
+  display: block;
 }
 
 .listIntro {
-  grid-template-columns: minmax(0, 0.76fr) minmax(24rem, 1.24fr);
-  gap: clamp(2rem, 5vw, 5rem);
-  min-height: clamp(23rem, 58dvh, 36rem);
-  padding-bottom: clamp(2.75rem, 5vw, 4.5rem);
+  padding-bottom: clamp(3.25rem, 5vw, 4.5rem);
 }
 
 .listIntroCompact {
-  grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.7fr);
-  gap: 2rem;
-  min-height: 12rem;
-  padding-bottom: 2.5rem;
+  padding-bottom: clamp(2.25rem, 4vw, 3rem);
 }
 
 .listIdentity {
-  position: relative;
-  z-index: 1;
   min-width: 0;
+  max-width: 42rem;
 }
 
 .articleMeta dt,
@@ -97,10 +86,11 @@
 
 .listTitle {
   margin: 0;
-  font-size: clamp(4.25rem, 7.8vw, 6rem);
+  font-size: clamp(4.25rem, 8.2vw, 6rem);
   font-weight: 760;
-  line-height: 0.9;
-  letter-spacing: -0.055em;
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
 }
 
 .listIntroCompact .listTitle {
@@ -108,110 +98,30 @@
 }
 
 .listRole {
-  margin: 0.85rem 0 0;
+  margin: 0.8rem 0 0;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--home-muted);
 }
 
 .listLead {
-  max-width: 36rem;
-  margin: 1.25rem 0 0;
-  font-size: clamp(1rem, 1.6vw, 1.14rem);
+  max-width: 35rem;
+  margin: 1.15rem 0 0;
+  font-size: clamp(1rem, 1.4vw, 1.1rem);
   line-height: 1.75;
   color: var(--home-muted);
   text-wrap: balance;
 }
 
-.heroArtwork {
-  position: relative;
-  width: 100%;
-  min-height: clamp(20rem, 43dvh, 29rem);
-  contain: layout paint;
-  overflow: clip;
-  pointer-events: auto;
+.listIntroCompact .listRole {
+  margin-top: 0.65rem;
+  font-size: 0.82rem;
 }
 
-.heroTypeOutline,
-.heroTypeStack,
-.heroSignature {
-  position: absolute;
-  display: block;
-  user-select: none;
-}
-
-.heroTypeOutline {
-  top: 4%;
-  left: -10%;
-  font-size: clamp(7rem, 12.5vw, 11rem);
-  font-weight: 800;
-  line-height: 0.78;
-  color: transparent;
-  -webkit-text-stroke: 1px var(--home-line);
-  letter-spacing: -0.1em;
-  white-space: nowrap;
-}
-
-.heroTypeStack {
-  right: -1%;
-  bottom: 5%;
-  font-size: clamp(6rem, 10vw, 9rem);
-  font-weight: 800;
-  line-height: 0.72;
-  letter-spacing: -0.095em;
-}
-
-.heroTypeLine,
-.heroTypeLineOutline {
-  display: block;
-  width: max-content;
-}
-
-.heroTypeLine {
-  color: var(--home-ink);
-}
-
-.heroTypeLineOutline {
-  margin-left: clamp(2.5rem, 7vw, 5.5rem);
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--home-ink);
-}
-
-.heroTypeAccent {
-  color: var(--home-blue);
-  -webkit-text-stroke: 0;
-}
-
-.heroSignature {
-  right: 4%;
-  bottom: 10%;
-  z-index: 1;
-  font-family: var(--font-shantell-sans), sans-serif;
-  font-size: clamp(1.35rem, 2.2vw, 2rem);
-  font-weight: 500;
-  line-height: 1;
-  color: var(--home-blue);
-  rotate: -7deg;
-}
-
-.listIntroCompact .heroArtwork {
-  min-height: 8rem;
-}
-
-.listIntroCompact .heroTypeOutline {
-  top: 19%;
-  left: 2%;
-  font-size: clamp(4rem, 8vw, 6.25rem);
-}
-
-.listIntroCompact .heroTypeStack {
-  right: 2%;
-  bottom: 7%;
-  font-size: clamp(3.25rem, 6vw, 4.75rem);
-}
-
-.listIntroCompact .heroSignature {
-  display: none;
+.listIntroCompact .listLead {
+  max-width: 32rem;
+  margin-top: 0.9rem;
+  font-size: 0.94rem;
 }
 
 .featuredSection {
@@ -241,8 +151,8 @@
 
 .featuredGrid {
   display: grid;
-  gap: 1.25rem;
-  padding-top: 0.75rem;
+  gap: 1rem;
+  padding-top: 0.5rem;
 }
 
 .featuredSupportingGrid {
@@ -315,13 +225,13 @@
 
 .postRow_lead {
   grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
-  min-height: 17rem;
+  min-height: 15rem;
 }
 
 .postRow_supporting {
   grid-template-columns: minmax(9.5rem, 0.8fr) minmax(0, 1.2fr);
   gap: 1rem;
-  min-height: 10rem;
+  min-height: 9rem;
   padding: 0.8rem;
 }
 
@@ -415,7 +325,7 @@
 
 .postImage_lead {
   height: 100%;
-  min-height: 17rem;
+  min-height: 15rem;
   aspect-ratio: auto;
   border-radius: 0;
 }
@@ -821,15 +731,6 @@
     font-size: clamp(3.5rem, 8vw, 4.5rem);
   }
 
-  .listIntro {
-    grid-template-columns: minmax(0, 0.72fr) minmax(19rem, 1.28fr);
-    gap: 1.25rem;
-  }
-
-  .listIntroCompact {
-    grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.55fr);
-  }
-
   .articleTitle {
     font-size: 3.25rem;
   }
@@ -882,25 +783,15 @@
     padding-block: 3.5rem 6rem;
   }
 
-  .listIntro,
-  .listIntroCompact {
-    display: grid;
-  }
-
   .articleHeader {
     display: block;
   }
 
   .listIntro {
-    grid-template-columns: 1fr;
-    gap: 1.75rem;
-    min-height: auto;
-    padding-bottom: 3.25rem;
+    padding-bottom: 2.75rem;
   }
 
   .listIntroCompact {
-    display: block;
-    min-height: 0;
     padding-bottom: 2.25rem;
   }
 
@@ -915,39 +806,6 @@
   .listLead {
     margin-top: 1.25rem;
     font-size: 0.98rem;
-  }
-
-  .heroArtwork {
-    justify-self: end;
-    width: min(100%, 28rem);
-    min-height: 10.5rem;
-    pointer-events: none;
-  }
-
-  .heroTypeOutline {
-    top: 4%;
-    left: -2%;
-    font-size: clamp(4.5rem, 22vw, 6.5rem);
-  }
-
-  .heroTypeStack {
-    right: 1%;
-    bottom: 2%;
-    font-size: clamp(3.9rem, 18vw, 5.5rem);
-  }
-
-  .heroTypeLineOutline {
-    margin-left: clamp(2rem, 13vw, 4rem);
-  }
-
-  .heroSignature {
-    right: 2%;
-    bottom: 7%;
-    font-size: 1.25rem;
-  }
-
-  .listIntroCompact .heroArtwork {
-    display: none;
   }
 
   .featuredSection {
@@ -1095,9 +953,5 @@
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-  }
-
-  .heroArtwork {
-    pointer-events: none;
   }
 }

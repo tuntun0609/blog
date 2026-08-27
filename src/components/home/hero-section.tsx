@@ -75,7 +75,7 @@ export function HeroSection() {
           <HeroTitleReveal />
         </h1>
         <p className={styles.heroLead}>
-          Hello, 我是 Tuntun，一名前端开发者。专注于
+          Hello, 我是 Tuntun，一名全栈开发者。专注于
           React、Next.js、浏览器扩展。
         </p>
 

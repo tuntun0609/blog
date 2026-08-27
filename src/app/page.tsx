@@ -16,8 +16,8 @@ import { formatPostDate } from '@/lib/blog-date'
 import styles from './home.module.css'
 
 export const metadata: Metadata = {
-  description: 'Tuntun 的个人主页，记录 Web 前端开发、开源项目与持续学习。',
-  title: 'Tuntun — Web 前端开发者',
+  description: 'Tuntun 的个人主页，记录全栈 Web 开发、开源项目与持续学习。',
+  title: 'Tuntun — 全栈开发者',
 }
 
 const RECENT_POSTS_LIMIT = 6
