@@ -29,6 +29,21 @@ export interface ProjectDefinition {
 
 export const projects: readonly ProjectDefinition[] = [
   {
+    description: '收集并筛选公开支持 shadcn CLI 或兼容 Registry 的 UI 组件库。',
+    href: 'https://github.com/tuntun0609/awesome-shadcn-ui',
+    preview: {
+      kind: 'image',
+      src: 'https://raw.githubusercontent.com/tuntun0609/awesome-shadcn-ui/master/public/og.png',
+    },
+    technologies: [
+      { icon: 'nextjs', name: 'Next.js' },
+      { icon: 'react', name: 'React' },
+      { icon: 'typescript', name: 'TypeScript' },
+      { icon: 'tailwindcss', name: 'Tailwind CSS' },
+    ],
+    title: 'awesome-shadcn-ui',
+  },
+  {
     description:
       '本地优先的手绘动画工具：在浏览器中绘制、预览笔画过程，并导出图片或视频。',
     href: 'https://github.com/tuntun0609/dranimo',
