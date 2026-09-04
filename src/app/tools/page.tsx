@@ -33,7 +33,7 @@ const toolSections: ToolSection[] = [
     label: '图片工具',
     tools: [
       {
-        cover: '/tools/image-resize.svg',
+        cover: '/tools/image-upscale-illustration.png',
         description: '用本地 AI 重建细节，或按指定插值直接放大像素。',
         href: '/tools/image-upscale',
         name: '图片放大',
