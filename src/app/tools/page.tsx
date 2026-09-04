@@ -33,6 +33,12 @@ const toolSections: ToolSection[] = [
     label: '图片工具',
     tools: [
       {
+        cover: '/tools/image-resize.svg',
+        description: '用本地 AI 重建细节，或按指定插值直接放大像素。',
+        href: '/tools/image-upscale',
+        name: '图片放大',
+      },
+      {
         cover: '/tools/background-removal-illustration.png',
         description: '在浏览器本地识别主体并导出透明 PNG。',
         href: '/tools/background-removal',

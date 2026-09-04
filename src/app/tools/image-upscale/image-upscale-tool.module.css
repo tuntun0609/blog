@@ -1,0 +1,654 @@
+.tool {
+  --upscale-canvas: var(--tools-canvas);
+  --upscale-surface: var(--background);
+  --upscale-line: color-mix(in oklab, var(--foreground) 12%, transparent);
+  --upscale-line-strong: color-mix(
+    in oklab,
+    var(--foreground) 24%,
+    transparent
+  );
+  --upscale-muted: color-mix(in oklab, var(--foreground) 64%, transparent);
+  --upscale-selected: var(--home-blue);
+  --upscale-selected-soft: var(--home-blue-soft);
+
+  min-height: calc(100svh - var(--site-header-height));
+  color: var(--foreground);
+  background: var(--upscale-canvas);
+}
+
+.fileInput,
+.srStatus {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0 0 0 0);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100% - 2rem, 42rem);
+  min-height: calc(100svh - var(--site-header-height));
+  padding-block: clamp(3rem, 9svh, 6rem);
+  margin-inline: auto;
+}
+
+.intro {
+  text-align: center;
+}
+
+.intro p,
+.workspaceHeader p {
+  max-width: 36rem;
+  margin: 0 auto;
+  line-height: 1.65;
+  color: var(--upscale-muted);
+  text-wrap: balance;
+}
+
+.dropButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin-top: 2rem;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-2xl);
+}
+
+.dropButton:disabled {
+  cursor: wait;
+}
+
+.dropZone {
+  min-height: 19rem;
+  padding: 2.5rem 1.5rem;
+  background: var(--upscale-surface);
+  border: 1px dashed var(--upscale-line-strong);
+  border-radius: var(--radius-2xl);
+}
+
+.dropButton:hover .dropZone,
+.dropButton:focus-visible .dropZone,
+.tool[data-dragging] .dropZone {
+  border-color: var(--primary);
+}
+
+.dropButton:focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--ring) 45%, transparent);
+  outline-offset: 4px;
+}
+
+.pickFileLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding-inline: 1.1rem;
+  font-weight: 650;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-radius: var(--radius-2xl);
+}
+
+.dropZone [data-slot="empty-content"] > span:last-child {
+  max-width: 30rem;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--muted-foreground);
+}
+
+.emptyError {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0 0;
+  font-size: 0.96rem;
+  line-height: 1.5;
+  color: var(--destructive);
+  text-align: center;
+  background: color-mix(in oklab, var(--destructive) 7%, var(--background));
+  border: 1px solid color-mix(in oklab, var(--destructive) 22%, transparent);
+  border-radius: var(--radius-xl);
+}
+
+.workspace {
+  width: min(100% - 2rem, 68rem);
+  padding-block: 2.25rem 4rem;
+  margin-inline: auto;
+}
+
+.workspaceHeader {
+  margin-bottom: 1.5rem;
+}
+
+.workspaceHeader p {
+  margin-inline: 0;
+}
+
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18.5rem, 20.5rem);
+  min-height: 36rem;
+  overflow: hidden;
+  background: var(--upscale-surface);
+  border: 1px solid var(--upscale-line);
+  border-radius: var(--radius-2xl);
+}
+
+.previewColumn {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1rem;
+  background: color-mix(in oklab, var(--foreground) 3%, var(--background));
+  border-inline-end: 1px solid var(--upscale-line);
+}
+
+.previewToolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.previewIdentity {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--upscale-muted);
+}
+
+.previewIdentity svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.viewButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.previewStage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: min(100%, var(--preview-max-width));
+  max-height: 62svh;
+  margin: auto;
+  overflow: hidden;
+  background: #18191d;
+  border-radius: var(--radius-xl);
+  isolation: isolate;
+}
+
+.sourceImage,
+.resultImage {
+  display: block;
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.resultImage {
+  z-index: 2;
+  clip-path: inset(0 0 0 var(--comparison-position));
+}
+
+.originalBadge,
+.resultBadge {
+  position: absolute;
+  top: 0.75rem;
+  z-index: 3;
+}
+
+.originalBadge {
+  left: 0.75rem;
+}
+
+.resultBadge {
+  right: 0.75rem;
+}
+
+.compareDivider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--comparison-position);
+  z-index: 4;
+  width: 1px;
+  pointer-events: none;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 20%);
+  transform: translateX(-50%);
+}
+
+.compareDivider span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: #fff;
+  background: color-mix(in oklab, var(--primary) 88%, #121318);
+  border: 1px solid rgb(255 255 255 / 45%);
+  border-radius: 50%;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 24%);
+  transform: translate(-50%, -50%);
+}
+
+.compareDivider svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.previewStage[data-comparison-edge] .compareDivider span {
+  display: none;
+}
+
+.compareRange {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: ew-resize;
+  opacity: 0;
+}
+
+.previewStage:has(.compareRange:focus-visible) {
+  outline: 3px solid color-mix(in oklab, var(--ring) 60%, transparent);
+  outline-offset: 3px;
+}
+
+.compareHelp {
+  margin: 0.65rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--upscale-muted);
+  text-align: center;
+}
+
+.processingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #fff;
+  text-align: center;
+  background: rgb(17 18 22 / 88%);
+}
+
+.processingOverlay > svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  animation: spin 900ms linear infinite;
+}
+
+.processingOverlay strong {
+  font-size: 1rem;
+}
+
+.processingOverlay > span {
+  font-size: 0.72rem;
+  color: rgb(255 255 255 / 70%);
+}
+
+.processingOverlay progress {
+  width: min(100%, 16rem);
+  height: 0.35rem;
+  overflow: hidden;
+  accent-color: var(--primary);
+  background: rgb(255 255 255 / 14%);
+  border: 0;
+  border-radius: 999px;
+}
+
+.processingOverlay progress::-webkit-progress-bar {
+  background: rgb(255 255 255 / 14%);
+}
+
+.processingOverlay progress::-webkit-progress-value {
+  background: var(--primary);
+}
+
+.processingOverlay [data-slot="button"] {
+  margin-top: 0.4rem;
+  color: #fff;
+  background: rgb(255 255 255 / 8%);
+  border-color: rgb(255 255 255 / 25%);
+}
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+  padding: 1.25rem;
+}
+
+.fileSummary {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.fileSummary > div,
+.resultHeading > div {
+  min-width: 0;
+}
+
+.fileSummary h2,
+.resultHeading h2 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1.02rem;
+  font-weight: 680;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.fileSummary p,
+.resultHeading p {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--upscale-muted);
+}
+
+.settings {
+  gap: 1.25rem;
+}
+
+.settings [data-slot="field"] {
+  gap: 0.65rem;
+}
+
+.segmentedControl,
+.scaleControl {
+  width: 100%;
+}
+
+.segmentedControl [data-slot="toggle-group-item"],
+.scaleControl [data-slot="toggle-group-item"] {
+  flex: 1;
+}
+
+.segmentedControl
+  [data-slot="toggle-group-item"]:is([data-state="on"], [aria-pressed="true"]),
+.scaleControl
+  [data-slot="toggle-group-item"]:is([data-state="on"], [aria-pressed="true"]) {
+  color: var(--upscale-selected);
+  background: var(--upscale-selected-soft);
+  border-color: color-mix(in oklab, var(--upscale-selected) 58%, var(--border));
+}
+
+.scaleControl [data-slot="toggle-group-item"]:last-child {
+  flex: 1.4;
+}
+
+.fixedScale {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--muted);
+  border-radius: var(--radius-2xl);
+}
+
+.fixedScale strong {
+  font-family: var(--font-mono);
+  font-size: 0.96rem;
+}
+
+.fixedScale span {
+  font-size: 0.72rem;
+  color: var(--upscale-muted);
+}
+
+.dimensionHeading {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dimensionInputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.dimensionInputs > svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--upscale-muted);
+}
+
+.dimensionInputs [data-slot="field"] {
+  position: relative;
+}
+
+.dimensionInputs [data-slot="input"] {
+  padding-inline-end: 1.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.96rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dimensionInputs [data-slot="field"] > span {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.42rem;
+  width: max-content;
+  font-size: 0.68rem;
+  color: var(--upscale-muted);
+  pointer-events: none;
+}
+
+.notice {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--upscale-muted);
+}
+
+.processError {
+  padding: 0.85rem;
+  background: color-mix(in oklab, var(--destructive) 7%, var(--background));
+  border: 1px solid color-mix(in oklab, var(--destructive) 22%, transparent);
+  border-radius: var(--radius-xl);
+}
+
+.processError strong {
+  font-size: 0.72rem;
+  color: var(--destructive);
+}
+
+.processError p {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--upscale-muted);
+}
+
+.processActions,
+.resultActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: auto;
+}
+
+.backendSummary,
+.resultHeading {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.backendSummary > span {
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.processActions > p {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--upscale-muted);
+}
+
+.loadingIcon {
+  animation: spin 900ms linear infinite;
+}
+
+.dataBoundary {
+  display: flex;
+  gap: 1.5rem 3rem;
+  justify-content: space-between;
+  padding-top: 1rem;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: var(--upscale-muted);
+}
+
+.dataBoundary p {
+  max-width: 38rem;
+  margin: 0;
+}
+
+.dragOverlay {
+  position: fixed;
+  inset: var(--site-header-height) 0 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-foreground);
+  pointer-events: none;
+  background: color-mix(in oklab, var(--primary) 92%, transparent);
+}
+
+.dragOverlay svg {
+  width: 3rem;
+  height: 3rem;
+}
+
+.dragOverlay strong {
+  font-size: clamp(1.45rem, 2vw, 1.75rem);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 940px) {
+  .editor {
+    grid-template-columns: 1fr;
+  }
+
+  .previewColumn {
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--upscale-line);
+  }
+
+  .previewStage {
+    max-width: min(100%, var(--preview-compact-max-width));
+    max-height: 58svh;
+  }
+
+  .processActions,
+  .resultActions {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .emptyState {
+    width: min(100% - 1.5rem, 42rem);
+    padding-block: 2.5rem;
+  }
+
+  .dropZone {
+    min-height: 17rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .workspace {
+    width: min(100% - 1rem, 68rem);
+    padding-block: 1.25rem 3rem;
+  }
+
+  .workspaceHeader p {
+    font-size: 0.96rem;
+  }
+
+  .editor {
+    border-radius: var(--radius-xl);
+  }
+
+  .previewColumn,
+  .inspector {
+    padding: 0.75rem;
+  }
+
+  .previewToolbar {
+    align-items: flex-start;
+  }
+
+  .dataBoundary {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .tool
+    :is([data-slot="button"], [data-slot="toggle-group-item"], .dropButton) {
+    min-height: 44px;
+  }
+
+  .compareDivider span {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingIcon,
+  .processingOverlay > svg {
+    animation-duration: 1.8s;
+  }
+}
