@@ -1,9 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getPublishedPosts } from '@/lib/blog'
-
-const siteUrl = new URL(
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-)
+import { siteUrl } from '@/lib/site'
 
 const staticPages: MetadataRoute.Sitemap = [
   {

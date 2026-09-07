@@ -1,6 +1,7 @@
 import { RootProvider } from 'fumadocs-ui/provider/next'
 import type { Metadata } from 'next'
 import { Geist_Mono, Noto_Sans } from 'next/font/google'
+import { siteUrl } from '@/lib/site'
 import { cn } from '@/lib/utils'
 
 import './globals.css'
@@ -18,9 +19,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   description: '关于现代 Web 开发、产品工程与实践的思考。',
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-  ),
+  metadataBase: siteUrl,
   title: {
     default: 'Tuntun',
     template: '%s | Tuntun',
