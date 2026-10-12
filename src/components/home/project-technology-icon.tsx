@@ -1,8 +1,10 @@
 import type { ReactElement } from 'react'
 import {
   siAgentskills,
+  siMacos,
   siNextdotjs,
   siReact,
+  siSwift,
   siTailwindcss,
 } from 'simple-icons'
 
@@ -10,10 +12,12 @@ export type ProjectTechnologyIconName =
   | 'agent-skills'
   | 'chrome-web-store'
   | 'javascript'
+  | 'macos'
   | 'mdx'
   | 'nextjs'
   | 'python'
   | 'react'
+  | 'swift'
   | 'tailwindcss'
   | 'typescript'
 
@@ -122,6 +126,8 @@ const JavaScriptIcon = () => (
   </svg>
 )
 
+const MacOSIcon = () => <SimpleIcon color="#000000" path={siMacos.path} />
+
 const MdxIcon = () => (
   <svg aria-hidden="true" focusable="false" viewBox="0 0 512 212">
     <path d="m272.696 40.203-.002 84.896 31.185-31.178 15.74 15.741-57.642 57.638-58.369-58.369 15.741-15.741 31.085 31.085.001-84.072zM72.162 162.979V97.232l40.255 40.257 40.56-40.557v65.383h22.261V43.192l-62.82 62.816-62.517-62.521v119.492z" />
@@ -171,6 +177,8 @@ const PythonIcon = () => (
 
 const ReactIcon = () => <SimpleIcon color="#61dafb" path={siReact.path} />
 
+const SwiftIcon = () => <SimpleIcon color="#F05138" path={siSwift.path} />
+
 const TailwindIcon = () => (
   <SimpleIcon color="#06b6d4" path={siTailwindcss.path} />
 )
@@ -197,10 +205,12 @@ const TECHNOLOGY_ICONS: Record<
   'agent-skills': AgentSkillsIcon,
   'chrome-web-store': ChromeWebStoreIcon,
   javascript: JavaScriptIcon,
+  macos: MacOSIcon,
   mdx: MdxIcon,
   nextjs: NextIcon,
   python: PythonIcon,
   react: ReactIcon,
+  swift: SwiftIcon,
   tailwindcss: TailwindIcon,
   typescript: TypeScriptIcon,
 }

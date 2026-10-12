@@ -29,6 +29,20 @@ export interface ProjectDefinition {
 
 export const projects: readonly ProjectDefinition[] = [
   {
+    description:
+      '为 AI 工作中的零散想法设计的 macOS 菜单栏便笺，支持快速捕获、整理和搜索，笔记保存在本机。',
+    href: 'https://github.com/tuntun0609/pebble',
+    preview: {
+      kind: 'image',
+      src: 'https://raw.githubusercontent.com/tuntun0609/pebble/master/Resources/Brand/readme-hero.png',
+    },
+    technologies: [
+      { icon: 'macos', name: 'macOS' },
+      { icon: 'swift', name: 'Swift' },
+    ],
+    title: 'Pebble',
+  },
+  {
     description: '收集并筛选公开支持 shadcn CLI 或兼容 Registry 的 UI 组件库。',
     href: 'https://github.com/tuntun0609/awesome-shadcn-ui',
     preview: {
